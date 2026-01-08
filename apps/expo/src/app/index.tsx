@@ -112,12 +112,12 @@ function MobileAuth() {
           session
             ? authClient.signOut()
             : authClient.signIn.social({
-                provider: "discord",
+                provider: "github",
                 callbackURL: "/",
               })
         }
       >
-        <Text>{session ? "Sign Out" : "Sign In With Discord"}</Text>
+        <Text>{session ? "Sign Out" : "Sign In With GitHub"}</Text>
       </Pressable>
     </>
   );

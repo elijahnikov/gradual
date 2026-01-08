@@ -54,7 +54,13 @@ export function initAuth<
       }),
       ...(options.extraPlugins ?? []),
     ],
-    socialProviders: {},
+    socialProviders: {
+      github: {
+        clientId: process.env.GITHUB_CLIENT_ID as string,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+        redirectURI: `${options.baseUrl}/api/auth/callback/github`,
+      },
+    },
     trustedOrigins: ["expo://"],
     onAPIError: {
       onError(error, ctx) {

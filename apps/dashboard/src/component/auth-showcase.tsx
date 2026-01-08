@@ -12,7 +12,7 @@ export function AuthShowcase() {
       <Button
         onClick={async () => {
           const res = await authClient.signIn.social({
-            provider: "discord",
+            provider: "github",
             callbackURL: "/",
           });
           if (!res.data?.url) {
@@ -22,7 +22,7 @@ export function AuthShowcase() {
         }}
         size="lg"
       >
-        Sign in with Discord
+        Sign in with GitHub
       </Button>
     );
   }

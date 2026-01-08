@@ -27,9 +27,11 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@planetscale/database": "^1.19.0",
     "@vercel/postgres": "^0.10.0",
     "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.8.3",
+    "pg": "^8.16.3",
     "zod": "catalog:"
   },
   "devDependencies": {

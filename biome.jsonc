@@ -4,5 +4,19 @@
     "ultracite/biome/core",
     "ultracite/biome/react",
     "ultracite/biome/remix"
-  ]
+  ],
+  "linter": {
+    "rules": {
+      "performance": {
+        "noNamespaceImport": "off",
+        "noBarrelFile": "off"
+      },
+      "complexity": {
+        "noVoid": "off"
+      },
+      "correctness": {
+        "noChildrenProp": "off"
+      }
+    }
+  }
 }

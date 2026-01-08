@@ -73,7 +73,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
           return content;
         },
       },
-      async (answers) => {
+      (answers) => {
         /**
          * Install deps and format everything
          */

@@ -20,7 +20,9 @@ export type ThemeMode = z.output<typeof ThemeModeSchema>;
 export type ResolvedTheme = Exclude<ThemeMode, "auto">;
 
 const getStoredThemeMode = (): ThemeMode => {
-  if (typeof window === "undefined") return "auto";
+  if (typeof window === "undefined") {
+    return "auto";
+  }
   try {
     const storedTheme = localStorage.getItem(themeKey);
     return ThemeModeSchema.parse(storedTheme);
@@ -39,7 +41,9 @@ const setStoredThemeMode = (theme: ThemeMode) => {
 };
 
 const getSystemTheme = () => {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") {
+    return "light";
+  }
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
@@ -68,7 +72,7 @@ const getNextTheme = (current: ThemeMode): ThemeMode => {
     getSystemTheme() === "dark"
       ? ["auto", "light", "dark"]
       : ["auto", "dark", "light"];
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  // biome-ignore lint/style/noNonNullAssertion: <>
   return themes[(themes.indexOf(current) + 1) % themes.length]!;
 };
 
@@ -109,7 +113,9 @@ export function ThemeProvider({ children }: React.PropsWithChildren) {
   const [themeMode, setThemeMode] = React.useState(getStoredThemeMode);
 
   React.useEffect(() => {
-    if (themeMode !== "auto") return;
+    if (themeMode !== "auto") {
+      return;
+    }
     return setupPreferredListener();
   }, [themeMode]);
 
@@ -135,6 +141,7 @@ export function ThemeProvider({ children }: React.PropsWithChildren) {
       }}
     >
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: <>
         dangerouslySetInnerHTML={{ __html: themeDetectorScript }}
         suppressHydrationWarning
       />
