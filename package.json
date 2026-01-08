@@ -1,43 +1,84 @@
 {
-  "name": "create-t3-turbo",
+  "name": "gradual",
   "private": true,
-  "engines": {
-    "node": "^22.21.0",
-    "pnpm": "^10.19.0"
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*",
+      "tooling/*"
+    ],
+    "catalog": {
+      "typescript": "^5.9.3",
+      "zod": "^4.3.5",
+      "@types/node": "^25.0.3"
+    },
+    "catalogs": {
+      "tailwind": {
+        "tailwindcss": "^4.1.18",
+        "@tailwindcss/vite": "^4.1.18",
+        "@tailwindcss/postcss": "^4.1.18"
+      },
+      "better-auth": {
+        "better-auth": "^1.4.10",
+        "@better-auth/cli": "^1.4.10",
+        "@better-auth/expo": "^1.4.10",
+        "@polar-sh/better-auth": "^1.6.3",
+        "@polar-sh/sdk": "^0.42.1"
+      },
+      "trpc": {
+        "@trpc/client": "^11.8.1",
+        "@trpc/server": "^11.8.1",
+        "@trpc/tanstack-react-query": "^11.8.1"
+      },
+      "tanstack": {
+        "@tanstack/react-query": "^5.90.16",
+        "@tanstack/react-form": "^1.27.7",
+        "@tanstack/react-router": "^1.135.2",
+        "@tanstack/react-router-devtools": "^1.135.2",
+        "@tanstack/react-router-ssr-query": "^1.135.2",
+        "@tanstack/react-start": "^1.135.2"
+      },
+      "vite": {
+        "vite": "^7.3.1",
+        "@vitejs/plugin-react": "^5.1.2",
+        "vite-tsconfig-paths": "^5.1.4"
+      },
+      "react": {
+        "@types/react": "^19.2.7",
+        "@types/react-dom": "^19.2.3",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3"
+      }
+    }
   },
   "scripts": {
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
-    "auth:generate": "pnpm -F @acme/auth generate",
-    "db:push": "turbo -F @acme/db push",
-    "db:studio": "turbo -F @acme/db studio",
+    "auth:generate": "bun -F @gradual/auth generate",
+    "db:push": "turbo -F @gradual/db push",
+    "db:studio": "turbo -F @gradual/db studio",
     "dev": "turbo watch dev --continue",
-    "dev:next": "turbo watch dev -F @acme/nextjs...",
-    "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
-    "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
-    "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
-    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
-    "lint:ws": "pnpm dlx sherif@latest",
-    "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
     "ui-add": "turbo run ui-add",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "prepare": "husky",
+    "postinstall": "bun run fix",
+    "check": "bun x ultracite@latest check",
+    "fix": "bun x ultracite@latest fix"
   },
   "devDependencies": {
-    "@acme/prettier-config": "*",
+    "@biomejs/biome": "2.3.11",
     "@turbo/gen": "^2.5.8",
     "dotenv-cli": "^10.0.0",
-    "prettier": "catalog:",
+    "husky": "^9.1.7",
     "turbo": "^2.5.8",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "ultracite": "7.0.9"
   },
-  "prettier": "@acme/prettier-config",
-  "packageManager": "bun@1.2.14",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "tooling/*"
-  ]
+  "engines": {
+    "node": "^22.21.0"
+  },
+  "packageManager": "bun@1.2.14"
 }

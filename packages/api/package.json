@@ -1,6 +1,7 @@
 {
-  "name": "@acme/api",
+  "name": "@gradual/api",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
@@ -8,30 +9,21 @@
       "default": "./src/index.ts"
     }
   },
-  "license": "MIT",
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "tsc",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
-    "lint": "eslint --flag unstable_native_nodejs_ts_config",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@acme/auth": "*",
-    "@acme/db": "*",
-    "@acme/validators": "*",
-    "@trpc/server": "catalog:",
+    "@gradual/auth": "*",
+    "@gradual/db": "*",
+    "@trpc/server": "catalog:trpc",
     "superjson": "2.2.3",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@acme/eslint-config": "*",
-    "@acme/prettier-config": "*",
-    "@acme/tsconfig": "*",
-    "eslint": "catalog:",
-    "prettier": "catalog:",
+    "@gradual/tsconfig": "*",
     "typescript": "catalog:"
-  },
-  "prettier": "@acme/prettier-config"
+  }
 }

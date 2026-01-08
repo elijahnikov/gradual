@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { DesktopIcon, MoonIcon, SunIcon } from "@radix-ui/react-icons";
+import * as React from "react";
 import * as z from "zod/v4";
 
 import { Button } from "./button";
@@ -72,7 +72,7 @@ const getNextTheme = (current: ThemeMode): ThemeMode => {
   return themes[(themes.indexOf(current) + 1) % themes.length]!;
 };
 
-export const themeDetectorScript = (function () {
+export const themeDetectorScript = (() => {
   function themeFn() {
     const isValidTheme = (theme: string): theme is ThemeMode => {
       const validThemes = ["light", "dark", "auto"] as const;
@@ -102,7 +102,7 @@ interface ThemeContextProps {
   toggleMode: () => void;
 }
 const ThemeContext = React.createContext<ThemeContextProps | undefined>(
-  undefined,
+  undefined
 );
 
 export function ThemeProvider({ children }: React.PropsWithChildren) {
@@ -158,11 +158,11 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          size="icon"
           className="[&>svg]:absolute [&>svg]:size-5 [&>svg]:scale-0"
+          size="icon"
+          variant="outline"
         >
-          <SunIcon className="light:scale-100! auto:scale-0!" />
+          <SunIcon className="auto:scale-0! light:scale-100!" />
           <MoonIcon className="auto:scale-0! dark:scale-100!" />
           <DesktopIcon className="auto:scale-100!" />
           <span className="sr-only">Toggle theme</span>

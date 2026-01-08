@@ -1,9 +1,10 @@
 {
-  "extends": "@acme/tsconfig/base.json",
+  "extends": "@gradual/tsconfig/base.json",
   "compilerOptions": {
     "lib": ["ES2022", "dom", "dom.iterable"],
     "jsx": "preserve",
-    "rootDir": "."
+    "rootDir": ".",
+    "strictNullChecks": true
   },
   "include": ["src"],
   "exclude": ["node_modules"]

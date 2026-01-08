@@ -16,7 +16,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         type: "input",
         name: "name",
         message:
-          "What is the name of the package? (You can skip the `@acme/` prefix)",
+          "What is the name of the package? (You can skip the `@gradual/` prefix)",
       },
       {
         type: "input",
@@ -27,17 +27,14 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
     ],
     actions: [
       (answers) => {
-        if ("name" in answers && typeof answers.name === "string") {
-          if (answers.name.startsWith("@acme/")) {
-            answers.name = answers.name.replace("@acme/", "");
-          }
+        if (
+          "name" in answers &&
+          typeof answers.name === "string" &&
+          answers.name.startsWith("@gradual/")
+        ) {
+          answers.name = answers.name.replace("@gradual/", "");
         }
         return "Config sanitized";
-      },
-      {
-        type: "add",
-        path: "packages/{{ name }}/eslint.config.ts",
-        templateFile: "templates/eslint.config.ts.hbs",
       },
       {
         type: "add",
@@ -62,11 +59,13 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
             const pkg = JSON.parse(content) as PackageJson;
             for (const dep of answers.deps.split(" ").filter(Boolean)) {
               const version = await fetch(
-                `https://registry.npmjs.org/-/package/${dep}/dist-tags`,
+                `https://registry.npmjs.org/-/package/${dep}/dist-tags`
               )
                 .then((res) => res.json())
                 .then((json) => json.latest);
-              if (!pkg.dependencies) pkg.dependencies = {};
+              if (!pkg.dependencies) {
+                pkg.dependencies = {};
+              }
               pkg.dependencies[dep] = `^${version}`;
             }
             return JSON.stringify(pkg, null, 2);
@@ -83,9 +82,6 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
           //   stdio: "inherit",
           // });
           execSync("pnpm i", { stdio: "inherit" });
-          execSync(
-            `pnpm prettier --write packages/${answers.name}/** --list-different`,
-          );
           return "Package scaffolded";
         }
         return "Package not scaffolded";
