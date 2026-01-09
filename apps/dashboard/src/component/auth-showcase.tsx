@@ -9,21 +9,38 @@ export function AuthShowcase() {
 
   if (!session) {
     return (
-      <Button
-        onClick={async () => {
-          const res = await authClient.signIn.social({
-            provider: "github",
-            callbackURL: "/",
-          });
-          if (!res.data?.url) {
-            throw new Error("No URL returned from signInSocial");
-          }
-          await navigate({ href: res.data.url, replace: true });
-        }}
-        size="lg"
-      >
-        Sign in with GitHub
-      </Button>
+      <>
+        <Button
+          onClick={async () => {
+            const res = await authClient.signIn.social({
+              provider: "github",
+              callbackURL: "/",
+            });
+            if (!res.data?.url) {
+              throw new Error("No URL returned from signInSocial");
+            }
+            await navigate({ href: res.data.url, replace: true });
+          }}
+          size="lg"
+        >
+          Sign in with GitHub
+        </Button>
+        <Button
+          onClick={async () => {
+            const res = await authClient.signIn.social({
+              provider: "google",
+              callbackURL: "/",
+            });
+            if (!res.data?.url) {
+              throw new Error("No URL returned from signInSocial");
+            }
+            await navigate({ href: res.data.url, replace: true });
+          }}
+          size="lg"
+        >
+          Sign in with Google
+        </Button>
+      </>
     );
   }
 

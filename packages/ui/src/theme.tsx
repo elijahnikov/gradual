@@ -163,17 +163,19 @@ export function ThemeToggle() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="[&>svg]:absolute [&>svg]:size-5 [&>svg]:scale-0"
-          size="icon"
-          variant="outline"
-        >
-          <SunIcon className="auto:scale-0! light:scale-100!" />
-          <MoonIcon className="auto:scale-0! dark:scale-100!" />
-          <DesktopIcon className="auto:scale-100!" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            className="[&>svg]:absolute [&>svg]:size-5 [&>svg]:scale-0"
+            size="icon"
+            variant="outline"
+          />
+        }
+      >
+        <SunIcon className="auto:scale-0! light:scale-100!" />
+        <MoonIcon className="auto:scale-0! dark:scale-100!" />
+        <DesktopIcon className="auto:scale-100!" />
+        <span className="sr-only">Toggle theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>

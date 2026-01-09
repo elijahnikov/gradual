@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
 import type { AppRouter } from "@gradual/api";
-import { ThemeProvider, ThemeToggle } from "@gradual/ui/theme";
-import { Toaster } from "@gradual/ui/toast";
+import { ThemeProvider } from "@gradual/ui/theme";
+import { AnchoredToastProvider, ToastProvider } from "@gradual/ui/toast";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
@@ -42,11 +42,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-          {children}
-          <div className="absolute right-4 bottom-12">
-            <ThemeToggle />
-          </div>
-          <Toaster />
+          <ToastProvider>
+            <AnchoredToastProvider>{children}</AnchoredToastProvider>
+          </ToastProvider>
           <TanStackRouterDevtools position="bottom-right" />
           <Scripts />
         </body>

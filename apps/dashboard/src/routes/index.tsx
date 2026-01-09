@@ -2,15 +2,9 @@ import type { RouterOutputs } from "@gradual/api";
 import { CreatePostSchema } from "@gradual/db/schema";
 import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@gradual/ui/field";
+import { Field, FieldError, FieldLabel } from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
-import { toast } from "@gradual/ui/toast";
+
 import { useForm } from "@tanstack/react-form";
 import {
   useMutation,
@@ -69,13 +63,6 @@ function CreatePostForm() {
         form.reset();
         await queryClient.invalidateQueries(trpc.post.pathFilter());
       },
-      onError: (err) => {
-        toast.error(
-          err.data?.code === "UNAUTHORIZED"
-            ? "You must be logged in to post"
-            : "Failed to create post"
-        );
-      },
     })
   );
 
@@ -98,56 +85,54 @@ function CreatePostForm() {
         void form.handleSubmit();
       }}
     >
-      <FieldGroup>
-        <form.Field
-          children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldContent>
-                  <FieldLabel htmlFor={field.name}>Bug Title</FieldLabel>
-                </FieldContent>
-                <Input
-                  aria-invalid={isInvalid}
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Title"
-                  value={field.state.value}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            );
-          }}
-          name="title"
-        />
-        <form.Field
-          children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldContent>
-                  <FieldLabel htmlFor={field.name}>Content</FieldLabel>
-                </FieldContent>
-                <Input
-                  aria-invalid={isInvalid}
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Content"
-                  value={field.state.value}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            );
-          }}
-          name="content"
-        />
-      </FieldGroup>
+      <form.Field
+        children={(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid;
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>Bug Title</FieldLabel>
+              <Input
+                aria-invalid={isInvalid}
+                id={field.name}
+                name={field.name}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Title"
+                value={field.state.value}
+              />
+              {isInvalid && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
+            </Field>
+          );
+        }}
+        name="title"
+      />
+      <form.Field
+        children={(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid;
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>Content</FieldLabel>
+              <Input
+                aria-invalid={isInvalid}
+                id={field.name}
+                name={field.name}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Content"
+                value={field.state.value}
+              />
+              {isInvalid && (
+                <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+              )}
+            </Field>
+          );
+        }}
+        name="content"
+      />
       <Button type="submit">Create</Button>
     </form>
   );
@@ -187,13 +172,6 @@ function PostCard(props: { post: RouterOutputs["post"]["all"][number] }) {
     trpc.post.delete.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(trpc.post.pathFilter());
-      },
-      onError: (err) => {
-        toast.error(
-          err.data?.code === "UNAUTHORIZED"
-            ? "You must be logged in to delete a post"
-            : "Failed to delete post"
-        );
       },
     })
   );

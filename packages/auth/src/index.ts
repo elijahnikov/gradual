@@ -60,6 +60,12 @@ export function initAuth<
         clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
         redirectURI: `${options.baseUrl}/api/auth/callback/github`,
       },
+      google: {
+        prompt: "select_account",
+        clientId: process.env.GOOGLE_CLIENT_ID as string,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+        redirectURI: `${options.baseUrl}/api/auth/callback/google`,
+      },
     },
     trustedOrigins: ["expo://"],
     onAPIError: {
