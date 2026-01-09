@@ -47,3 +47,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
+
+export type ProtectedTRPCContext = Awaited<
+  ReturnType<typeof createTRPCContext>
+>;

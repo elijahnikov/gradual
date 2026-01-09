@@ -21,6 +21,12 @@ export function initAuth<
     }),
     baseURL: options.baseUrl,
     secret: options.secret,
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+      },
+    },
     plugins: [
       oAuthProxy({
         productionURL: options.productionUrl,
@@ -65,6 +71,11 @@ export function initAuth<
         clientId: process.env.GOOGLE_CLIENT_ID as string,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
         redirectURI: `${options.baseUrl}/api/auth/callback/google`,
+      },
+      linear: {
+        clientId: process.env.LINEAR_CLIENT_ID as string,
+        clientSecret: process.env.LINEAR_CLIENT_SECRET as string,
+        scope: ["read", "write"],
       },
     },
     trustedOrigins: ["expo://"],

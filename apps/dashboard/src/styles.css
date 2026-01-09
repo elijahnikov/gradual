@@ -1,14 +1,26 @@
 @import "tailwindcss";
 @import "@gradual/tailwind-config/theme";
 
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
-
 @source "../../../packages/ui/src/*.{ts,tsx}";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant light (&:where(.light, .light *));
 @custom-variant auto (&:where(.auto, .auto *));
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/CommitMono-400-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/CommitMono-700-Regular.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @utility container {
   margin-inline: auto;
@@ -23,8 +35,7 @@
 
 @layer base {
   :root {
-    --font-geist-sans: "Geist Variable";
-    --font-geist-mono: "Geist Mono Variable";
+    --font-commit-mono: "CommitMono";
   }
   * {
     @apply border-border;

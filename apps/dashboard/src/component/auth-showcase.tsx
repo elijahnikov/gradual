@@ -1,10 +1,15 @@
 import { Button } from "@gradual/ui/button";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { authClient } from "~/auth/client";
+import { useTRPC } from "~/lib/trpc";
 
 export function AuthShowcase() {
-  const { data: session } = authClient.useSession();
+  const trpc = useTRPC();
+  const { data: session } = useSuspenseQuery(
+    trpc.auth.getSession.queryOptions()
+  );
   const navigate = useNavigate();
 
   if (!session) {
@@ -39,6 +44,20 @@ export function AuthShowcase() {
           size="lg"
         >
           Sign in with Google
+        </Button>
+        <Button
+          onClick={async () => {
+            const res = await authClient.signIn.social({
+              provider: "linear",
+            });
+            if (!res.data?.url) {
+              throw new Error("No URL returned from signInSocial");
+            }
+            await navigate({ href: res.data.url, replace: true });
+          }}
+          size="lg"
+        >
+          Sign in with Linear
         </Button>
       </>
     );
