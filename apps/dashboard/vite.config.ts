@@ -16,7 +16,9 @@ export default defineConfig({
     tsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
-    nitro(),
+    nitro({
+      preset: "vercel",
+    }),
     tanstackStart(),
     viteReact(),
     tailwindcss(),
