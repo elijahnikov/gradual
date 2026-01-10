@@ -290,7 +290,6 @@
     color: var(--shiki-light);
 
     @variant dark {
-      /* biome-ignore lint/suspicious/noDuplicateProperties: known */
       color: var(--shiki-dark) !important;
     }
   }

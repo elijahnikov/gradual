@@ -16,6 +16,9 @@
       },
       "correctness": {
         "noChildrenProp": "off"
+      },
+      "suspicious": {
+        "noDuplicateProperties": "off"
       }
     }
   }
