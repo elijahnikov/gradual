@@ -144,6 +144,8 @@ export const project = pgTable(
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     name: varchar("name", { length: 256 }).notNull(),
+    icon: varchar("icon", { length: 256 }),
+    emoji: varchar("emoji", { length: 256 }),
     slug: varchar("slug", { length: 256 }).notNull(),
     description: text("description"),
     organizationId: uuid("organization_id")
