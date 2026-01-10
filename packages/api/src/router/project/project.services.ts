@@ -5,6 +5,7 @@ import type { OrganizationProtectedTRPCContext } from "../../trpc";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
+  GetAllProjectsByOrganizationIdInput,
   GetProjectByIdInput,
   GetProjectBySlugInput,
   UpdateProjectInput,
@@ -44,7 +45,7 @@ export const getProjectById = async ({
       and(
         eq(project.id, input.projectId),
         isNull(project.deletedAt),
-        eq(project.organizationId, ctx.organization.id)
+        eq(project.organizationId, input.organizationId)
       )
     );
   if (!foundProject) {
@@ -104,8 +105,8 @@ export const updateProject = async ({
 
   if (!updatedProject) {
     throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to update project",
+      code: "NOT_FOUND",
+      message: "Project not found",
     });
   }
   return updatedProject;
@@ -140,8 +141,10 @@ export const deleteProject = async ({
 
 export const getAllProjectsByOrganizationId = async ({
   ctx,
+  input,
 }: {
   ctx: OrganizationProtectedTRPCContext;
+  input: GetAllProjectsByOrganizationIdInput;
 }) => {
   const projects = await ctx.db
     .select()
@@ -149,14 +152,9 @@ export const getAllProjectsByOrganizationId = async ({
     .where(
       and(
         isNull(project.deletedAt),
-        eq(project.organizationId, ctx.organization.id)
+        eq(project.organizationId, input.organizationId)
       )
     );
-  if (!projects) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Projects could not be found",
-    });
-  }
+
   return projects;
 };

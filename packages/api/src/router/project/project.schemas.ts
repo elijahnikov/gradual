@@ -13,6 +13,7 @@ export const createProjectSchema = createInsertSchema(project).omit({
 export type GetProjectByIdInput = z.infer<typeof getProjectByIdSchema>;
 export const getProjectByIdSchema = z.object({
   projectId: z.uuid(),
+  organizationId: z.uuid(),
 });
 
 export type GetProjectBySlugInput = z.infer<typeof getProjectBySlugSchema>;
@@ -35,4 +36,11 @@ export const updateProjectSchema = createUpdateSchema(project)
 export type DeleteProjectInput = z.infer<typeof deleteProjectSchema>;
 export const deleteProjectSchema = z.object({
   projectId: z.uuid(),
+});
+
+export type GetAllProjectsByOrganizationIdInput = z.infer<
+  typeof getAllProjectsByOrganizationIdSchema
+>;
+export const getAllProjectsByOrganizationIdSchema = z.object({
+  organizationId: z.uuid(),
 });

@@ -35,7 +35,9 @@ export const projectRouter = {
       return services.deleteProject({ ...opts });
     }),
 
-  getAllByOrganizationId: protectedOrganizationProcedure().query((opts) => {
-    return services.getAllProjectsByOrganizationId({ ...opts });
-  }),
+  getAllByOrganizationId: protectedOrganizationProcedure()
+    .input(schemas.getAllProjectsByOrganizationIdSchema)
+    .query((opts) => {
+      return services.getAllProjectsByOrganizationId({ ...opts });
+    }),
 } satisfies TRPCRouterRecord;
