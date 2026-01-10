@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd ../.. && bun run build --filter=@gradual/dashboard",
-  "outputDirectory": ".output",
-  "installCommand": "cd ../.. && bun install",
-  "framework": null
-}
