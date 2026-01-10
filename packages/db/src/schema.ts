@@ -87,6 +87,9 @@ export const organization = pgTable(
   "organization",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
+    createdById: text("created_by_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 256 }).notNull(),
     slug: varchar("slug", { length: 256 }).notNull().unique(),
     description: text("description"),
@@ -101,6 +104,7 @@ export const organization = pgTable(
       .notNull(),
   },
   (table) => [
+    index("organization_created_by_id_idx").on(table.createdById),
     index("organization_slug_idx").on(table.slug),
     index("organization_deleted_at_idx").on(table.deletedAt),
   ]
