@@ -36,7 +36,7 @@ export const getOrganizationBySlug = async ({
   const [foundOrganization] = await ctx.db
     .select()
     .from(organization)
-    .where(eq(organization.slug, slug));
+    .where(and(eq(organization.slug, slug), isNull(organization.deletedAt)));
 
   if (!foundOrganization) {
     throw new TRPCError({
@@ -56,28 +56,29 @@ export const createOrganization = async ({
   input: CreateOrganizationInput;
 }) => {
   const currentUser = ctx.session.user;
-  const [createdOrganization] = await ctx.db
-    .insert(organization)
-    .values({
-      ...input,
-      createdById: currentUser.id,
-    })
-    .returning();
 
-  if (!createdOrganization) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to create organization",
+  const result = await ctx.db.transaction(async (tx) => {
+    const [createdOrganization] = await tx
+      .insert(organization)
+      .values({
+        ...input,
+        createdById: currentUser.id,
+      })
+      .returning();
+    if (!createdOrganization) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to create organization",
+      });
+    }
+    await tx.insert(organizationMember).values({
+      organizationId: createdOrganization.id,
+      userId: currentUser.id,
+      role: "owner",
     });
-  }
-
-  await ctx.db.insert(organizationMember).values({
-    organizationId: createdOrganization.id,
-    userId: currentUser.id,
-    role: "admin",
+    return createdOrganization;
   });
-
-  return createdOrganization;
+  return result;
 };
 
 export const updateOrganization = async ({
@@ -87,9 +88,10 @@ export const updateOrganization = async ({
   ctx: OrganizationProtectedTRPCContext;
   input: UpdateOrganizationInput;
 }) => {
+  const { organizationId: _, ...rest } = input;
   const [updatedOrganization] = await ctx.db
     .update(organization)
-    .set(input)
+    .set(rest)
     .where(eq(organization.id, ctx.organization.id))
     .returning();
 

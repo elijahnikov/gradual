@@ -4,6 +4,7 @@ import { db } from "@gradual/db/client";
 import { organization, organizationMember } from "@gradual/db/schema";
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { InferSelectModel } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError, z } from "zod/v4";
 
@@ -69,7 +70,9 @@ export const protectedOrganizationProcedure = (
     const org = await ctx.db
       .select()
       .from(organization)
-      .where(eq(organization.id, organizationId))
+      .where(
+        and(eq(organization.id, organizationId), isNull(organization.deletedAt))
+      )
       .limit(1)
       .then((results) => results[0]);
 

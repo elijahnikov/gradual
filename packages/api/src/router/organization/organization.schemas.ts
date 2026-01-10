@@ -12,6 +12,7 @@ export const createOrganizationSchema = createInsertSchema(organization).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  deletedAt: true,
 });
 
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
@@ -19,6 +20,8 @@ export const updateOrganizationSchema = createUpdateSchema(organization)
   .omit({
     id: true,
     createdAt: true,
+    createdById: true,
+    deletedAt: true,
     updatedAt: true,
   })
   .extend({

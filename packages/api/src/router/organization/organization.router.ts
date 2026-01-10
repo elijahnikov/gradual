@@ -29,7 +29,7 @@ export const organizationRouter = {
       return services.updateOrganization({ ...opts });
     }),
 
-  delete: protectedOrganizationProcedure(["admin"])
+  delete: protectedOrganizationProcedure(["owner"])
     .input(schemas.deleteOrganizationSchema)
     .mutation((opts) => {
       return services.deleteOrganization({ ...opts });
