@@ -1,9 +1,8 @@
 "use client";
 
-import { DesktopIcon, MoonIcon, SunIcon } from "@radix-ui/react-icons";
+import { RiComputerFill, RiMoonFill, RiSunFill } from "@remixicon/react";
 import * as React from "react";
 import * as z from "zod/v4";
-
 import { Button } from "./button";
 import {
   DropdownMenu,
@@ -172,9 +171,9 @@ export function ThemeToggle() {
           />
         }
       >
-        <SunIcon className="auto:scale-0! light:scale-100!" />
-        <MoonIcon className="auto:scale-0! dark:scale-100!" />
-        <DesktopIcon className="auto:scale-100!" />
+        <RiSunFill className="auto:scale-0! light:scale-100!" />
+        <RiMoonFill className="auto:scale-0! dark:scale-100!" />
+        <RiComputerFill className="auto:scale-100!" />
         <span className="sr-only">Toggle theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
