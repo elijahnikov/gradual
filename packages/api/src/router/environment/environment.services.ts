@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "@gradual/db";
 import { environment } from "@gradual/db/schema";
+import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateEnvironmentInput,
@@ -17,7 +18,26 @@ export const createEnvironment = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateEnvironmentInput;
 }) => {
-  return await ctx.db.insert(environment).values(input);
+  const { organizationId: organizationIdInput, projectId } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ id, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(id, projectId),
+        eq(organizationId, organizationIdInput),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const [createdEnvironment] = await ctx.db
+    .insert(environment)
+    .values(input)
+    .returning();
+  return createdEnvironment;
 };
 
 export const listEnvironments = async ({
@@ -53,6 +73,14 @@ export const getEnvironment = async ({
       organization: true,
     },
   });
+
+  if (!environment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
   return environment;
 };
 
@@ -75,6 +103,14 @@ export const getEnvironmentBySlug = async ({
       organization: true,
     },
   });
+
+  if (!environment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
   return environment;
 };
 
@@ -86,7 +122,7 @@ export const updateEnvironment = async ({
   input: UpdateEnvironmentInput;
 }) => {
   const { organizationId, id, ...rest } = input;
-  return await ctx.db
+  const [updatedEnvironment] = await ctx.db
     .update(environment)
     .set({
       ...rest,
@@ -97,7 +133,10 @@ export const updateEnvironment = async ({
         eq(environment.organizationId, organizationId),
         isNull(environment.deletedAt)
       )
-    );
+    )
+    .returning();
+
+  return updatedEnvironment;
 };
 
 export const deleteEnvironment = async ({
@@ -107,7 +146,23 @@ export const deleteEnvironment = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: DeleteEnvironmentInput;
 }) => {
-  return await ctx.db
+  const foundEnvironment = await ctx.db.query.environment.findFirst({
+    where: ({ id, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(id, input.id),
+        eq(organizationId, input.organizationId),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
+  const [deletedEnvironment] = await ctx.db
     .update(environment)
     .set({ deletedAt: new Date() })
     .where(
@@ -116,5 +171,8 @@ export const deleteEnvironment = async ({
         eq(environment.organizationId, input.organizationId),
         isNull(environment.deletedAt)
       )
-    );
+    )
+    .returning();
+
+  return deletedEnvironment;
 };

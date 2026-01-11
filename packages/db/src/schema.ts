@@ -77,12 +77,6 @@ export const flagDependencyTypeEnum = pgEnum("flag_dependency_type", [
   "conflicts",
 ]);
 
-export const apiKeyTypeEnum = pgEnum("api_key_type", [
-  "server",
-  "client",
-  "admin",
-]);
-
 export const organization = pgTable(
   "organization",
   {
@@ -476,7 +470,6 @@ export const apiKey = pgTable(
     name: varchar("name", { length: 256 }).notNull(),
     keyHash: text("key_hash").notNull().unique(), // Hashed API key
     keyPrefix: varchar("key_prefix", { length: 16 }).notNull(), // First 8 chars for display
-    type: apiKeyTypeEnum("type").notNull().default("server"),
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
@@ -484,11 +477,7 @@ export const apiKey = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     environmentIds: jsonb("environment_ids").$type<string[]>().default([]),
-    // Rate limiting
-    rateLimitRequests: integer("rate_limit_requests"), // Requests per period
-    rateLimitPeriodSeconds: integer("rate_limit_period_seconds"), // Period in seconds
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     createdById: uuid("created_by_id")
       .notNull()
