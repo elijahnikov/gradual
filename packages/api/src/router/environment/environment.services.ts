@@ -85,17 +85,16 @@ export const updateEnvironment = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: UpdateEnvironmentInput;
 }) => {
+  const { organizationId, id, ...rest } = input;
   return await ctx.db
     .update(environment)
     .set({
-      name: input.name,
-      slug: input.slug,
-      color: input.color,
+      ...rest,
     })
     .where(
       and(
-        eq(environment.id, input.id),
-        eq(environment.organizationId, input.organizationId),
+        eq(environment.id, id),
+        eq(environment.organizationId, organizationId),
         isNull(environment.deletedAt)
       )
     );
@@ -111,5 +110,11 @@ export const deleteEnvironment = async ({
   return await ctx.db
     .update(environment)
     .set({ deletedAt: new Date() })
-    .where(eq(environment.id, input.id));
+    .where(
+      and(
+        eq(environment.id, input.id),
+        eq(environment.organizationId, input.organizationId),
+        isNull(environment.deletedAt)
+      )
+    );
 };
