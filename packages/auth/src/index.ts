@@ -19,6 +19,11 @@ export function initAuth<
     database: drizzleAdapter(db, {
       provider: "pg",
     }),
+    advanced: {
+      database: {
+        generateId: "uuid",
+      },
+    },
     baseURL: options.baseUrl,
     secret: options.secret,
     session: {

@@ -87,7 +87,7 @@ export const organization = pgTable(
   "organization",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 256 }).notNull(),
@@ -117,7 +117,7 @@ export const organizationMember = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    userId: text("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     role: organizationMemberRoleEnum("role").notNull().default("member"),
@@ -213,7 +213,7 @@ export const featureFlag = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     tags: jsonb("tags").$type<string[]>().default([]),
-    maintainerId: text("maintainer_id").references(() => user.id),
+    maintainerId: uuid("maintainer_id").references(() => user.id),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -313,7 +313,7 @@ export const attribute = pgTable(
     // Whether this was manually defined by user or auto-discovered from evaluations
     isManual: boolean("is_manual").notNull().default(false),
     // User who manually created this (if isManual = true)
-    createdById: text("created_by_id").references(() => user.id),
+    createdById: uuid("created_by_id").references(() => user.id),
     // Which project this attribute belongs to
     projectId: uuid("project_id")
       .notNull()
@@ -361,7 +361,7 @@ export const attributeValue = pgTable(
     // Whether this value was manually defined or auto-discovered
     isManual: boolean("is_manual").notNull().default(false),
     // User who manually created this (if isManual = true)
-    createdById: text("created_by_id").references(() => user.id),
+    createdById: uuid("created_by_id").references(() => user.id),
     // Count of how many times this value has been seen in evaluations
     usageCount: integer("usage_count").notNull().default(0),
     // First time this value was seen (null if manually created before any usage)
@@ -489,7 +489,7 @@ export const apiKey = pgTable(
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -638,7 +638,7 @@ export const featureFlagSchedule = pgTable(
     executedAt: timestamp("executed_at", { withTimezone: true }),
     // Whether this schedule is active
     enabled: boolean("enabled").notNull().default(true),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -683,7 +683,7 @@ export const changeRequest = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
     // Reviewers who need to approve
@@ -699,7 +699,7 @@ export const changeRequest = pgTable(
       >()
       .default([]),
     mergedAt: timestamp("merged_at", { withTimezone: true }),
-    mergedById: text("merged_by_id").references(() => user.id),
+    mergedById: uuid("merged_by_id").references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -741,7 +741,7 @@ export const flagTemplate = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     // Whether this is a system template or user-created
     isSystem: boolean("is_system").notNull().default(false),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
     usageCount: integer("usage_count").notNull().default(0),
@@ -778,7 +778,7 @@ export const featureFlagVersion = pgTable(
     }>(),
     // What changed in this version
     changeDescription: text("change_description"),
-    createdById: text("created_by_id")
+    createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -808,7 +808,7 @@ export const auditLog = pgTable(
     projectId: uuid("project_id").references(() => project.id, {
       onDelete: "cascade",
     }),
-    userId: text("user_id")
+    userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "set null" }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
