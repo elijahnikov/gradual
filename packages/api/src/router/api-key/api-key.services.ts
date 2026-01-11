@@ -18,6 +18,21 @@ export const createApiKey = async ({
   input: CreateApiKeyInput;
 }) => {
   const currentUser = ctx.session.user;
+  const { projectId } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ id, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(id, projectId),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
   const key = generateApiKey();
   const keyHash = hashApiKey(key);
   const keyPrefix = extractKeyPrefix(key);

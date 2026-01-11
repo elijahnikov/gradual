@@ -136,6 +136,13 @@ export const updateEnvironment = async ({
     )
     .returning();
 
+  if (!updatedEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
   return updatedEnvironment;
 };
 
