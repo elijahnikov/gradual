@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import type { AppRouter } from "@gradual/api";
+import { cn } from "@gradual/ui";
 import { ThemeProvider } from "@gradual/ui/theme";
 import { AnchoredToastProvider, ToastProvider } from "@gradual/ui/toast";
 import type { QueryClient } from "@tanstack/react-query";
@@ -37,11 +38,15 @@ function RootComponent() {
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html className="dark" lang="en" suppressHydrationWarning>
         <head>
           <HeadContent />
         </head>
-        <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <body
+          className={cn(
+            "min-h-screen bg-ui-bg-base font-sans text-ui-fg-base antialiased"
+          )}
+        >
           <ToastProvider>
             <AnchoredToastProvider>{children}</AnchoredToastProvider>
           </ToastProvider>

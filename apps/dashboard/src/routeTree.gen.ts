@@ -9,15 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OrganizationRouteImport } from './routes/_organization'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OrganizationOrganizationSlugIndexRouteImport } from './routes/_organization/$organizationSlug/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
+const OrganizationRoute = OrganizationRouteImport.update({
+  id: '/_organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganizationOrganizationSlugIndexRoute =
+  OrganizationOrganizationSlugIndexRouteImport.update({
+    id: '/$organizationSlug/',
+    path: '/$organizationSlug/',
+    getParentRoute: () => OrganizationRoute,
+  } as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
@@ -33,40 +45,65 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_organization': typeof OrganizationRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$' | '/api/trpc/$'
+  fullPaths: '/' | '/api/auth/$' | '/api/trpc/$' | '/$organizationSlug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$' | '/api/trpc/$'
-  id: '__root__' | '/' | '/api/auth/$' | '/api/trpc/$'
+  to: '/' | '/api/auth/$' | '/api/trpc/$' | '/$organizationSlug'
+  id:
+    | '__root__'
+    | '/'
+    | '/_organization'
+    | '/api/auth/$'
+    | '/api/trpc/$'
+    | '/_organization/$organizationSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OrganizationRoute: typeof OrganizationRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_organization': {
+      id: '/_organization'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof OrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_organization/$organizationSlug/': {
+      id: '/_organization/$organizationSlug/'
+      path: '/$organizationSlug'
+      fullPath: '/$organizationSlug'
+      preLoaderRoute: typeof OrganizationOrganizationSlugIndexRouteImport
+      parentRoute: typeof OrganizationRoute
     }
     '/api/trpc/$': {
       id: '/api/trpc/$'
@@ -85,8 +122,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OrganizationRouteChildren {
+  OrganizationOrganizationSlugIndexRoute: typeof OrganizationOrganizationSlugIndexRoute
+}
+
+const OrganizationRouteChildren: OrganizationRouteChildren = {
+  OrganizationOrganizationSlugIndexRoute:
+    OrganizationOrganizationSlugIndexRoute,
+}
+
+const OrganizationRouteWithChildren = OrganizationRoute._addFileChildren(
+  OrganizationRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OrganizationRoute: OrganizationRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

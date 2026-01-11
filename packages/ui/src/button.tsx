@@ -5,7 +5,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 
 const buttonVariants = cva(
-  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md border font-medium text-base outline-none transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] pointer-coarse:after:absolute pointer-coarse:after:size-full pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 sm:text-sm [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0",
+  [
+    "relative inline-flex w-fit items-center justify-center rounded-md font-medium outline-none",
+    "disabled:border-ui-border-base disabled:opacity-50 disabled:after:hidden",
+    "disabled:pointer-events-none",
+    'after:absolute after:inset-0 after:content-[""]',
+    "transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]",
+  ],
   {
     defaultVariants: {
       size: "default",
@@ -13,7 +19,7 @@ const buttonVariants = cva(
     },
     variants: {
       size: {
-        default: "h-9 px-[calc(--spacing(3)-1px)] sm:h-8",
+        default: "h-9 px-[calc(--spacing(3)-1px)] text-sm sm:h-8",
         icon: "size-9 sm:size-8",
         "icon-lg": "size-10 sm:size-9",
         "icon-sm": "size-8 sm:size-7",
@@ -27,6 +33,13 @@ const buttonVariants = cva(
         xs: "h-7 gap-1 rounded-sm px-[calc(--spacing(2)-1px)] text-sm before:rounded-[calc(var(--radius-md)-1px)] sm:h-6 sm:text-xs [&_svg:not([class*='size-'])]:size-4 sm:[&_svg:not([class*='size-'])]:size-3.5",
       },
       variant: {
+        gradual: cn(
+          "bg-linear-to-t from-blue-500 to-blue-400 text-white shadow-buttons-recall after:hidden",
+          "hover:from-blue-600 hover:to-blue-500",
+          "active:from-blue-700 active:to-blue-600",
+          "focus-visible:shadow-buttons-recall-focus disabled:shadow-none"
+        ),
+
         default:
           "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none [:hover,[data-pressed]]:bg-primary/90",
         destructive:
