@@ -13,7 +13,6 @@ export const createApiKeySchema = createInsertSchema(apiKey)
     keyHash: true,
     keyPrefix: true,
     createdById: true,
-    expiresAt: true,
     environmentIds: true,
   })
   .extend({
