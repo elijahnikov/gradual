@@ -8,10 +8,7 @@ import type {
   RemoveOrganizationMemberInput,
   UpdateMemberRoleInput,
 } from "./organization-member.schemas";
-import {
-  calculateMemberPermissions,
-  type MemberRole,
-} from "./organization-member.utils";
+import { calculateMemberPermissions } from "./organization-member.utils";
 
 export const createOrganizationMember = async ({
   ctx,
@@ -37,7 +34,10 @@ export const getOrganizationMembers = async ({
 }) => {
   const organizationMembers = await ctx.db.query.organizationMember.findMany({
     where: (organizationMember, { eq }) =>
-      eq(organizationMember.organizationId, input.organizationId),
+      and(
+        eq(organizationMember.organizationId, input.organizationId),
+        isNull(organizationMember.deletedAt)
+      ),
     with: {
       user: {
         columns: {
@@ -52,14 +52,9 @@ export const getOrganizationMembers = async ({
     limit: input.limit,
   });
 
-  const currentUserRole = ctx.organizationMember.role as MemberRole;
-
   return organizationMembers.map((member) => ({
     ...member,
-    permissions: calculateMemberPermissions(
-      currentUserRole,
-      member.role as MemberRole
-    ),
+    permissions: calculateMemberPermissions(ctx.organizationMember, member),
   }));
 };
 
@@ -89,9 +84,29 @@ export const removeOrganizationMember = async ({
     });
   }
 
+  if (memberToRemove.role === "owner") {
+    const owners = await ctx.db
+      .select()
+      .from(organizationMember)
+      .where(
+        and(
+          eq(organizationMember.organizationId, input.organizationId),
+          eq(organizationMember.role, "owner"),
+          isNull(organizationMember.deletedAt)
+        )
+      );
+
+    if (owners.length === 1) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Cannot remove the last owner of the organization",
+      });
+    }
+  }
+
   const { canDelete } = calculateMemberPermissions(
-    ctx.organizationMember.role as MemberRole,
-    memberToRemove.role as MemberRole
+    ctx.organizationMember,
+    memberToRemove
   );
 
   if (!canDelete) {
@@ -122,7 +137,13 @@ export const updateMemberRole = async ({
   const [memberToUpdate] = await ctx.db
     .select()
     .from(organizationMember)
-    .where(eq(organizationMember.id, input.id));
+    .where(
+      and(
+        eq(organizationMember.id, input.id),
+        eq(organizationMember.organizationId, input.organizationId),
+        isNull(organizationMember.deletedAt)
+      )
+    );
 
   if (!memberToUpdate) {
     throw new TRPCError({
@@ -131,9 +152,30 @@ export const updateMemberRole = async ({
     });
   }
 
+  // Prevent demoting the last owner
+  if (memberToUpdate.role === "owner" && input.role !== "owner") {
+    const owners = await ctx.db
+      .select()
+      .from(organizationMember)
+      .where(
+        and(
+          eq(organizationMember.organizationId, input.organizationId),
+          eq(organizationMember.role, "owner"),
+          isNull(organizationMember.deletedAt)
+        )
+      );
+
+    if (owners.length === 1) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Cannot demote the last owner of the organization",
+      });
+    }
+  }
+
   const { canUpdateRole } = calculateMemberPermissions(
-    currentUser.role,
-    memberToUpdate.role
+    currentUser,
+    memberToUpdate
   );
 
   if (!canUpdateRole) {

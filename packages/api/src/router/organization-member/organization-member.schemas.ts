@@ -11,6 +11,7 @@ export const createOrganizationMemberSchema = createInsertSchema(
   id: true,
   createdAt: true,
   updatedAt: true,
+  deletedAt: true,
 });
 
 export type GetOrganizationMembersInput = z.infer<

@@ -89,7 +89,8 @@ export const protectedOrganizationProcedure = (
       .where(
         and(
           eq(organizationMember.organizationId, organizationId),
-          eq(organizationMember.userId, ctx.session.user.id)
+          eq(organizationMember.userId, ctx.session.user.id),
+          isNull(organizationMember.deletedAt)
         )
       )
       .limit(1)
