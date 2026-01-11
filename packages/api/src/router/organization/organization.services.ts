@@ -3,7 +3,7 @@ import { organization, organizationMember } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isNull, not } from "drizzle-orm";
 import type {
-  OrganizationProtectedTRPCContext,
+  ProtectedOrganizationTRPCContext,
   ProtectedTRPCContext,
 } from "../../trpc";
 import type {
@@ -17,7 +17,7 @@ import type {
 export const getOrganizationById = ({
   ctx,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
 }) => {
   return {
     organization: ctx.organization,
@@ -85,7 +85,7 @@ export const updateOrganization = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: UpdateOrganizationInput;
 }) => {
   const { organizationId: _, ...rest } = input;
@@ -109,7 +109,7 @@ export const deleteOrganization = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: DeleteOrganizationInput;
 }) => {
   const [deletedOrganization] = await ctx.db
