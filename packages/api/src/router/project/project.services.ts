@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "@gradual/db";
 import { project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
-import type { OrganizationProtectedTRPCContext } from "../../trpc";
+import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
@@ -15,7 +15,7 @@ export const createProject = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: CreateProjectInput;
 }) => {
   const [createdProject] = await ctx.db
@@ -35,7 +35,7 @@ export const getProjectById = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: GetProjectByIdInput;
 }) => {
   const [foundProject] = await ctx.db
@@ -61,7 +61,7 @@ export const getProjectBySlug = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: GetProjectBySlugInput;
 }) => {
   const [foundProject] = await ctx.db
@@ -87,7 +87,7 @@ export const updateProject = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: UpdateProjectInput;
 }) => {
   const { projectId: _, organizationId: __, ...rest } = input;
@@ -116,7 +116,7 @@ export const deleteProject = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: DeleteProjectInput;
 }) => {
   const [deletedProject] = await ctx.db
@@ -143,7 +143,7 @@ export const getAllProjectsByOrganizationId = async ({
   ctx,
   input,
 }: {
-  ctx: OrganizationProtectedTRPCContext;
+  ctx: ProtectedOrganizationTRPCContext;
   input: GetAllProjectsByOrganizationIdInput;
 }) => {
   const projects = await ctx.db

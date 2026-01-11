@@ -89,7 +89,8 @@ export const protectedOrganizationProcedure = (
       .where(
         and(
           eq(organizationMember.organizationId, organizationId),
-          eq(organizationMember.userId, ctx.session.user.id)
+          eq(organizationMember.userId, ctx.session.user.id),
+          isNull(organizationMember.deletedAt)
         )
       )
       .limit(1)
@@ -127,7 +128,7 @@ export type ProtectedTRPCContext = Awaited<
   >;
 };
 
-export type OrganizationProtectedTRPCContext = ProtectedTRPCContext & {
+export type ProtectedOrganizationTRPCContext = ProtectedTRPCContext & {
   organization: InferSelectModel<typeof organization>;
   organizationMember: InferSelectModel<typeof organizationMember>;
 };
