@@ -18,6 +18,7 @@
         "noChildrenProp": "off"
       },
       "suspicious": {
+        "noTsIgnore": "off",
         "noDuplicateProperties": "off"
       }
     }

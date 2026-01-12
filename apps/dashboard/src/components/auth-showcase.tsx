@@ -1,5 +1,5 @@
 import { Button } from "@gradual/ui/button";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { authClient } from "@/auth/client";
@@ -7,6 +7,7 @@ import { useTRPC } from "@/lib/trpc";
 
 export function AuthShowcase() {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const { data: session } = useSuspenseQuery(
     trpc.auth.getSession.queryOptions()
   );
@@ -75,7 +76,10 @@ export function AuthShowcase() {
       <Button
         onClick={async () => {
           await authClient.signOut();
-          await navigate({ href: "/", replace: true });
+          await queryClient.invalidateQueries(
+            trpc.auth.getSession.queryFilter()
+          );
+          await navigate({ to: "/login", replace: true });
         }}
         size="lg"
         variant="gradual"

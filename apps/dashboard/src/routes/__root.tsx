@@ -14,6 +14,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import type * as React from "react";
 import appCss from "@/styles.css?url";
 
@@ -39,30 +40,34 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <ThemeProvider>
+        <NuqsAdapter>
+          <ToastProvider>
+            <AnchoredToastProvider>
+              <Outlet />
+            </AnchoredToastProvider>
+          </ToastProvider>
+        </NuqsAdapter>
+      </ThemeProvider>
     </RootDocument>
   );
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <html lang="en" suppressHydrationWarning>
-        <head>
-          <HeadContent />
-        </head>
-        <body
-          className={cn(
-            "min-h-screen bg-ui-bg-base font-sans text-ui-fg-base antialiased"
-          )}
-        >
-          <ToastProvider>
-            <AnchoredToastProvider>{children}</AnchoredToastProvider>
-          </ToastProvider>
-          <TanStackRouterDevtools position="bottom-right" />
-          <Scripts />
-        </body>
-      </html>
-    </ThemeProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body
+        className={cn(
+          "min-h-screen bg-ui-bg-base font-sans text-ui-fg-base antialiased"
+        )}
+      >
+        {children}
+        <TanStackRouterDevtools position="bottom-right" />
+        <Scripts />
+      </body>
+    </html>
   );
 }
