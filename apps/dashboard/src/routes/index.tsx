@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthShowcase } from "~/components/auth-showcase";
+import { AuthShowcase } from "@/components/auth-showcase";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
