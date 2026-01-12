@@ -3,8 +3,6 @@
 
 @config "../tailwind.config.ts";
 
-@config "../tailwind.config.ts";
-
 @source "../../../packages/ui/src/*.{ts,tsx}";
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -12,6 +12,7 @@ import {
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useTheme } from "@gradual/ui/theme";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { redirect } from "@tanstack/react-router";
 import {
   CreditCardIcon,
   LogOutIcon,
@@ -20,6 +21,7 @@ import {
   SunIcon,
   UserIcon,
 } from "lucide-react";
+import { authClient } from "@/auth/client";
 import { useTRPC } from "@/lib/trpc";
 
 export default function UserMenu() {
@@ -29,7 +31,8 @@ export default function UserMenu() {
   const { resolvedTheme, setTheme } = useTheme();
 
   const handleSignOut = () => {
-    console.log("user");
+    authClient.signOut();
+    throw redirect({ to: "/login" });
   };
 
   if (!user) {
