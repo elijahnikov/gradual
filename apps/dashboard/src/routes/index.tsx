@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-import { AuthShowcase } from "~/component/auth-showcase";
+import { AuthShowcase } from "@/components/auth-showcase";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
@@ -18,6 +17,8 @@ function RouteComponent() {
         <h1 className="font-extrabold text-5xl tracking-tight sm:text-[5rem]">
           Create <span className="text-primary">T3</span> Turbo
         </h1>
+
+        <div className="h-24 w-24 bg-ui-bg-subtle">1</div>
         <AuthShowcase />
         {/* <CreatePostForm />
         <div className="w-full max-w-2xl overflow-y-scroll">

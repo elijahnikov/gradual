@@ -2,7 +2,7 @@ import { appRouter, createTRPCContext } from "@gradual/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
-import { auth } from "~/auth/server";
+import { auth } from "@/auth/server";
 
 const handler = (req: Request) =>
   fetchRequestHandler({

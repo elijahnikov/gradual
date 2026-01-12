@@ -2,8 +2,8 @@ import { Button } from "@gradual/ui/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { authClient } from "~/auth/client";
-import { useTRPC } from "~/lib/trpc";
+import { authClient } from "@/auth/client";
+import { useTRPC } from "@/lib/trpc";
 
 export function AuthShowcase() {
   const trpc = useTRPC();
@@ -26,7 +26,8 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="lg"
+          size="default"
+          variant="gradual"
         >
           Sign in with GitHub
         </Button>
@@ -41,7 +42,8 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="lg"
+          size="default"
+          variant="gradual"
         >
           Sign in with Google
         </Button>
@@ -55,7 +57,8 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="lg"
+          size="default"
+          variant="gradual"
         >
           Sign in with Linear
         </Button>
@@ -75,6 +78,7 @@ export function AuthShowcase() {
           await navigate({ href: "/", replace: true });
         }}
         size="lg"
+        variant="gradual"
       >
         Sign out
       </Button>

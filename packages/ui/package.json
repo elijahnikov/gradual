@@ -5,14 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./button": "./src/button.tsx",
-    "./dropdown-menu": "./src/dropdown-menu.tsx",
-    "./field": "./src/field.tsx",
-    "./input": "./src/input.tsx",
-    "./label": "./src/label.tsx",
-    "./separator": "./src/separator.tsx",
-    "./theme": "./src/theme.tsx",
-    "./toast": "./src/toast.tsx"
+    "./hooks/*": "./src/hooks/*.ts",
+    "./*": "./src/*.tsx"
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",

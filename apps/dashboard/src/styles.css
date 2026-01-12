@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "@gradual/tailwind-config/theme";
 
+@config "../tailwind.config.ts";
+
 @source "../../../packages/ui/src/*.{ts,tsx}";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -42,5 +44,17 @@
   }
   body {
     letter-spacing: var(--tracking-normal);
+  }
+}
+
+@layer utilities {
+  html {
+    overscroll-behavior: none;
+  }
+}
+
+@layer utilities {
+  html {
+    overscroll-behavior: none;
   }
 }
