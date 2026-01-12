@@ -4,7 +4,7 @@ import { checkout, polar, portal, usage } from "@polar-sh/better-auth";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { oAuthProxy } from "better-auth/plugins";
+import { emailOTP, oAuthProxy } from "better-auth/plugins";
 import { polarClient } from "./polar";
 
 export function initAuth<
@@ -33,6 +33,16 @@ export function initAuth<
       },
     },
     plugins: [
+      emailOTP({
+        // biome-ignore lint/suspicious/useAwait: <NOT_YET_IMPLEMENTED>
+        async sendVerificationOTP({ email, otp, type }) {
+          if (type === "sign-in") {
+            console.log("sign-in", email, otp);
+          } else if (type === "email-verification") {
+            console.log("email-verification", email, otp);
+          }
+        },
+      }),
       oAuthProxy({
         productionURL: options.productionUrl,
       }),
