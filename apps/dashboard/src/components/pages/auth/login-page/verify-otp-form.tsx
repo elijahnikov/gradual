@@ -9,11 +9,13 @@ import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState } from "react";
 import z from "zod/v4";
 import { authClient } from "@/auth/client";
+import { useTRPC } from "@/lib/trpc";
 import Footer from "./auth-footer";
 
 const submitCodeSchema = z.object({
@@ -27,6 +29,9 @@ export default function VerifyOTPForm({
   email: string;
   goBack: () => void;
 }) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -51,7 +56,8 @@ export default function VerifyOTPForm({
         form.resetField("code");
       }
       if (res.data) {
-        navigate({ to: "/" });
+        await queryClient.invalidateQueries(trpc.auth.getSession.queryFilter());
+        throw navigate({ to: "/" });
       }
       setIsSubmitting(false);
     },
@@ -61,7 +67,6 @@ export default function VerifyOTPForm({
     <div className="flex h-[75%] w-full min-w-[280px] max-w-[90vw] bg-ui-bg-subtle sm:max-w-[380px] md:max-w-[400px] lg:w-[30vw] lg:min-w-[450px] lg:max-w-none">
       <div className="flex w-full flex-col items-center px-4 py-8 sm:px-8 md:px-12">
         <div className="flex flex-col items-center">
-          {/* <Logo /> */}
           <div className="mt-6 flex flex-col items-center gap-0">
             <Heading level="h1">Check your inbox!</Heading>
             <Text
