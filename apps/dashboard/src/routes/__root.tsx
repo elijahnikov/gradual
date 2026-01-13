@@ -23,7 +23,10 @@ export const Route = createRootRouteWithContext<{
   trpc: TRPCOptionsProxy<AppRouter>;
 }>()({
   head: () => ({
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
+    ],
   }),
   beforeLoad: async ({ context, location }) => {
     const { trpc, queryClient } = context;

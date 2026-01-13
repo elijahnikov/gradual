@@ -66,14 +66,14 @@ export default function LoginForm({
             )}
           >
             <img
-              alt="Evermind"
+              alt="Gradual"
               height={64}
               src="/gradual-logo-500x500.png"
               width={64}
             />
           </Card>
           <div className="mt-6 flex flex-col items-center gap-0">
-            <Heading level="h1">Continue to Evermind</Heading>
+            <Heading level="h1">Continue to Gradual</Heading>
             <Text className="font-medium text-ui-fg-subtle" size="small">
               Welcome back! Please log in to continue.
             </Text>
