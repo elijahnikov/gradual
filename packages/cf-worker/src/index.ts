@@ -98,12 +98,8 @@ function verifyAdminAuth(request: Request, env: Env): boolean {
 }
 
 function extractApiKey(request: Request, requestUrl: URL): string | null {
-  const authHeader = request.headers.get("Authorization");
-  const bearerPrefix = "Bearer ";
-  if (authHeader?.startsWith(bearerPrefix)) {
-    return authHeader.slice(bearerPrefix.length);
-  }
-
+  // Don't check Authorization header - that's reserved for admin authentication
+  // API key should come from query params (GET) or request body (POST)
   if (request.method === "GET") {
     return requestUrl.searchParams.get("apiKey");
   }
