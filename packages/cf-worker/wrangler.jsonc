@@ -1,0 +1,18 @@
+{
+  "name": "gradual_cf_worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-13",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "GRADUAL_API_KEY",
+      "id": "7f37c9404a64470fa0788f1b687c7df8"
+    },
+    {
+      "binding": "GRADUAL_SNAPSHOT",
+      "id": "c8fa7f048ebd47c59c165f27a9aa54d0"
+    }
+  ]
+}
