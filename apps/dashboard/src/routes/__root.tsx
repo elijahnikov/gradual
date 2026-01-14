@@ -36,6 +36,13 @@ export const Route = createRootRouteWithContext<{
     if (!session?.user && location.pathname !== "/login") {
       throw redirect({ to: "/login" });
     }
+    if (
+      session?.user &&
+      !session.user.hasOnboarded &&
+      location.pathname !== "/onboarding"
+    ) {
+      throw redirect({ to: "/onboarding" });
+    }
   },
   component: RootComponent,
 });

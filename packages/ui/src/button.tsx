@@ -6,54 +6,71 @@ import type * as React from "react";
 
 const buttonVariants = cva(
   [
-    "relative inline-flex w-fit items-center justify-center rounded-md font-medium outline-none",
+    "relative inline-flex w-fit items-center justify-center rounded-md outline-none",
     "disabled:border-ui-border-base disabled:opacity-50 disabled:after:hidden",
     "disabled:pointer-events-none",
     'after:absolute after:inset-0 after:content-[""]',
-    "transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]",
   ],
   {
-    defaultVariants: {
-      size: "default",
-      variant: "default",
-    },
     variants: {
-      size: {
-        default: "h-9 px-[calc(--spacing(3)-1px)] text-[13px] sm:h-8",
-        icon: "size-9 sm:size-8",
-        "icon-lg": "size-10 sm:size-9",
-        "icon-sm": "size-8 sm:size-7",
-        "icon-xl":
-          "size-11 sm:size-10 [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
-        "icon-xs":
-          "size-7 rounded-md before:rounded-[calc(var(--radius-md)-1px)] sm:size-6 not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-4 sm:not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-10 px-[calc(--spacing(3.5)-1px)] sm:h-9",
-        sm: "h-8 gap-1.5 px-[calc(--spacing(2.5)-1px)] sm:h-7",
-        xl: "h-11 px-[calc(--spacing(4)-1px)] text-lg sm:h-10 sm:text-base [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
-        xs: "h-7 gap-1 rounded-sm px-[calc(--spacing(2)-1px)] text-sm before:rounded-[calc(var(--radius-md)-1px)] sm:h-6 sm:text-xs [&_svg:not([class*='size-'])]:size-4 sm:[&_svg:not([class*='size-'])]:size-3.5",
-      },
       variant: {
+        default: cn(
+          "after:button-inverted-gradient bg-gradient-to-t from-ui-button-inverted to-ui-button-inverted-hover text-ui-contrast-fg-primary shadow-buttons-inverted",
+          "hover:after:button-inverted-hover-gradient hover:from-ui-button-inverted-hover hover:to-ui-button-inverted-hover",
+          "active:after:button-inverted-pressed-gradient active:from-ui-button-inverted-pressed active:to-ui-button-inverted-pressed",
+          "focus-visible:!shadow-buttons-inverted-focus"
+        ),
         gradual: cn(
-          "bg-linear-to-t from-blue-500 to-blue-400 text-white shadow-buttons-recall after:hidden",
+          "bg-gradient-to-t from-blue-500 to-blue-400 text-white shadow-buttons-recall after:hidden",
           "hover:from-blue-600 hover:to-blue-500",
           "active:from-blue-700 active:to-blue-600",
           "focus-visible:shadow-buttons-recall-focus disabled:shadow-none"
         ),
-
-        default:
-          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none [:hover,[data-pressed]]:bg-primary/90",
-        destructive:
-          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-destructive bg-destructive text-white shadow-destructive/24 shadow-xs [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none [:hover,[data-pressed]]:bg-destructive/90",
-        "destructive-outline":
-          "border-input bg-transparent not-dark:bg-clip-padding text-destructive-foreground shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/6%)] dark:bg-input/32 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none [:hover,[data-pressed]]:border-destructive/32 [:hover,[data-pressed]]:bg-destructive/4",
-        ghost:
-          "border-transparent data-pressed:bg-accent [:hover,[data-pressed]]:bg-accent",
-        link: "border-transparent underline-offset-4 [:hover,[data-pressed]]:underline",
-        outline:
-          "border bg-background not-dark:bg-clip-padding shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/6%)] dark:bg-input/32 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none [:hover,[data-pressed]]:bg-accent/50 dark:[:hover,[data-pressed]]:bg-input/64",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground [:active,[data-pressed]]:bg-secondary/80 [:hover,[data-pressed]]:bg-secondary/90",
+        success: cn(
+          "bg-gradient-to-t from-green-500 to-green-400 text-white shadow-buttons-recall after:hidden",
+          "hover:from-green-600 hover:to-green-500",
+          "active:from-green-700 active:to-green-600",
+          "focus-visible:shadow-buttons-recall-focus disabled:shadow-none",
+          "disabled:text-green-200"
+        ),
+        outline: cn(
+          "after:button-neutral-gradient bg-ui-button-neutral text-ui-fg-base shadow-buttons-neutral",
+          "hover:after:button-neutral-hover-gradient hover:bg-ui-button-neutral-hover",
+          "active:after:button-neutral-pressed-gradient active:bg-ui-button-neutral-pressed",
+          "focus-visible:shadow-buttons-neutral-focus"
+        ),
+        secondary: cn(
+          "bg-[rgba(0,0,0,0.05)] text-ui-fg-base dark:bg-[rgba(255,255,255,0.05)]",
+          "hover:bg-[rgba(0,0,0,0.1)] dark:hover:bg-[rgba(255,255,255,0.1)]",
+          "active:bg-[rgba(0,0,0,0.15)] dark:active:bg-[rgba(255,255,255,0.15)]",
+          "focus-visible:bg-ui-bg-base focus-visible:shadow-buttons-neutral-focus",
+          "disabled:!bg-transparent disabled:!shadow-none"
+        ),
+        ghost: cn(
+          "after:hidden",
+          "bg-ui-button-transparent text-ui-fg-base",
+          "hover:bg-ui-button-transparent-hover",
+          "active:bg-ui-button-transparent-pressed",
+          "focus-visible:bg-ui-bg-base focus-visible:shadow-buttons-neutral-focus",
+          "disabled:!bg-transparent disabled:!shadow-none"
+        ),
+        destructive: cn(
+          "after:button-danger-gradient bg-ui-button-danger text-ui-fg-on-color shadow-buttons-colored shadow-buttons-danger",
+          "hover:after:button-danger-hover-gradient hover:bg-ui-button-danger-hover",
+          "active:after:button-danger-pressed-gradient active:bg-ui-button-danger-pressed",
+          "focus-visible:shadow-buttons-danger-focus"
+        ),
       },
+      size: {
+        small: "txt-compact-small-plus gap-x-1.5 px-2 py-1",
+        base: "txt-compact-small-plus gap-x-1.5 px-3 py-1.5",
+        large: "txt-compact-medium-plus gap-x-1.5 px-4 py-2.5",
+        xlarge: "txt-compact-large-plus gap-x-1.5 px-5 py-3.5",
+      },
+    },
+    defaultVariants: {
+      size: "base",
+      variant: "default",
     },
   }
 );

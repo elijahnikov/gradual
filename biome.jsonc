@@ -19,7 +19,8 @@
       },
       "suspicious": {
         "noTsIgnore": "off",
-        "noDuplicateProperties": "off"
+        "noDuplicateProperties": "off",
+        "noArrayIndexKey": "off"
       }
     }
   }

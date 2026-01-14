@@ -62,7 +62,7 @@ export default function LoginForm({
         <div className="flex flex-col items-center">
           <Card
             className={cn(
-              "relative flex shrink-0 items-center justify-center overflow-hidden p-0"
+              "relative flex w-max shrink-0 items-center justify-center overflow-hidden p-0"
             )}
           >
             <img
