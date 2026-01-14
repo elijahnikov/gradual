@@ -36,6 +36,25 @@ export function initAuth<
         maxAge: 5 * 60,
       },
     },
+    user: {
+      additionalFields: {
+        hasOnboarded: {
+          type: "boolean",
+          defaultValue: false,
+          required: true,
+        },
+        onboardingStep: {
+          type: "number",
+          defaultValue: 0,
+          required: true,
+        },
+        defaultOrganizationId: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+        },
+      },
+    },
     plugins: [
       emailOTP({
         async sendVerificationOTP({ email, otp, type }) {

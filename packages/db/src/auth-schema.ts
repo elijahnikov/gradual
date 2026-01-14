@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -19,6 +20,9 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  hasOnboarded: boolean("has_onboarded").default(false).notNull(),
+  onboardingStep: integer("onboarding_step").default(0).notNull(),
+  defaultOrganizationId: text("default_organization_id"),
 });
 
 export const session = pgTable(
