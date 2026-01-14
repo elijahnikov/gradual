@@ -17,6 +17,7 @@ export function authEnv() {
       LINEAR_CLIENT_SECRET: z.string().min(1),
       POLAR_ACCESS_TOKEN: z.string().min(1),
       POLAR_SUCCESS_URL: z.string().min(1),
+      AUTH_RESEND_KEY: z.string().min(1),
     },
     runtimeEnv: process.env,
     skipValidation:

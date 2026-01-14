@@ -98,8 +98,6 @@ function verifyAdminAuth(request: Request, env: Env): boolean {
 }
 
 function extractApiKey(request: Request, requestUrl: URL): string | null {
-  // Don't check Authorization header - that's reserved for admin authentication
-  // API key should come from query params (GET) or request body (POST)
   if (request.method === "GET") {
     return requestUrl.searchParams.get("apiKey");
   }

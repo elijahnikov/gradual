@@ -15,7 +15,7 @@ export default function AnimatedSection() {
       >
         <div className="relative">
           <div
-            className="relative grayscale"
+            className="relative grayscale not-dark:invert"
             style={{
               width: "1080px",
               position: "relative",
@@ -59,7 +59,7 @@ export default function AnimatedSection() {
                   src="/gradual-logo-500x500.png"
                   width={40}
                 />
-                <Text className="ml-1 font-medium text-3xl text-white underline underline-offset-4">
+                <Text className="ml-1 font-medium text-3xl text-black underline underline-offset-4 dark:text-white">
                   Gradual
                 </Text>
               </div>

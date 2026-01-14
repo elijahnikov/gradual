@@ -21,6 +21,7 @@
     "@polar-sh/sdk": "catalog:better-auth",
     "@t3-oss/env-core": "^0.13.8",
     "better-auth": "catalog:better-auth",
+    "resend": "^6.7.0",
     "zod": "catalog:"
   },
   "devDependencies": {

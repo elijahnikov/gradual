@@ -5,7 +5,11 @@ import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, oAuthProxy } from "better-auth/plugins";
+import { Resend } from "resend";
+import { authEnv } from "../env";
 import { polarClient } from "./polar";
+
+export const resend = new Resend(authEnv().AUTH_RESEND_KEY as string);
 
 export function initAuth<
   TExtraPlugins extends BetterAuthPlugin[] = [],
@@ -34,10 +38,21 @@ export function initAuth<
     },
     plugins: [
       emailOTP({
-        // biome-ignore lint/suspicious/useAwait: <NOT_YET_IMPLEMENTED>
         async sendVerificationOTP({ email, otp, type }) {
           if (type === "sign-in") {
-            console.log("sign-in", email, otp);
+            const { error } = await resend.emails.send({
+              from: "Gradual <noreply@notifications.gradual.so>",
+              to: [email],
+              template: {
+                id: "email-otp",
+                variables: {
+                  otp,
+                },
+              },
+            });
+            if (error) {
+              console.error("Error sending email", error);
+            }
           } else if (type === "email-verification") {
             console.log("email-verification", email, otp);
           }
