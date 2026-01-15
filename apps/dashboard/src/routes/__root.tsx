@@ -2,7 +2,6 @@
 
 import type { AppRouter } from "@gradual/api";
 import { cn } from "@gradual/ui";
-import { ThemeProvider } from "@gradual/ui/theme";
 import { AnchoredToastProvider, ToastProvider } from "@gradual/ui/toast";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -49,22 +48,22 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   return (
     <RootDocument>
-      <ThemeProvider>
-        <NuqsAdapter>
-          <ToastProvider>
-            <AnchoredToastProvider>
-              <Outlet />
-            </AnchoredToastProvider>
-          </ToastProvider>
-        </NuqsAdapter>
-      </ThemeProvider>
+      {/* <ThemeProvider> */}
+      <NuqsAdapter>
+        <ToastProvider>
+          <AnchoredToastProvider>
+            <Outlet />
+          </AnchoredToastProvider>
+        </ToastProvider>
+      </NuqsAdapter>
+      {/* </ThemeProvider> */}
     </RootDocument>
   );
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="not:dark" lang="en" suppressHydrationWarning>
+    <html className="light" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

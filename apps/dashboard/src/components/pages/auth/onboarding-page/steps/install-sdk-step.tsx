@@ -1,6 +1,5 @@
-"use client";
-
 import { Button } from "@gradual/ui/button";
+import CopyButton from "@gradual/ui/copy-button";
 import { Field, FieldDescription, FieldLabel } from "@gradual/ui/field";
 import { useState } from "react";
 
@@ -15,10 +14,10 @@ export function InstallSDKStep({
   onSkip,
   isLoading = false,
 }: InstallSDKStepProps) {
-  const [copied, setCopied] = useState(false);
+  const [_copied, setCopied] = useState(false);
   const installCommand = "npm install @gradual/sdk";
 
-  const copyToClipboard = async () => {
+  const _copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(installCommand);
       setCopied(true);
@@ -54,14 +53,7 @@ if (isEnabled) {
         <div className="relative">
           <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-4 font-mono text-sm">
             <code className="flex-1">{installCommand}</code>
-            <Button
-              onClick={copyToClipboard}
-              size="small"
-              type="button"
-              variant="outline"
-            >
-              {copied ? "Copied!" : "Copy"}
-            </Button>
+            <CopyButton text={installCommand} />
           </div>
         </div>
       </div>
@@ -78,23 +70,7 @@ if (isEnabled) {
           <pre className="overflow-x-auto rounded-lg border bg-muted/30 p-4 text-xs">
             <code>{codeExample}</code>
           </pre>
-          <Button
-            className="absolute top-2 right-2"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(codeExample);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              } catch (err) {
-                console.error("Failed to copy:", err);
-              }
-            }}
-            size="small"
-            type="button"
-            variant="outline"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </Button>
+          <CopyButton text={codeExample} />
         </div>
       </div>
 

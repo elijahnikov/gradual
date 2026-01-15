@@ -36,7 +36,6 @@ export default function OnboardingPageComponent() {
   const { data: session } = useSuspenseQuery(
     trpc.auth.getSession.queryOptions()
   );
-  console.log("onboardingStatus", onboardingStatus);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(
     (onboardingStatus?.onboardingStep as OnboardingStep) ?? 0
   );

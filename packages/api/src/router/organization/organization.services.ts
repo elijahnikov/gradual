@@ -1,5 +1,5 @@
 import { and, eq } from "@gradual/db";
-import { organization, organizationMember } from "@gradual/db/schema";
+import { organization, organizationMember, user } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isNull, not } from "drizzle-orm";
 import type {
@@ -76,8 +76,17 @@ export const createOrganization = async ({
       userId: currentUser.id,
       role: "owner",
     });
+    if (input.setAsDefault) {
+      await tx
+        .update(user)
+        .set({
+          defaultOrganizationId: createdOrganization.id,
+        })
+        .where(eq(user.id, currentUser.id));
+    }
     return createdOrganization;
   });
+
   return result;
 };
 

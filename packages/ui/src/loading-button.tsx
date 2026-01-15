@@ -16,7 +16,7 @@ const LoadingButton = ({
   className,
   children,
   disabled,
-  size = "default",
+  size = "base",
   ref,
   ...props
 }: LoadingButtonProps) => (

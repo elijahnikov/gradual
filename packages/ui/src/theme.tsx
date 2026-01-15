@@ -166,7 +166,7 @@ export function ThemeToggle() {
         render={
           <Button
             className="[&>svg]:absolute [&>svg]:size-4 [&>svg]:scale-0"
-            size="icon-sm"
+            size="small"
             variant="outline"
           />
         }

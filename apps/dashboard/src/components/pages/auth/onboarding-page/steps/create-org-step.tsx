@@ -15,13 +15,16 @@ import {
   FieldLabel,
 } from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
+import Loader from "@gradual/ui/loader";
 import { LoadingButton } from "@gradual/ui/loading-button";
 import { Text } from "@gradual/ui/text";
+import { toastManager } from "@gradual/ui/toast";
 import { RiArrowDownSFill } from "@remixicon/react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "react-use";
 import z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
 
@@ -69,11 +72,13 @@ export function CreateOrgStep({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const _createOrg = useMutation(trpc.organization.create.mutationOptions());
-  const _createProject = useMutation(trpc.project.create.mutationOptions());
-
   const [currentEmailInput, setCurrentEmailInput] = useState("");
+  const [slugAvailabilityStatus, setSlugAvailabilityStatus] = useState<
+    "idle" | "checking" | "available" | "unavailable"
+  >("idle");
+
+  const createOrg = useMutation(trpc.organization.create.mutationOptions());
+  const createProject = useMutation(trpc.project.create.mutationOptions());
 
   const form = useForm({
     defaultValues: {
@@ -87,67 +92,172 @@ export function CreateOrgStep({
       }>,
     },
     validators: {
-      onSubmit: createOrgSchema,
+      onChange: createOrgSchema,
     },
     onSubmit: async ({ value }) => {
       setError(null);
       setIsSubmitting(true);
 
       try {
-        // Create organization
-        // const organization = await createOrg.mutateAsync({
-        //   name: value.orgName,
-        //   slug: value.orgSlug,
-        // });
+        if (slugAvailabilityStatus === "unavailable") {
+          setError("This organization slug is already taken");
+          setIsSubmitting(false);
+          return;
+        }
 
-        // Create first project (requires organizationId in input)
-        // await createProject.mutateAsync({
-        //   name: value.projectName,
-        //   slug: value.projectSlug,
-        //   organizationId: organization.id,
-        // });
+        const organization = await createOrg.mutateAsync({
+          name: value.orgName,
+          slug: value.orgSlug,
+        });
 
-        // Invalidate queries to refresh data
+        await createProject.mutateAsync({
+          name: value.projectName,
+          slug: value.projectSlug,
+          organizationId: organization.id,
+        });
+
         await queryClient.invalidateQueries(
           trpc.organization.getAllByUserId.pathFilter()
         );
 
-        // TODO: Send invitations to team members
-        // You'll need to implement an invite mutation
-        // For now, we'll just log it
         if (value.teamMembers && value.teamMembers.length > 0) {
           console.log("Team members to invite:", value.teamMembers);
         }
 
         onComplete();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to create workspace"
-        );
+        toastManager.add({
+          type: "error",
+          title: "Failed to complete step, please try again.",
+          description: err instanceof Error ? err.message : "Unknown error",
+        });
       } finally {
         setIsSubmitting(false);
       }
     },
   });
 
-  // Auto-generate slug from name
-  // const handleOrgNameChange = (value: string, field: any) => {
-  //   field.handleChange(value);
-  //   const slug = value
-  //     .toLowerCase()
-  //     .replace(/[^a-z0-9]+/g, "-")
-  //     .replace(/^-+|-+$/g, "");
-  //   form.setFieldValue("orgSlug", slug);
-  // };
+  const orgName = useStore(form.store, (state) => state.values.orgName);
+  const orgSlug = useStore(form.store, (state) => state.values.orgSlug);
+  const projectName = useStore(form.store, (state) => state.values.projectName);
+  const projectSlug = useStore(form.store, (state) => state.values.projectSlug);
 
-  // const handleProjectNameChange = (value: string, field: any) => {
-  //   field.handleChange(value);
-  //   const slug = value
-  //     .toLowerCase()
-  //     .replace(/[^a-z0-9]+/g, "-")
-  //     .replace(/^-+|-+$/g, "");
-  //   form.setFieldValue("projectSlug", slug);
-  // };
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const [isProjectSlugManuallyEdited, setIsProjectSlugManuallyEdited] =
+    useState(false);
+
+  useEffect(() => {
+    if (!orgName) {
+      return;
+    }
+
+    // Read current slug value from form state (not reactive dependency)
+    const currentSlug = form.baseStore.state.values.orgSlug;
+    // Auto-fill slug if slug is empty or not manually edited
+    const slugIsEmpty = !currentSlug;
+    const slugNotManuallyEdited = !isSlugManuallyEdited;
+    const shouldAutoFill = slugIsEmpty || slugNotManuallyEdited;
+
+    if (shouldAutoFill) {
+      const autoSlug = orgName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      if (autoSlug) {
+        form.setFieldValue("orgSlug", autoSlug);
+        if (slugIsEmpty) {
+          setIsSlugManuallyEdited(false);
+        }
+      }
+    }
+  }, [orgName, isSlugManuallyEdited, form]);
+
+  useEffect(() => {
+    if (!projectName) {
+      return;
+    }
+
+    const currentSlug = form.baseStore.state.values.projectSlug;
+    const slugIsEmpty = !currentSlug;
+    const slugNotManuallyEdited = !isProjectSlugManuallyEdited;
+    const shouldAutoFill = slugIsEmpty || slugNotManuallyEdited;
+
+    if (shouldAutoFill) {
+      const autoSlug = projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      if (autoSlug) {
+        form.setFieldValue("projectSlug", autoSlug);
+        if (slugIsEmpty) {
+          setIsProjectSlugManuallyEdited(false);
+        }
+      }
+    }
+  }, [projectName, isProjectSlugManuallyEdited, form]);
+
+  const [debouncedSlug, setDebouncedSlug] = useState(orgSlug);
+
+  useDebounce(
+    () => {
+      setDebouncedSlug(orgSlug);
+    },
+    500,
+    [orgSlug]
+  );
+
+  useEffect(() => {
+    const checkSlug = async () => {
+      if (
+        !debouncedSlug ||
+        debouncedSlug.length < 3 ||
+        !slugRegex.test(debouncedSlug)
+      ) {
+        setSlugAvailabilityStatus("idle");
+        return;
+      }
+
+      setSlugAvailabilityStatus("checking");
+      try {
+        const isAvailable = await queryClient.fetchQuery(
+          trpc.organization.checkSlugAvailability.queryOptions({
+            slug: debouncedSlug,
+          })
+        );
+        setSlugAvailabilityStatus(isAvailable ? "available" : "unavailable");
+      } catch {
+        setSlugAvailabilityStatus("idle");
+      }
+    };
+
+    checkSlug();
+  }, [debouncedSlug, queryClient, trpc]);
+
+  useEffect(() => {
+    if (slugAvailabilityStatus === "unavailable") {
+      form.setFieldMeta("orgSlug", (prev) => ({
+        ...prev,
+        errors: ["This organization slug is already taken"],
+      }));
+    } else if (slugAvailabilityStatus === "available") {
+      form.setFieldMeta("orgSlug", (prev) => ({
+        ...prev,
+        errors: [],
+      }));
+    }
+  }, [slugAvailabilityStatus, form]);
+
+  const isFormValid =
+    !!(
+      orgName &&
+      orgSlug &&
+      projectName &&
+      projectSlug &&
+      slugRegex.test(orgSlug) &&
+      slugRegex.test(projectSlug)
+    ) &&
+    slugAvailabilityStatus !== "unavailable" &&
+    slugAvailabilityStatus !== "checking";
 
   return (
     <form
@@ -216,11 +326,26 @@ export function CreateOrgStep({
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    setIsSlugManuallyEdited(true);
+                  }}
                   placeholder="acme-inc"
                   value={field.state.value}
                 />
-
+                {slugAvailabilityStatus === "checking" && (
+                  <Loader className="absolute -right-6 mt-2 animate-spin" />
+                )}
+                {slugAvailabilityStatus === "available" && (
+                  <FieldDescription className="absolute mt-9">
+                    <span className="text-green-600">✓ Available</span>
+                  </FieldDescription>
+                )}
+                {slugAvailabilityStatus === "unavailable" && (
+                  <FieldDescription className="absolute mt-9">
+                    <span className="text-destructive">✗ Already taken</span>
+                  </FieldDescription>
+                )}
                 {shouldShowError && (
                   <FieldError>
                     {field.state.meta.errors
@@ -307,7 +432,10 @@ export function CreateOrgStep({
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    setIsProjectSlugManuallyEdited(true);
+                  }}
                   placeholder="my-first-project"
                   value={field.state.value}
                 />
@@ -344,7 +472,7 @@ export function CreateOrgStep({
             <span className="text-muted-foreground text-xs">(optional)</span>
           </FieldLabel>
           <FieldDescription>
-            Press Enter to add a teammate to the list
+            Press Enter to add a teammate to the list (max 3 for onboarding)
           </FieldDescription>
         </Field>
 
@@ -363,6 +491,10 @@ export function CreateOrgStep({
               }
 
               if (teamMembers.some((m) => m.email === email)) {
+                return;
+              }
+
+              if (teamMembers.length >= 3) {
                 return;
               }
 
@@ -400,9 +532,14 @@ export function CreateOrgStep({
             return (
               <div className="space-y-2">
                 <Input
+                  disabled={teamMembers.length >= 3}
                   onChange={(e) => setCurrentEmailInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="teammate@example.com"
+                  placeholder={
+                    teamMembers.length >= 3
+                      ? "Maximum 3 team members reached"
+                      : "teammate@example.com"
+                  }
                   value={currentEmailInput}
                 />
 
@@ -471,6 +608,13 @@ export function CreateOrgStep({
       <div className="absolute bottom-0 mt-auto flex w-full gap-2 pt-4">
         <LoadingButton
           className="w-full text-[13px]"
+          disabled={
+            (!form.state.canSubmit ||
+              isSubmitting ||
+              isLoading ||
+              !isFormValid) &&
+            slugAvailabilityStatus !== "available"
+          }
           loading={isSubmitting || isLoading}
           size="base"
           type="submit"
