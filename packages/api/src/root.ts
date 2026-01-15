@@ -1,4 +1,4 @@
-import { authRouter } from "./router/auth";
+import { authRouter } from "./router/auth/auth.router";
 import { organizationRouter } from "./router/organization/organization.router";
 import { projectRouter } from "./router/project/project.router";
 import { createTRPCRouter } from "./trpc";

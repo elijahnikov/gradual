@@ -12,7 +12,6 @@ import {
   redirect,
   Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import type * as React from "react";
@@ -75,7 +74,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         )}
       >
         {children}
-        <TanStackRouterDevtools position="bottom-right" />
+        {/* <TanStackRouterDevtools position="bottom-right" /> */}
         <Scripts />
       </body>
     </html>

@@ -41,14 +41,13 @@ function MenuPopup({
       >
         <MenuPrimitive.Popup
           className={cn(
-            "z-30 max-h-[var(--radix-popper-available-height)] min-w-[220px] overflow-hidden rounded-lg border bg-ui-bg-component p-1 text-ui-fg-base shadow-md",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=open]:animate-in",
+            "relative flex not-[class*='w-']:min-w-52 origin-(--transform-origin) rounded-lg border bg-ui-bg-component not-dark:bg-clip-padding shadow-lg/5 outline-none before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/6%)] focus:outline-none dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
             className
           )}
           data-slot="menu-popup"
           {...props}
         >
-          <div className="max-h-(--available-height) w-full overflow-y-auto">
+          <div className="max-h-(--available-height) w-full overflow-y-auto p-1">
             {children}
           </div>
         </MenuPrimitive.Popup>
@@ -76,7 +75,7 @@ function MenuItem({
         "txt-compact-small relative flex cursor-pointer select-none items-center rounded-md bg-ui-bg-component px-2 py-1.5 text-ui-fg-subtle outline-none transition-colors [&_svg]:mr-2 [&_svg]:size-4 [&_svg]:text-ui-fg-base",
         "focus:bg-ui-bg-component-hover focus:text-ui-fg-base focus-visible:bg-ui-bg-component-hover focus:[&_svg]:text-ui-fg-base!",
         "active:bg-ui-bg-component-hover",
-        "data-disabled:pointer-events-none data-disabled:text-ui-fg-disabled",
+        "data-[disabled]:pointer-events-none data-[disabled]:text-ui-fg-disabled",
         className
       )}
       data-inset={inset}

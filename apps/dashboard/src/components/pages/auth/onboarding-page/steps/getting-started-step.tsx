@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@gradual/ui/avatar";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import {
@@ -17,63 +16,129 @@ import {
 } from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
 import { LoadingButton } from "@gradual/ui/loading-button";
+import { Text } from "@gradual/ui/text";
+import { RiUserFill } from "@remixicon/react";
 import { useForm } from "@tanstack/react-form";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import z from "zod/v4";
-import { authClient } from "@/auth/client";
+import { useFileUpload } from "@/lib/hooks/use-file-upload";
 import { useTRPC } from "@/lib/trpc";
 
-const roles = ["Software Engineer", "Product Manager", "Designer", "Other"];
+const roles = [
+  "Software Engineer",
+  "Product Manager",
+  "Designer",
+  "Engineering Manager",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "DevOps Engineer",
+  "Data Engineer",
+  "QA Engineer",
+  "Technical Lead",
+  "Architect",
+  "UX Designer",
+  "UI Designer",
+  "Marketing",
+  "Sales",
+  "Customer Success",
+  "Other",
+];
 
 interface GettingStartedStepProps {
   onComplete: () => void;
   onSkip: () => void;
+  isLoading?: boolean;
 }
 
 const gettingStartedSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  username: z.string().min(1, "Display name is required"),
   avatarUrl: z.url(),
-  jobRole: z.string(),
+  jobRole: z.union([z.string(), z.undefined()]),
 });
 
 export function GettingStartedStep({
   onComplete,
   onSkip,
+  isLoading = false,
 }: GettingStartedStepProps) {
   const trpc = useTRPC();
   const { data: session } = useSuspenseQuery(
     trpc.auth.getSession.queryOptions()
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: updateUser } = useMutation(
+    trpc.auth.updateUser.mutationOptions({
+      onSuccess: () => {
+        onComplete();
+      },
+    })
+  );
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [
+    { files, isDragging },
+    {
+      handleDragEnter,
+      handleDragLeave,
+      handleDragOver,
+      handleDrop,
+      openFileDialog,
+      getInputProps,
+    },
+  ] = useFileUpload({
+    multiple: false,
+    maxFiles: 1,
+    maxSize: 1024 * 1024 * 5,
+    accept: "image/*",
+  });
 
   const form = useForm({
     defaultValues: {
       username: session?.user?.name || "",
       avatarUrl: session?.user?.image || "",
-      jobRole: "",
+      jobRole: undefined as string | undefined,
     },
     validators: {
       onSubmit: gettingStartedSchema,
     },
     onSubmit: async ({ value }) => {
-      setIsLoading(true);
+      setIsSubmitting(true);
       try {
-        await authClient.updateUser({
+        let avatarUrl = value.avatarUrl;
+
+        if (files.length > 0 && files[0]?.file instanceof File) {
+          const file = files[0].file as File;
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Failed to upload file");
+          }
+
+          const { url } = await response.json();
+          avatarUrl = url;
+        }
+
+        updateUser({
           name: value.username,
-          image: value.avatarUrl || undefined,
-        } as Record<string, unknown>);
+          image: avatarUrl,
+        });
         onComplete();
       } catch (error) {
         console.error("Error updating user:", error);
       } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
       }
     },
   });
-
-  const username = form.baseStore.state.values.username;
-  const avatarUrl = form.baseStore.state.values.avatarUrl;
 
   return (
     <form
@@ -83,20 +148,51 @@ export function GettingStartedStep({
         form.handleSubmit();
       }}
     >
-      <Card className="flex flex-col items-center gap-4">
-        <Avatar className="size-20">
-          <AvatarImage alt={username || "User"} src={avatarUrl} />
-          <AvatarFallback>
-            {username
-              ? username
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2)
-              : "U"}
-          </AvatarFallback>
-        </Avatar>
+      <Card
+        className="flex min-h-36 flex-col items-center justify-center rounded-xl bg-white px-1 py-2 transition-colors has-disabled:pointer-events-none has-[input:focus]:border-ring has-disabled:opacity-50 has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 data-[dragging=true]:border-interactive dark:bg-ui-bg-field"
+        data-dragging={isDragging || undefined}
+        onClick={openFileDialog}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <input
+          {...getInputProps()}
+          aria-label="Upload files"
+          className="sr-only"
+        />
+        <div className="flex flex-col items-center justify-center gap-2 text-center">
+          <div>
+            {files.length > 0 || form.baseStore.state.values.avatarUrl ? (
+              <div className="flex w-full flex-col items-center justify-center gap-2">
+                <img
+                  alt={
+                    files[0]?.file instanceof File
+                      ? files[0].file.name
+                      : "Avatar"
+                  }
+                  className="h-24 w-full min-w-24 max-w-24 rounded-full object-cover"
+                  height={96}
+                  src={
+                    files.length > 0 && files[0]?.preview
+                      ? files[0].preview
+                      : form.baseStore.state.values.avatarUrl ||
+                        String(session?.user?.image || "")
+                  }
+                  width={96}
+                />
+              </div>
+            ) : (
+              <div className="flex max-h-24 min-h-24 min-w-24 max-w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ui-bg-base shadow-borders-base">
+                <RiUserFill className="size-6 text-secondary-foreground/70" />
+              </div>
+            )}
+          </div>
+          <Text className="text-ui-fg-muted" size={"xsmall"} weight={"plus"}>
+            Drag & drop or click to browse
+          </Text>
+        </div>
       </Card>
 
       <form.Field
@@ -105,22 +201,35 @@ export function GettingStartedStep({
             field.state.meta.isTouched && !field.state.meta.isValid;
           return (
             <Field data-invalid={isInvalid}>
-              <FieldLabel>Username</FieldLabel>
+              <FieldLabel>Display name</FieldLabel>
               <Input
                 aria-invalid={isInvalid}
                 id={field.name}
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Enter your username"
-                required
+                placeholder="Enter your desired display name"
                 value={field.state.value}
               />
-
+              <FieldDescription>
+                This is how you'll be identified across your organization(s)
+              </FieldDescription>
               {isInvalid && (
                 <FieldError>
                   {field.state.meta.errors
-                    .map((error) => error?.message)
+                    .map((error) => {
+                      if (typeof error === "string") {
+                        return error;
+                      }
+                      if (
+                        error &&
+                        typeof error === "object" &&
+                        "message" in error
+                      ) {
+                        return String(error.message);
+                      }
+                      return String(error);
+                    })
                     .join(", ")}
                 </FieldError>
               )}
@@ -164,9 +273,11 @@ export function GettingStartedStep({
               </FieldDescription>
               {isInvalid && (
                 <FieldError>
-                  {field.state.meta.errors
-                    .map((error) => error?.message)
-                    .join(", ")}
+                  {field.state.meta.errors.map((error, i) => (
+                    <Text className="text-ui-fg-error" key={i}>
+                      {typeof error === "string" ? error : String(error)}
+                    </Text>
+                  ))}
                 </FieldError>
               )}
             </Field>
@@ -181,7 +292,7 @@ export function GettingStartedStep({
         </Button>
         <LoadingButton
           className="w-full text-[13px]"
-          loading={isLoading}
+          loading={isSubmitting || isLoading}
           type="submit"
           variant="gradual"
         >

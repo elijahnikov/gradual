@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrganizationRouteImport } from './routes/_organization'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as OrganizationOrganizationSlugIndexRouteImport } from './routes/_organization/$organizationSlug/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
+import { Route as ApiFilesKeyRouteImport } from './routes/api/files/$key'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const OrganizationRoute = OrganizationRouteImport.update({
@@ -29,6 +32,16 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFilesRoute = ApiFilesRouteImport.update({
+  id: '/api/files',
+  path: '/api/files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
@@ -52,6 +65,11 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFilesKeyRoute = ApiFilesKeyRouteImport.update({
+  id: '/$key',
+  path: '/$key',
+  getParentRoute: () => ApiFilesRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -62,7 +80,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
 }
@@ -70,7 +91,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
 }
@@ -81,7 +105,10 @@ export interface FileRoutesById {
   '/_organization': typeof OrganizationRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
 }
@@ -91,7 +118,10 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/api/files'
+    | '/api/upload'
     | '/api/auth/$'
+    | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug'
   fileRoutesByTo: FileRoutesByTo
@@ -99,7 +129,10 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/api/files'
+    | '/api/upload'
     | '/api/auth/$'
+    | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug'
   id:
@@ -109,7 +142,10 @@ export interface FileRouteTypes {
     | '/_organization'
     | '/_auth/login'
     | '/_auth/onboarding'
+    | '/api/files'
+    | '/api/upload'
     | '/api/auth/$'
+    | '/api/files/$key'
     | '/api/trpc/$'
     | '/_organization/$organizationSlug/'
   fileRoutesById: FileRoutesById
@@ -118,6 +154,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   OrganizationRoute: typeof OrganizationRouteWithChildren
+  ApiFilesRoute: typeof ApiFilesRouteWithChildren
+  ApiUploadRoute: typeof ApiUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
@@ -143,6 +181,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/files': {
+      id: '/api/files'
+      path: '/api/files'
+      fullPath: '/api/files'
+      preLoaderRoute: typeof ApiFilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/onboarding': {
@@ -172,6 +224,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/trpc/$'
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/files/$key': {
+      id: '/api/files/$key'
+      path: '/$key'
+      fullPath: '/api/files/$key'
+      preLoaderRoute: typeof ApiFilesKeyRouteImport
+      parentRoute: typeof ApiFilesRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -208,10 +267,24 @@ const OrganizationRouteWithChildren = OrganizationRoute._addFileChildren(
   OrganizationRouteChildren,
 )
 
+interface ApiFilesRouteChildren {
+  ApiFilesKeyRoute: typeof ApiFilesKeyRoute
+}
+
+const ApiFilesRouteChildren: ApiFilesRouteChildren = {
+  ApiFilesKeyRoute: ApiFilesKeyRoute,
+}
+
+const ApiFilesRouteWithChildren = ApiFilesRoute._addFileChildren(
+  ApiFilesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   OrganizationRoute: OrganizationRouteWithChildren,
+  ApiFilesRoute: ApiFilesRouteWithChildren,
+  ApiUploadRoute: ApiUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

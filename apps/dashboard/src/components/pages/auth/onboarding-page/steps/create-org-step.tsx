@@ -1,17 +1,44 @@
 "use client";
 
 import { Button } from "@gradual/ui/button";
-import { Field } from "@gradual/ui/field";
+import { Card } from "@gradual/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@gradual/ui/dropdown-menu";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
+import { LoadingButton } from "@gradual/ui/loading-button";
+import { Text } from "@gradual/ui/text";
+import { RiArrowDownSFill } from "@remixicon/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { useState } from "react";
 import z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
 
 interface CreateOrgStepProps {
   onComplete: () => void;
+  isLoading?: boolean;
 }
+
+const teamMemberRoles = ["admin", "member", "viewer"] as const;
+
+const teamMemberSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  role: z.enum(teamMemberRoles),
+});
+
+const slugRegex = /^[a-z0-9-]+$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const createOrgSchema = z.object({
   orgName: z.string().min(1, "Organization name is required"),
@@ -19,7 +46,7 @@ const createOrgSchema = z.object({
     .string()
     .min(1, "Organization slug is required")
     .regex(
-      /^[a-z0-9-]+$/,
+      slugRegex,
       "Slug can only contain lowercase letters, numbers, and hyphens"
     ),
   projectName: z.string().min(1, "Project name is required"),
@@ -27,21 +54,26 @@ const createOrgSchema = z.object({
     .string()
     .min(1, "Project slug is required")
     .regex(
-      /^[a-z0-9-]+$/,
+      slugRegex,
       "Slug can only contain lowercase letters, numbers, and hyphens"
     ),
-  teamEmails: z.string(),
+  teamMembers: z.array(teamMemberSchema),
 });
 
-export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
+export function CreateOrgStep({
+  onComplete,
+  isLoading = false,
+}: CreateOrgStepProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const _createOrg = useMutation(trpc.organization.create.mutationOptions());
   const _createProject = useMutation(trpc.project.create.mutationOptions());
+
+  const [currentEmailInput, setCurrentEmailInput] = useState("");
 
   const form = useForm({
     defaultValues: {
@@ -49,14 +81,17 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
       orgSlug: "",
       projectName: "",
       projectSlug: "",
-      teamEmails: "",
+      teamMembers: [] as Array<{
+        email: string;
+        role: "owner" | "admin" | "member" | "viewer";
+      }>,
     },
     validators: {
       onSubmit: createOrgSchema,
     },
     onSubmit: async ({ value }) => {
       setError(null);
-      setIsLoading(true);
+      setIsSubmitting(true);
 
       try {
         // Create organization
@@ -78,18 +113,10 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
         );
 
         // TODO: Send invitations to team members
-        // Parse teamEmails and send invites
-        const emails = value.teamEmails
-          ? value.teamEmails
-              .split(",")
-              .map((email) => email.trim())
-              .filter(Boolean)
-          : [];
-
         // You'll need to implement an invite mutation
         // For now, we'll just log it
-        if (emails.length > 0) {
-          console.log("Team emails to invite:", emails);
+        if (value.teamMembers && value.teamMembers.length > 0) {
+          console.log("Team members to invite:", value.teamMembers);
         }
 
         onComplete();
@@ -98,7 +125,7 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
           err instanceof Error ? err.message : "Failed to create workspace"
         );
       } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
       }
     },
   });
@@ -124,31 +151,51 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
 
   return (
     <form
-      className="space-y-6"
+      className="relative h-full w-full space-y-6 pt-6"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
       }}
     >
-      <div className="space-y-4">
-        <h3 className="font-semibold text-base">Organization</h3>
-
+      <div className="flex items-center gap-x-2">
         <form.Field
           children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
+            const hasErrors = field.state.meta.errors.length > 0;
+            const shouldShowError =
+              hasErrors &&
+              (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field data-invalid={isInvalid}>
+              <Field className="-mt-6" data-invalid={shouldShowError}>
+                <FieldLabel>Organization</FieldLabel>
                 <Input
-                  aria-invalid={isInvalid}
+                  aria-invalid={shouldShowError}
+                  className="min-w-42"
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Acme Inc."
-                  required
                   value={field.state.value}
                 />
+                {shouldShowError && (
+                  <FieldError>
+                    {field.state.meta.errors
+                      .map((error) => {
+                        if (typeof error === "string") {
+                          return error;
+                        }
+                        if (
+                          error &&
+                          typeof error === "object" &&
+                          "message" in error
+                        ) {
+                          return String(error.message);
+                        }
+                        return String(error);
+                      })
+                      .join(", ")}
+                  </FieldError>
+                )}
               </Field>
             );
           }}
@@ -157,24 +204,42 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
 
         <form.Field
           children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
+            const hasErrors = field.state.meta.errors.length > 0;
+            const shouldShowError =
+              hasErrors &&
+              (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field data-invalid={isInvalid}>
+              <Field className="w-full" data-invalid={shouldShowError}>
                 <Input
-                  aria-invalid={isInvalid}
+                  aria-invalid={shouldShowError}
+                  className="w-full"
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="acme-inc"
-                  required
                   value={field.state.value}
                 />
 
-                <p className="mt-1 text-muted-foreground text-xs">
-                  This will be used in your organization URL
-                </p>
+                {shouldShowError && (
+                  <FieldError>
+                    {field.state.meta.errors
+                      .map((error) => {
+                        if (typeof error === "string") {
+                          return error;
+                        }
+                        if (
+                          error &&
+                          typeof error === "object" &&
+                          "message" in error
+                        ) {
+                          return String(error.message);
+                        }
+                        return String(error);
+                      })
+                      .join(", ")}
+                  </FieldError>
+                )}
               </Field>
             );
           }}
@@ -182,25 +247,45 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
         />
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-semibold text-base">First Project</h3>
-
+      <div className="flex items-center gap-x-2">
         <form.Field
           children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
+            const hasErrors = field.state.meta.errors.length > 0;
+            const shouldShowError =
+              hasErrors &&
+              (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field data-invalid={isInvalid}>
+              <Field data-invalid={shouldShowError}>
+                <FieldLabel>Project</FieldLabel>
                 <Input
-                  aria-invalid={isInvalid}
+                  aria-invalid={shouldShowError}
+                  className="min-w-42"
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="My First Project"
-                  required
                   value={field.state.value}
                 />
+                {shouldShowError && (
+                  <FieldError>
+                    {field.state.meta.errors
+                      .map((error) => {
+                        if (typeof error === "string") {
+                          return error;
+                        }
+                        if (
+                          error &&
+                          typeof error === "object" &&
+                          "message" in error
+                        ) {
+                          return String(error.message);
+                        }
+                        return String(error);
+                      })
+                      .join(", ")}
+                  </FieldError>
+                )}
               </Field>
             );
           }}
@@ -209,20 +294,42 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
 
         <form.Field
           children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
+            const hasErrors = field.state.meta.errors.length > 0;
+            const shouldShowError =
+              hasErrors &&
+              (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field data-invalid={isInvalid}>
+              <Field className="w-full" data-invalid={shouldShowError}>
+                <div className="h-4" />
                 <Input
-                  aria-invalid={isInvalid}
+                  aria-invalid={shouldShowError}
+                  className="w-full"
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="my-first-project"
-                  required
                   value={field.state.value}
                 />
+                {shouldShowError && (
+                  <FieldError>
+                    {field.state.meta.errors
+                      .map((error) => {
+                        if (typeof error === "string") {
+                          return error;
+                        }
+                        if (
+                          error &&
+                          typeof error === "object" &&
+                          "message" in error
+                        ) {
+                          return String(error.message);
+                        }
+                        return String(error);
+                      })
+                      .join(", ")}
+                  </FieldError>
+                )}
               </Field>
             );
           }}
@@ -230,34 +337,128 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
         />
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-semibold text-base">
-          Invite Team Members (optional)
-        </h3>
+      <div className="mt-6 space-y-4">
+        <Field>
+          <FieldLabel>
+            Invite team members{" "}
+            <span className="text-muted-foreground text-xs">(optional)</span>
+          </FieldLabel>
+          <FieldDescription>
+            Press Enter to add a teammate to the list
+          </FieldDescription>
+        </Field>
 
         <form.Field
           children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid;
+            const teamMembers = field.state.value || [];
+
+            const handleAddMember = () => {
+              const email = currentEmailInput.trim();
+              if (!email) {
+                return;
+              }
+
+              if (!emailRegex.test(email)) {
+                return;
+              }
+
+              if (teamMembers.some((m) => m.email === email)) {
+                return;
+              }
+
+              field.handleChange([
+                ...teamMembers,
+                { email, role: "member" as const },
+              ]);
+              setCurrentEmailInput("");
+            };
+
+            const handleKeyDown = (
+              e: React.KeyboardEvent<HTMLInputElement>
+            ) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddMember();
+              }
+            };
+
+            const handleRemoveMember = (index: number) => {
+              field.handleChange(teamMembers.filter((_, i) => i !== index));
+            };
+
+            const handleRoleChange = (
+              index: number,
+              role: "owner" | "admin" | "member" | "viewer"
+            ) => {
+              const updated = [...teamMembers];
+              if (updated[index]) {
+                updated[index] = { email: updated[index].email, role };
+                field.handleChange(updated);
+              }
+            };
+
             return (
-              <Field data-invalid={isInvalid}>
+              <div className="space-y-2">
                 <Input
-                  aria-invalid={isInvalid}
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="colleague@example.com, teammate@example.com"
-                  value={field.state.value}
+                  onChange={(e) => setCurrentEmailInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="teammate@example.com"
+                  value={currentEmailInput}
                 />
 
-                <p className="mt-1 text-muted-foreground text-xs">
-                  Separate multiple emails with commas
-                </p>
-              </Field>
+                {teamMembers.length > 0 && (
+                  <div className="space-y-2">
+                    {teamMembers.map((member, index) => (
+                      <Card
+                        className="flex items-center justify-between gap-2 rounded-md p-2"
+                        key={index}
+                      >
+                        <Text weight="plus">{member.email}</Text>
+                        <div className="flex items-center gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  className="flex min-w-32 items-center justify-start gap-1 text-left text-xs"
+                                  size="base"
+                                  variant="outline"
+                                >
+                                  <RiArrowDownSFill className="size-4 shrink-0" />
+                                  {member.role.charAt(0).toUpperCase() +
+                                    member.role.slice(1)}
+                                </Button>
+                              }
+                            >
+                              {member.role}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {teamMemberRoles.map((role) => (
+                                <DropdownMenuItem
+                                  key={role}
+                                  onClick={() => handleRoleChange(index, role)}
+                                >
+                                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <Button
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleRemoveMember(index)}
+                            size="small"
+                            variant="destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           }}
-          name="teamEmails"
+          name="teamMembers"
         />
       </div>
 
@@ -267,10 +468,16 @@ export function CreateOrgStep({ onComplete }: CreateOrgStepProps) {
         </div>
       )}
 
-      <div className="flex justify-end pt-4">
-        <Button disabled={isLoading} type="submit">
-          {isLoading ? "Creating..." : "Create Workspace"}
-        </Button>
+      <div className="absolute bottom-0 mt-auto flex w-full gap-2 pt-4">
+        <LoadingButton
+          className="w-full text-[13px]"
+          loading={isSubmitting || isLoading}
+          size="base"
+          type="submit"
+          variant="gradual"
+        >
+          Continue
+        </LoadingButton>
       </div>
     </form>
   );

@@ -1,14 +1,20 @@
 "use client";
 
 import { Button } from "@gradual/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@gradual/ui/field";
 import { useState } from "react";
 
 interface InstallSDKStepProps {
   onComplete: () => void;
   onSkip: () => void;
+  isLoading?: boolean;
 }
 
-export function InstallSDKStep({ onComplete, onSkip }: InstallSDKStepProps) {
+export function InstallSDKStep({
+  onComplete,
+  onSkip,
+  isLoading = false,
+}: InstallSDKStepProps) {
   const [copied, setCopied] = useState(false);
   const installCommand = "npm install @gradual/sdk";
 
@@ -22,30 +28,28 @@ export function InstallSDKStep({ onComplete, onSkip }: InstallSDKStepProps) {
     }
   };
 
-  const codeExample = `import { Gradual } from '@gradual/sdk';
+  const codeExample = `import { Gradual } from '@gradual/flags-sdk';
 
 const gradual = new Gradual({
   apiKey: 'your-api-key',
   environment: 'production'
 });
 
-// Get a feature flag
 const isEnabled = await gradual.isEnabled('feature-flag-key');
 
 if (isEnabled) {
-  // Feature is enabled
   console.log('Feature is active!');
 }`;
 
   return (
     <div className="relative h-full w-full space-y-6">
       <div className="space-y-4">
-        <div>
-          <h3 className="mb-2 font-semibold text-base">Install the SDK</h3>
-          <p className="text-muted-foreground text-sm">
+        <Field>
+          <FieldLabel>Install the SDK</FieldLabel>
+          <FieldDescription>
             Add the Gradual SDK to your project to start using feature flags
-          </p>
-        </div>
+          </FieldDescription>
+        </Field>
 
         <div className="relative">
           <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-4 font-mono text-sm">
@@ -63,12 +67,12 @@ if (isEnabled) {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <h3 className="mb-2 font-semibold text-base">Quick Start Example</h3>
-          <p className="text-muted-foreground text-sm">
+        <Field>
+          <FieldLabel>Quick Start Example</FieldLabel>
+          <FieldDescription>
             Here's a simple example to get you started
-          </p>
-        </div>
+          </FieldDescription>
+        </Field>
 
         <div className="relative">
           <pre className="overflow-x-auto rounded-lg border bg-muted/30 p-4 text-xs">
@@ -85,7 +89,7 @@ if (isEnabled) {
                 console.error("Failed to copy:", err);
               }
             }}
-            size="sm"
+            size="small"
             type="button"
             variant="outline"
           >
@@ -98,7 +102,7 @@ if (isEnabled) {
         <Button onClick={onSkip} type="button" variant="outline">
           Skip
         </Button>
-        <Button onClick={onComplete} type="button">
+        <Button disabled={isLoading} onClick={onComplete} type="button">
           I've Installed the SDK
         </Button>
       </div>

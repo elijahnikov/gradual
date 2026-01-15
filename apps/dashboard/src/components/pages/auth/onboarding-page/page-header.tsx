@@ -1,7 +1,5 @@
-import { cn } from "@gradual/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@gradual/ui/avatar";
 import { Button } from "@gradual/ui/button";
-import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
 import { RiLogoutBoxLine } from "@remixicon/react";
 import { useNavigate } from "@tanstack/react-router";
@@ -23,18 +21,7 @@ export default function PageHeader({
 
   return (
     <div className="absolute top-0 flex h-12 w-full items-center justify-between px-2 text-center">
-      <Card
-        className={cn(
-          "relative flex w-max shrink-0 items-center justify-center overflow-hidden rounded-full bg-black p-0.5"
-        )}
-      >
-        <img
-          alt="Gradual"
-          height={24}
-          src="/gradual-logo-500x500.png"
-          width={24}
-        />
-      </Card>
+      <div />
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
           <Avatar className="size-6 shadow-borders-base">
@@ -46,7 +33,7 @@ export default function PageHeader({
           {email && <Text className="text-ui-fg-muted">{email}</Text>}
         </div>
         <Button
-          className="pl-1 text-[13px]"
+          className="pl-1.5 text-[13px]"
           onClick={handleSignOut}
           size="small"
           variant="ghost"

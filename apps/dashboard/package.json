@@ -11,6 +11,8 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.969.0",
+    "@aws-sdk/s3-request-presigner": "^3.969.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@gradual/api": "*",

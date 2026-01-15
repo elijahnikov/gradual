@@ -20,6 +20,11 @@ export const env = createEnv({
     DATABASE_HOST: z.string(),
     DATABASE_USERNAME: z.string(),
     DATABASE_PASSWORD: z.string(),
+    R2_ACCOUNT_ID: z.string(),
+    R2_ACCESS_KEY_ID: z.string(),
+    R2_SECRET_ACCESS_KEY: z.string(),
+    R2_BUCKET: z.string(),
+    R2_S3_API_URL: z.url(),
   },
 
   /**

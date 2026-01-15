@@ -13,6 +13,7 @@ import { useState } from "react";
 interface PlanSelectionStepProps {
   onComplete: () => void;
   onSkip: () => void;
+  isLoadingProp?: boolean;
 }
 
 const PLANS = [
@@ -60,6 +61,7 @@ const PLANS = [
 export function PlanSelectionStep({
   onComplete,
   onSkip,
+  isLoadingProp = false,
 }: PlanSelectionStepProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,7 +135,7 @@ export function PlanSelectionStep({
 
       <div className="flex justify-end gap-2 pt-4">
         <Button
-          disabled={isLoading}
+          disabled={isLoading || isLoadingProp}
           onClick={onSkip}
           type="button"
           variant="outline"
