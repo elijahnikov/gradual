@@ -23,4 +23,7 @@ export default defineConfig({
     viteReact(),
     tailwindcss(),
   ],
+  ssr: {
+    noExternal: ["react-use"],
+  },
 });
