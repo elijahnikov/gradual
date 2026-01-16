@@ -54,7 +54,7 @@ export default function VerifyOTPForm({
         form.resetField("code");
       }
       if (res.data) {
-        await queryClient.invalidateQueries(trpc.auth.getSession.queryFilter());
+        await queryClient.invalidateQueries(trpc.auth.getSession.pathFilter());
         throw navigate({ to: "/" });
       }
       setIsSubmitting(false);

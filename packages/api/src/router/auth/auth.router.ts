@@ -11,7 +11,14 @@ export const authRouter = {
   getUserOnboardingStatus: protectedProcedure.query(({ ctx }) => {
     return services.getUserOnboardingStatus({ ctx });
   }),
+
   updateUser: protectedProcedure
     .input(schemas.updateUserSchema)
     .mutation(async ({ ctx, input }) => services.updateUser({ ctx, input })),
+
+  listSubscriptionsByOrganizationId: protectedProcedure
+    .input(schemas.listSubscriptionsByOrganizationIdSchema)
+    .query(async ({ ctx, input }) =>
+      services.listSubscriptionsByOrganizationId({ ctx, input })
+    ),
 } satisfies TRPCRouterRecord;

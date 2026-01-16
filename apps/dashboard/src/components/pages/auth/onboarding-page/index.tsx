@@ -5,18 +5,20 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo } from "react";
+import {
+  type OnboardingStep,
+  useOnboardingStore,
+} from "@/lib/stores/onboarding-store";
 import { useTRPC } from "@/lib/trpc";
 import { CurrentStepHeader } from "./current-step-header";
-import PageHeader from "./page-header";
-import Breadcrumb from "./step-breadcrumb";
+import { PageHeader } from "./page-header";
+import { StepBreadcrumb } from "./step-breadcrumb";
 import { CreateOrgStep } from "./steps/create-org-step";
 import { GettingStartedStep } from "./steps/getting-started-step";
 import { InstallSDKStep } from "./steps/install-sdk-step";
 import { PlanSelectionStep } from "./steps/plan-selection-step";
-
-type OnboardingStep = 0 | 1 | 2 | 3;
 export interface OnboardingStepEntry {
   step: OnboardingStep;
   title: string;
@@ -26,27 +28,34 @@ export interface OnboardingStepEntry {
 }
 
 export default function OnboardingPageComponent() {
-  const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
-  const { data: onboardingStatus } = useSuspenseQuery(
-    trpc.auth.getUserOnboardingStatus.queryOptions()
-  );
-  const { data: session } = useSuspenseQuery(
-    trpc.auth.getSession.queryOptions()
-  );
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(
-    (onboardingStatus?.onboardingStep as OnboardingStep) ?? 0
-  );
+  const { data: onboardingStatus } = useSuspenseQuery({
+    ...trpc.auth.getUserOnboardingStatus.queryOptions(),
+    gcTime: 0,
+    staleTime: 0,
+  });
+  const { data: session } = useSuspenseQuery({
+    ...trpc.auth.getSession.queryOptions(),
+    gcTime: 0,
+    staleTime: 0,
+  });
 
-  const onboardingStatusQueryKey =
-    trpc.auth.getUserOnboardingStatus.queryOptions().queryKey;
+  const {
+    currentStep,
+    setCurrentStep,
+    setCreatedOrganizationId,
+    setCreatedProjectId,
+    setOrganizationSlug,
+    organizationSlug,
+  } = useOnboardingStore();
 
-  const { mutate: updateUser, isPending: isUpdatingUser } = useMutation(
+  const { mutateAsync: updateUser, isPending: isUpdatingUser } = useMutation(
     trpc.auth.updateUser.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: onboardingStatusQueryKey });
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.auth.pathFilter());
       },
       onError: (error) => {
         console.error("Failed to update user:", error);
@@ -55,33 +64,49 @@ export default function OnboardingPageComponent() {
   );
 
   const handleStepComplete = useCallback(
-    (step: OnboardingStep, skipToNext = true) => {
+    async (step: OnboardingStep, skipToNext = true) => {
       const nextStep = (step + 1) as OnboardingStep;
 
       if (skipToNext && step < 3) {
         setCurrentStep(nextStep);
       }
 
-      updateUser({
-        onboardingStep: nextStep,
-      });
+      if (step < 3) {
+        updateUser({
+          onboardingStep: nextStep,
+        });
+      }
+      await queryClient.invalidateQueries(
+        trpc.auth.getUserOnboardingStatus.queryOptions()
+      );
+      await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
     },
-    [updateUser]
+    [updateUser, setCurrentStep, queryClient, trpc]
   );
 
-  const handleSkip = useCallback((step: OnboardingStep) => {
-    if (step < 3) {
-      setCurrentStep((step + 1) as OnboardingStep);
-    }
-  }, []);
+  const handleSkip = useCallback(
+    (step: OnboardingStep) => {
+      if (step < 3) {
+        setCurrentStep((step + 1) as OnboardingStep);
+      }
+    },
+    [setCurrentStep]
+  );
 
-  const handleFinish = useCallback(() => {
-    updateUser({
+  const handleFinish = useCallback(async () => {
+    await updateUser({
       hasOnboarded: true,
     });
 
-    router.navigate({ to: "/" });
-  }, [updateUser, router]);
+    if (organizationSlug) {
+      navigate({
+        to: "/$organizationSlug",
+        params: { organizationSlug },
+      });
+    } else {
+      navigate({ to: "/" });
+    }
+  }, [updateUser, organizationSlug, navigate]);
 
   const steps: OnboardingStepEntry[] = useMemo(
     () => [
@@ -107,7 +132,12 @@ export default function OnboardingPageComponent() {
         component: (
           <CreateOrgStep
             isLoading={isUpdatingUser}
-            onComplete={() => handleStepComplete(1)}
+            onComplete={(organizationId, projectId, organizationSlug) => {
+              setCreatedOrganizationId(organizationId);
+              setCreatedProjectId(projectId);
+              setOrganizationSlug(organizationSlug);
+              handleStepComplete(1);
+            }}
           />
         ),
         skippable: false,
@@ -128,31 +158,37 @@ export default function OnboardingPageComponent() {
       {
         step: 3,
         title: "Choose Your Plan",
-        description: "Select the plan that works for you",
+        description:
+          "Choose the plan that best fits your needs. You can always upgrade or downgrade later.",
         component: (
           <PlanSelectionStep
             isLoadingProp={isUpdatingUser}
-            onComplete={() => handleStepComplete(3, false)}
-            onSkip={() => handleFinish()}
+            onComplete={handleFinish}
+            onSkip={handleFinish}
           />
         ),
         skippable: true,
       },
     ],
-    [handleSkip, handleFinish, handleStepComplete, isUpdatingUser]
+    [
+      handleSkip,
+      handleFinish,
+      handleStepComplete,
+      isUpdatingUser,
+      setCreatedOrganizationId,
+      setCreatedProjectId,
+      setOrganizationSlug,
+    ]
   );
 
-  // Only sync on initial load, not on every update
-  // Only sync from query if it's ahead of current step (e.g., on initial load or if user navigated back)
   useEffect(() => {
     if (onboardingStatus?.onboardingStep !== undefined) {
       const statusStep = onboardingStatus.onboardingStep as OnboardingStep;
-      // Only update if the status step is ahead of current step, or if currentStep is 0 (initial load)
       if (statusStep > currentStep || currentStep === 0) {
         setCurrentStep(statusStep);
       }
     }
-  }, [onboardingStatus?.onboardingStep, currentStep]);
+  }, [onboardingStatus?.onboardingStep, currentStep, setCurrentStep]);
 
   const currentStepEntry = useMemo(
     () =>
@@ -169,15 +205,18 @@ export default function OnboardingPageComponent() {
       <div className="flex flex-col">
         <div className="">
           {currentStepEntry && (
-            <div className="relative flex h-full min-w-[400px] flex-col gap-8">
-              <CurrentStepHeader currentStep={currentStepEntry} />
-              <div className="h-[60vh] max-h-[60vh]">
+            <div className="flex h-full min-w-[400px] flex-col gap-8">
+              <CurrentStepHeader
+                description={currentStepEntry.description}
+                title={currentStepEntry.title}
+              />
+              <div className="h-[70vh] max-h-[70vh]">
                 {currentStepEntry.component}
               </div>
             </div>
           )}
         </div>
-        <Breadcrumb currentStepIndex={currentStep} steps={steps.length} />
+        <StepBreadcrumb currentStep={currentStep} totalSteps={steps.length} />
       </div>
     </div>
   );

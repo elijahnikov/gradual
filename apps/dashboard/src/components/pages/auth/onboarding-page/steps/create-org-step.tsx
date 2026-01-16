@@ -29,7 +29,11 @@ import z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
 
 interface CreateOrgStepProps {
-  onComplete: () => void;
+  onComplete: (
+    organizationId: string,
+    projectId: string,
+    organizationSlug: string
+  ) => void;
   isLoading?: boolean;
 }
 
@@ -110,7 +114,7 @@ export function CreateOrgStep({
           slug: value.orgSlug,
         });
 
-        await createProject.mutateAsync({
+        const project = await createProject.mutateAsync({
           name: value.projectName,
           slug: value.projectSlug,
           organizationId: organization.id,
@@ -124,7 +128,7 @@ export function CreateOrgStep({
           console.log("Team members to invite:", value.teamMembers);
         }
 
-        onComplete();
+        onComplete(organization.id, project.id, organization.slug);
       } catch (err) {
         toastManager.add({
           type: "error",
@@ -151,9 +155,7 @@ export function CreateOrgStep({
       return;
     }
 
-    // Read current slug value from form state (not reactive dependency)
     const currentSlug = form.baseStore.state.values.orgSlug;
-    // Auto-fill slug if slug is empty or not manually edited
     const slugIsEmpty = !currentSlug;
     const slugNotManuallyEdited = !isSlugManuallyEdited;
     const shouldAutoFill = slugIsEmpty || slugNotManuallyEdited;
@@ -466,7 +468,7 @@ export function CreateOrgStep({
       </div>
 
       <div className="mt-6 space-y-4">
-        <Field>
+        <Field className="-space-y-1">
           <FieldLabel>
             Invite team members{" "}
             <span className="text-muted-foreground text-xs">(optional)</span>
@@ -556,13 +558,13 @@ export function CreateOrgStep({
                             <DropdownMenuTrigger
                               render={
                                 <Button
-                                  className="flex min-w-32 items-center justify-start gap-1 text-left text-xs"
+                                  className="flex min-w-32 items-center justify-start gap-1 pr-1.5 pl-2 text-left text-xs"
                                   size="base"
                                   variant="outline"
                                 >
-                                  <RiArrowDownSFill className="size-4 shrink-0" />
                                   {member.role.charAt(0).toUpperCase() +
                                     member.role.slice(1)}
+                                  <RiArrowDownSFill className="ml-auto size-4 shrink-0" />
                                 </Button>
                               }
                             >

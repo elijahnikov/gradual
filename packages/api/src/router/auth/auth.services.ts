@@ -2,7 +2,10 @@ import { eq } from "@gradual/db";
 import { user } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedTRPCContext } from "../../trpc";
-import type { UpdateUserInput } from "./auth.schemas";
+import type {
+  ListSubscriptionsByOrganizationIdInput,
+  UpdateUserInput,
+} from "./auth.schemas";
 
 export const updateUser = async ({
   ctx,
@@ -21,11 +24,11 @@ export const updateUser = async ({
 
   await ctx.authApi.updateUser({
     body: {
-      ...(input.onboardingStep ? { onboardingStep: input.onboardingStep } : {}),
-      ...(input.hasOnboarded ? { hasOnboarded: input.hasOnboarded } : {}),
-      ...(input.name ? { name: input.name } : {}),
-      ...(input.image ? { image: input.image } : {}),
+      hasOnboarded: input.hasOnboarded,
+      onboardingStep: input.onboardingStep,
+      defaultOrganizationId: input.defaultOrganizationId,
     },
+    headers: ctx.headers,
   });
 
   return updatedUser;
@@ -50,4 +53,25 @@ export const getUserOnboardingStatus = async ({
     onboardingStep: foundUser?.onboardingStep,
     hasOnboarded: foundUser?.hasOnboarded,
   };
+};
+
+export const listSubscriptionsByOrganizationId = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedTRPCContext;
+  input: ListSubscriptionsByOrganizationIdInput;
+}) => {
+  const subscriptions = await ctx.authApi.subscriptions({
+    query: {
+      page: 1,
+      limit: 10,
+      status: "active",
+      referenceId: input.organizationId,
+    },
+    asResponse: true,
+    headers: ctx.headers,
+  });
+  const result = await subscriptions.json();
+  return result;
 };

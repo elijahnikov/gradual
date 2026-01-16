@@ -468,8 +468,9 @@ export const apiKey = pgTable(
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     name: varchar("name", { length: 256 }).notNull(),
-    keyHash: text("key_hash").notNull().unique(), // Hashed API key
-    keyPrefix: varchar("key_prefix", { length: 16 }).notNull(), // First 8 chars for display
+    key: text("key").notNull().unique(),
+    keyHash: text("key_hash").notNull().unique(),
+    keyPrefix: varchar("key_prefix", { length: 16 }).notNull(),
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),

@@ -30,12 +30,6 @@ export function initAuth<
     },
     baseURL: options.baseUrl,
     secret: options.secret,
-    session: {
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60,
-      },
-    },
     user: {
       additionalFields: {
         hasOnboarded: {

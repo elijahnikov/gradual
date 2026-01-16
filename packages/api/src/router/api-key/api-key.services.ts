@@ -43,6 +43,7 @@ export const createApiKey = async ({
       ...input,
       organizationId: ctx.organization.id,
       createdById: currentUser.id,
+      key,
       keyHash,
       keyPrefix,
       projectId: input.projectId,
@@ -80,6 +81,7 @@ export const getApiKeyByOrganizationIdAndProjectId = async ({
       id: true,
       keyPrefix: true,
       createdAt: true,
+      key: true,
     },
     with: {
       createdBy: {

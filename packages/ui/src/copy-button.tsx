@@ -6,7 +6,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@gradual/ui/tooltip";
 import { RiCheckFill, RiFileCopyLine } from "@remixicon/react";
 import { useState } from "react";
 
-export default function CopyButton({ text }: { text: string }) {
+export default function CopyButton({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleCopy = async () => {
@@ -25,7 +31,7 @@ export default function CopyButton({ text }: { text: string }) {
         render={
           <Button
             aria-label={copied ? "Copied" : "Copy to clipboard"}
-            className="size-6 disabled:opacity-100"
+            className={cn("size-6 disabled:opacity-100", className)}
             disabled={copied}
             onClick={handleCopy}
             size="small"

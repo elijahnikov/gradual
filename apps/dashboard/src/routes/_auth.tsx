@@ -4,9 +4,12 @@ export const Route = createFileRoute("/_auth")({
   component: AuthLayoutComponent,
   beforeLoad: async ({ context, location }) => {
     const { trpc, queryClient } = context;
-    const session = await queryClient.ensureQueryData(
-      trpc.auth.getSession.queryOptions()
-    );
+
+    await queryClient.invalidateQueries(trpc.auth.getSession.pathFilter());
+    const session = await queryClient.fetchQuery({
+      ...trpc.auth.getSession.queryOptions(),
+      staleTime: 0,
+    });
     if (session?.user) {
       if (!session.user.hasOnboarded && location.pathname === "/login") {
         throw redirect({ to: "/onboarding" });

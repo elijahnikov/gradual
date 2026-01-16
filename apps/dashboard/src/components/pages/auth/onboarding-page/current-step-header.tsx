@@ -1,22 +1,25 @@
 import { Heading } from "@gradual/ui/heading";
 import { Text } from "@gradual/ui/text";
-import type { OnboardingStepEntry } from ".";
 
-export const CurrentStepHeader = ({
-  currentStep,
-}: {
-  currentStep: OnboardingStepEntry;
-}) => {
+interface CurrentStepHeaderProps {
+  title: string;
+  description: string;
+}
+
+export function CurrentStepHeader({
+  title,
+  description,
+}: CurrentStepHeaderProps) {
   return (
-    <div className="absolute -top-28 w-full text-center">
-      <Heading className="text-[24px]">{currentStep.title}</Heading>
+    <div className="absolute top-12 left-0 w-1/2 translate-x-1/2 text-center">
+      <Heading className="text-[24px]">{title}</Heading>
       <Text
         className="whitespace-pre-wrap text-balance text-ui-fg-muted"
         size="small"
-        weight={"plus"}
+        weight="plus"
       >
-        {currentStep.description}
+        {description}
       </Text>
     </div>
   );
-};
+}

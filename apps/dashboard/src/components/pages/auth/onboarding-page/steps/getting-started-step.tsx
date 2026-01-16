@@ -142,7 +142,7 @@ export function GettingStartedStep({
 
   return (
     <form
-      className="relative h-full w-full space-y-6"
+      className="h-full w-full space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
@@ -286,18 +286,20 @@ export function GettingStartedStep({
         name="jobRole"
       />
 
-      <div className="absolute bottom-0 mt-auto flex w-full gap-2 pt-4">
-        <Button onClick={onSkip} type="button" variant="outline">
-          Skip
-        </Button>
-        <LoadingButton
-          className="w-full text-[13px]"
-          loading={isSubmitting || isLoading}
-          type="submit"
-          variant="gradual"
-        >
-          Continue
-        </LoadingButton>
+      <div className="absolute bottom-16 left-0 mt-auto flex w-1/2 translate-x-1/2 items-center justify-center gap-2 pt-4">
+        <div className="flex w-[400px] gap-2">
+          <Button onClick={onSkip} type="button" variant="outline">
+            Skip
+          </Button>
+          <LoadingButton
+            className="w-full text-[13px]"
+            loading={isSubmitting || isLoading}
+            type="submit"
+            variant="gradual"
+          >
+            Continue
+          </LoadingButton>
+        </div>
       </div>
     </form>
   );

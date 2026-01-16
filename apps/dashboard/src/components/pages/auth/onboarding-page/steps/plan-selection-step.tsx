@@ -1,14 +1,18 @@
 "use client";
 
+import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@gradual/ui/card";
-import { useState } from "react";
+import { Card } from "@gradual/ui/card";
+import { Heading } from "@gradual/ui/heading";
+import { LoadingButton } from "@gradual/ui/loading-button";
+import { Separator } from "@gradual/ui/separator";
+import { Text } from "@gradual/ui/text";
+import { RiCheckLine } from "@remixicon/react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { authClient } from "@/auth/client";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useTRPC } from "@/lib/trpc";
 
 interface PlanSelectionStepProps {
   onComplete: () => void;
@@ -22,7 +26,10 @@ const PLANS = [
     name: "Free",
     description: "Perfect for getting started",
     features: [
-      "Up to 10 feature flags",
+      "One project",
+      "Unlimted feature flags",
+      "Up to two environments",
+      "100k evaluations per month",
       "Basic analytics",
       "Community support",
     ],
@@ -34,12 +41,15 @@ const PLANS = [
     name: "Pro",
     description: "For growing teams",
     features: [
-      "Unlimited feature flags",
+      "Everything in Free",
+      "Unlimited projects",
+      "Unlimited environments",
+      "1 million evaluations per month",
       "Advanced analytics",
       "Priority support",
       "Team collaboration",
     ],
-    price: "Custom",
+    price: "$15",
     productId: "4e1c7974-4814-4d97-a117-aa72aad58771",
   },
   {
@@ -48,12 +58,14 @@ const PLANS = [
     description: "For large organizations",
     features: [
       "Everything in Pro",
+      "Unlimited projects",
+      "Unlimited environments",
+      "20 million evaluations per month",
       "Dedicated support",
       "Custom integrations",
-      "SLA guarantee",
       "Advanced security",
     ],
-    price: "Custom",
+    price: "$39",
     productId: "d9376414-2b89-48a8-bdec-7a97ba70e1c4",
   },
 ];
@@ -63,90 +75,105 @@ export function PlanSelectionStep({
   onSkip,
   isLoadingProp = false,
 }: PlanSelectionStepProps) {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const trpc = useTRPC();
+  const { createdOrganizationId } = useOnboardingStore();
+  const { data: subscriptions } = useQuery({
+    ...trpc.auth.listSubscriptionsByOrganizationId.queryOptions({
+      organizationId: createdOrganizationId ?? "",
+    }),
+  });
 
-  const handleSelectPlan = (planSlug: string, productId: string) => {
-    setSelectedPlan(planSlug);
-    setIsLoading(true);
-
-    try {
-      // TODO: Integrate with Polar checkout
-      // For now, we'll just store the selection and allow the user to continue
-      // The actual checkout can be handled in a separate flow or settings page
-      console.log("Selected plan:", planSlug, "Product ID:", productId);
-
-      // You can implement Polar checkout here:
-      // const checkoutUrl = await authClient.polar.checkout({ productId });
-      // if (checkoutUrl) window.location.href = checkoutUrl;
-
-      onComplete();
-    } catch (error) {
-      console.error("Error selecting plan:", error);
-      onComplete();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleSelectPlan = useCallback(
+    async (productId: string) => {
+      try {
+        await authClient.checkout({
+          products: [productId],
+          referenceId: createdOrganizationId,
+        });
+      } catch (error) {
+        console.error("Error initiating checkout:", error);
+      }
+    },
+    [createdOrganizationId]
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-muted-foreground text-sm">
-          Choose the plan that best fits your needs. You can always upgrade or
-          downgrade later.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {PLANS.map((plan) => (
-          <Card
-            className={`cursor-pointer transition-all ${
-              selectedPlan === plan.slug
-                ? "ring-2 ring-primary"
-                : "hover:border-primary/50"
-            }`}
-            key={plan.slug}
-            onClick={() => handleSelectPlan(plan.slug, plan.productId)}
-          >
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-2">
-                <span className="font-bold text-2xl">{plan.price}</span>
-                {plan.price !== "$0" && plan.price !== "Custom" && (
-                  <span className="text-muted-foreground text-sm">/month</span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
+      {/** biome-ignore lint/suspicious/noExplicitAny: <> */}
+      {(subscriptions as any)?.result?.items?.length > 0 ? (
+        <div className="mt-24 flex flex-col items-center justify-center gap-2">
+          <RiCheckLine className="size-8 text-green-500" />
+          <Heading>You have successfully chosen a plan</Heading>
+          <Text className="text-ui-fg-muted" weight="plus">
+            You can now finish the onboarding process and start using Gradual.
+          </Text>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3">
+          {PLANS.map((plan, index) => (
+            <Card
+              className={cn("min-w-[300px] px-4 py-3 transition-all")}
+              key={plan.slug}
+            >
+              <Heading level={"h1"}>{plan.name}</Heading>
+              <Text className="text-ui-fg-subtle" weight="plus">
+                {plan.description}
+              </Text>
+              <Text className="mt-2">
+                <span className="font-semibold text-4xl">{plan.price}</span>
+                <span className="text-ui-fg-subtle">/month</span>
+              </Text>
+              <Button
+                className="mt-4 mb-2 w-full"
+                onClick={() => handleSelectPlan(plan.productId)}
+                variant={index === 0 ? "outline" : "gradual"}
+              >
+                Select Plan
+              </Button>
+              <Separator className="my-2" />
+              <ul className="mt-2 space-y-2">
                 {plan.features.map((feature) => (
-                  <li className="flex items-start gap-2" key={feature}>
-                    <span className="text-primary">✓</span>
-                    <span>{feature}</span>
+                  <li className="flex items-center gap-2" key={feature}>
+                    <RiCheckLine className="size-4 text-green-500" />
+                    <Text className="text-ui-fg-subtle" weight="plus">
+                      {feature}
+                    </Text>
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button
-          disabled={isLoading || isLoadingProp}
-          onClick={onSkip}
-          type="button"
-          variant="outline"
-        >
-          Skip for Now
-        </Button>
-        {selectedPlan && (
-          <Button disabled={isLoading} onClick={onComplete} type="button">
-            {isLoading ? "Processing..." : "Continue"}
+      <div className="absolute bottom-16 left-0 mt-auto flex w-1/2 translate-x-1/2 items-center justify-center gap-2 pt-4">
+        <div className="flex w-[400px] gap-2">
+          <Button
+            className="whitespace-nowrap"
+            disabled={isLoadingProp}
+            onClick={onSkip}
+            type="button"
+            variant="outline"
+          >
+            Skip
           </Button>
-        )}
+
+          <LoadingButton
+            className="w-full text-[13px]"
+            disabled={
+              isLoadingProp ||
+              !subscriptions ||
+              // biome-ignore lint/suspicious/noExplicitAny: <>
+              (subscriptions as any)?.result?.items?.length === 0
+            }
+            loading={isLoadingProp}
+            onClick={onComplete}
+            type="button"
+            variant="gradual"
+          >
+            Finish
+          </LoadingButton>
+        </div>
       </div>
     </div>
   );

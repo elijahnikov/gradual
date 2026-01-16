@@ -5,11 +5,12 @@ export const Route = createFileRoute("/_organization")({
   component: RouteComponent,
   loader: ({ context }) => {
     const { queryClient, trpc } = context;
-    void queryClient.prefetchQuery(trpc.auth.getSession.queryOptions());
+    void queryClient.ensureQueryData(trpc.auth.getSession.queryOptions());
   },
 });
 
 function RouteComponent() {
+  console.log("RouteComponent");
   return (
     <GlobalOrganizationLayout>
       <Outlet />

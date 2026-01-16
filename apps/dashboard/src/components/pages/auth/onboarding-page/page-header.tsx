@@ -5,13 +5,12 @@ import { RiLogoutBoxLine } from "@remixicon/react";
 import { useNavigate } from "@tanstack/react-router";
 import { authClient } from "@/auth/client";
 
-export default function PageHeader({
-  email,
-  image,
-}: {
+interface PageHeaderProps {
   email: string | undefined;
   image: string | undefined;
-}) {
+}
+
+export function PageHeader({ email, image }: PageHeaderProps) {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -20,14 +19,14 @@ export default function PageHeader({
   };
 
   return (
-    <div className="absolute top-0 flex h-12 w-full items-center justify-between px-2 text-center">
+    <header className="absolute top-0 flex h-12 w-full items-center justify-between px-2">
       <div />
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
           <Avatar className="size-6 shadow-borders-base">
             <AvatarImage src={image} />
             <AvatarFallback>
-              {email ? email.charAt(0).toUpperCase() : ""}
+              {email?.charAt(0).toUpperCase() ?? ""}
             </AvatarFallback>
           </Avatar>
           {email && <Text className="text-ui-fg-muted">{email}</Text>}
@@ -41,6 +40,6 @@ export default function PageHeader({
           <RiLogoutBoxLine className="size-3" /> Sign out
         </Button>
       </div>
-    </div>
+    </header>
   );
 }
