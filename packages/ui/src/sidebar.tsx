@@ -277,7 +277,7 @@ const SidebarTrigger = ({
         toggleSidebar();
       }}
       ref={ref}
-      size="sm"
+      size="small"
       variant="ghost"
       {...props}
     >

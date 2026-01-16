@@ -27,7 +27,7 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="default"
+          size="base"
           variant="gradual"
         >
           Sign in with GitHub
@@ -43,7 +43,7 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="default"
+          size="base"
           variant="gradual"
         >
           Sign in with Google
@@ -58,7 +58,7 @@ export function AuthShowcase() {
             }
             await navigate({ href: res.data.url, replace: true });
           }}
-          size="default"
+          size="base"
           variant="gradual"
         >
           Sign in with Linear
@@ -81,7 +81,7 @@ export function AuthShowcase() {
           );
           await navigate({ to: "/login", replace: true });
         }}
-        size="lg"
+        size="large"
         variant="gradual"
       >
         Sign out

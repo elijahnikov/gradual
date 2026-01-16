@@ -12,7 +12,6 @@ import {
   redirect,
   Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import type * as React from "react";
@@ -36,6 +35,13 @@ export const Route = createRootRouteWithContext<{
     if (!session?.user && location.pathname !== "/login") {
       throw redirect({ to: "/login" });
     }
+    if (
+      session?.user &&
+      !session.user.hasOnboarded &&
+      location.pathname !== "/onboarding"
+    ) {
+      throw redirect({ to: "/onboarding" });
+    }
   },
   component: RootComponent,
 });
@@ -58,7 +64,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html className="not:dark" lang="en" suppressHydrationWarning>
+    <html className="light" lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -68,7 +74,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         )}
       >
         {children}
-        <TanStackRouterDevtools position="bottom-right" />
+        {/* <TanStackRouterDevtools position="bottom-right" /> */}
         <Scripts />
       </body>
     </html>

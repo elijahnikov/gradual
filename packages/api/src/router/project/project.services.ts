@@ -2,6 +2,7 @@ import { and, eq, isNull } from "@gradual/db";
 import { project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
+import { createApiKey } from "../api-key/api-key.services";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
@@ -28,6 +29,14 @@ export const createProject = async ({
       message: "Failed to create project",
     });
   }
+  await createApiKey({
+    input: {
+      projectId: createdProject.id,
+      organizationId: ctx.organization.id,
+      name: createdProject.name,
+    },
+    ctx,
+  });
   return createdProject;
 };
 

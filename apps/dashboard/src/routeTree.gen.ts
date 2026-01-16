@@ -12,9 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrganizationRouteImport } from './routes/_organization'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as ApiFilesRouteImport } from './routes/api/files'
+import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as OrganizationOrganizationSlugRouteRouteImport } from './routes/_organization/$organizationSlug/route'
 import { Route as OrganizationOrganizationSlugIndexRouteImport } from './routes/_organization/$organizationSlug/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
+import { Route as ApiFilesKeyRouteImport } from './routes/api/files/$key'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const OrganizationRoute = OrganizationRouteImport.update({
@@ -30,21 +35,47 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFilesRoute = ApiFilesRouteImport.update({
+  id: '/api/files',
+  path: '/api/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const OrganizationOrganizationSlugRouteRoute =
+  OrganizationOrganizationSlugRouteRouteImport.update({
+    id: '/$organizationSlug',
+    path: '/$organizationSlug',
+    getParentRoute: () => OrganizationRoute,
+  } as any)
 const OrganizationOrganizationSlugIndexRoute =
   OrganizationOrganizationSlugIndexRouteImport.update({
-    id: '/$organizationSlug/',
-    path: '/$organizationSlug/',
-    getParentRoute: () => OrganizationRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => OrganizationOrganizationSlugRouteRoute,
   } as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFilesKeyRoute = ApiFilesKeyRouteImport.update({
+  id: '/$key',
+  path: '/$key',
+  getParentRoute: () => ApiFilesRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -54,15 +85,24 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$organizationSlug': typeof OrganizationOrganizationSlugRouteRouteWithChildren
   '/login': typeof AuthLoginRoute
+  '/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
-  '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
+  '/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
+  '/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
 }
@@ -71,8 +111,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_organization': typeof OrganizationRouteWithChildren
+  '/_organization/$organizationSlug': typeof OrganizationOrganizationSlugRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
+  '/_auth/onboarding': typeof AuthOnboardingRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
+  '/api/upload': typeof ApiUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
 }
@@ -80,19 +125,38 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$organizationSlug'
     | '/login'
+    | '/onboarding'
+    | '/api/files'
+    | '/api/upload'
     | '/api/auth/$'
+    | '/api/files/$key'
+    | '/api/trpc/$'
+    | '/$organizationSlug/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/api/files'
+    | '/api/upload'
+    | '/api/auth/$'
+    | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/api/auth/$' | '/api/trpc/$' | '/$organizationSlug'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/_organization'
+    | '/_organization/$organizationSlug'
     | '/_auth/login'
+    | '/_auth/onboarding'
+    | '/api/files'
+    | '/api/upload'
     | '/api/auth/$'
+    | '/api/files/$key'
     | '/api/trpc/$'
     | '/_organization/$organizationSlug/'
   fileRoutesById: FileRoutesById
@@ -101,6 +165,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   OrganizationRoute: typeof OrganizationRouteWithChildren
+  ApiFilesRoute: typeof ApiFilesRouteWithChildren
+  ApiUploadRoute: typeof ApiUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
@@ -128,6 +194,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/files': {
+      id: '/api/files'
+      path: '/api/files'
+      fullPath: '/api/files'
+      preLoaderRoute: typeof ApiFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/onboarding': {
+      id: '/_auth/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthOnboardingRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/login': {
       id: '/_auth/login'
       path: '/login'
@@ -135,12 +222,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_organization/$organizationSlug/': {
-      id: '/_organization/$organizationSlug/'
+    '/_organization/$organizationSlug': {
+      id: '/_organization/$organizationSlug'
       path: '/$organizationSlug'
       fullPath: '/$organizationSlug'
-      preLoaderRoute: typeof OrganizationOrganizationSlugIndexRouteImport
+      preLoaderRoute: typeof OrganizationOrganizationSlugRouteRouteImport
       parentRoute: typeof OrganizationRoute
+    }
+    '/_organization/$organizationSlug/': {
+      id: '/_organization/$organizationSlug/'
+      path: '/'
+      fullPath: '/$organizationSlug/'
+      preLoaderRoute: typeof OrganizationOrganizationSlugIndexRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugRouteRoute
     }
     '/api/trpc/$': {
       id: '/api/trpc/$'
@@ -148,6 +242,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/trpc/$'
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/files/$key': {
+      id: '/api/files/$key'
+      path: '/$key'
+      fullPath: '/api/files/$key'
+      preLoaderRoute: typeof ApiFilesKeyRouteImport
+      parentRoute: typeof ApiFilesRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -161,31 +262,62 @@ declare module '@tanstack/react-router' {
 
 interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthOnboardingRoute: typeof AuthOnboardingRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
+  AuthOnboardingRoute: AuthOnboardingRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
-interface OrganizationRouteChildren {
+interface OrganizationOrganizationSlugRouteRouteChildren {
   OrganizationOrganizationSlugIndexRoute: typeof OrganizationOrganizationSlugIndexRoute
 }
 
+const OrganizationOrganizationSlugRouteRouteChildren: OrganizationOrganizationSlugRouteRouteChildren =
+  {
+    OrganizationOrganizationSlugIndexRoute:
+      OrganizationOrganizationSlugIndexRoute,
+  }
+
+const OrganizationOrganizationSlugRouteRouteWithChildren =
+  OrganizationOrganizationSlugRouteRoute._addFileChildren(
+    OrganizationOrganizationSlugRouteRouteChildren,
+  )
+
+interface OrganizationRouteChildren {
+  OrganizationOrganizationSlugRouteRoute: typeof OrganizationOrganizationSlugRouteRouteWithChildren
+}
+
 const OrganizationRouteChildren: OrganizationRouteChildren = {
-  OrganizationOrganizationSlugIndexRoute:
-    OrganizationOrganizationSlugIndexRoute,
+  OrganizationOrganizationSlugRouteRoute:
+    OrganizationOrganizationSlugRouteRouteWithChildren,
 }
 
 const OrganizationRouteWithChildren = OrganizationRoute._addFileChildren(
   OrganizationRouteChildren,
 )
 
+interface ApiFilesRouteChildren {
+  ApiFilesKeyRoute: typeof ApiFilesKeyRoute
+}
+
+const ApiFilesRouteChildren: ApiFilesRouteChildren = {
+  ApiFilesKeyRoute: ApiFilesKeyRoute,
+}
+
+const ApiFilesRouteWithChildren = ApiFilesRoute._addFileChildren(
+  ApiFilesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   OrganizationRoute: OrganizationRouteWithChildren,
+  ApiFilesRoute: ApiFilesRouteWithChildren,
+  ApiUploadRoute: ApiUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

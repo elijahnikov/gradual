@@ -40,7 +40,7 @@ export default function AnimatedSection() {
           </div>
           <div className="absolute top-3 left-4">
             <a href="https://www.gradual.so" rel="noopener" target="_blank">
-              <Button className="pl-0.5" size="xs" variant="ghost">
+              <Button className="pl-0.5" size="small" variant="ghost">
                 <RiArrowLeftLine className="size-4 shrink-0" />
                 Back
               </Button>

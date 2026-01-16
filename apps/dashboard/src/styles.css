@@ -51,6 +51,10 @@
   html {
     overscroll-behavior: none;
   }
+
+  .debug {
+    @apply ring-1 ring-red-500 bg-red-500/10;
+  }
 }
 
 @layer utilities {

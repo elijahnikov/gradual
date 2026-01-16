@@ -1,52 +1,117 @@
 "use client";
 
-import { Input as InputPrimitive } from "@base-ui/react/input";
 import { cn } from "@gradual/ui";
-import type * as React from "react";
+import { RiEyeLine, RiEyeOffLine, RiSearchLine } from "@remixicon/react";
+import { cva, type VariantProps } from "class-variance-authority";
+import React from "react";
 
-type InputProps = Omit<
-  InputPrimitive.Props & React.RefAttributes<HTMLInputElement>,
-  "size"
-> & {
-  size?: "sm" | "default" | "lg" | number;
-  unstyled?: boolean;
-};
+const inputBaseStyles = cn(
+  "relative w-full appearance-none rounded-md bg-ui-bg-field-component text-ui-fg-base placeholder-ui-fg-muted caret-ui-fg-base shadow-borders-base outline-none transition-fg hover:bg-ui-bg-field-component-hover",
+  "focus-visible:shadow-borders-interactive-with-active",
+  "disabled:cursor-not-allowed disabled:bg-ui-bg-disabled! disabled:text-ui-fg-disabled disabled:placeholder-ui-fg-disabled",
+  "invalid:shadow-borders-error! aria-invalid:shadow-borders-error!"
+);
 
-function Input({
-  className,
-  size = "default",
-  unstyled = false,
-  ...props
-}: InputProps) {
-  return (
-    <span
-      className={
-        cn(
-          !unstyled &&
-            "relative inline-flex w-full rounded-lg border border-input bg-background not-dark:bg-clip-padding text-base shadow-xs/5 ring-ring/24 transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_1px_--theme(--color-black/6%)] has-focus-visible:has-aria-invalid:border-destructive/64 has-focus-visible:has-aria-invalid:ring-destructive/16 has-aria-invalid:border-destructive/36 has-focus-visible:border-ring has-disabled:opacity-64 has-[:disabled,:focus-visible,[aria-invalid]]:shadow-none has-focus-visible:ring-[3px] sm:text-sm dark:bg-input/32 dark:has-aria-invalid:ring-destructive/24 dark:not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]",
-          className
-        ) || undefined
-      }
-      data-size={size}
-      data-slot="input-control"
-    >
-      <InputPrimitive
-        className={cn(
-          "h-8.5 w-full min-w-0 rounded-[inherit] px-[calc(--spacing(3)-1px)] leading-8.5 outline-none placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5",
-          size === "sm" &&
-            "h-7.5 px-[calc(--spacing(2.5)-1px)] leading-7.5 sm:h-6.5 sm:leading-6.5",
-          size === "lg" && "h-9.5 leading-9.5 sm:h-8.5 sm:leading-8.5",
-          props.type === "search" &&
-            "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-results-decoration]:appearance-none",
-          props.type === "file" &&
-            "text-muted-foreground file:me-3 file:bg-transparent file:font-medium file:text-foreground file:text-sm"
-        )}
-        data-slot="input"
-        size={typeof size === "number" ? size : undefined}
-        {...props}
-      />
-    </span>
-  );
+const inputVariants = cva(
+  [
+    inputBaseStyles,
+    "[&::--webkit-search-cancel-button]:hidden [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
+  ],
+  {
+    variants: {
+      size: {
+        base: "txt-compact-small h-8 px-2 py-1.5",
+        small: "txt-compact-small h-7 px-2 py-1",
+      },
+    },
+    defaultVariants: {
+      size: "base",
+    },
+  }
+);
+
+interface InputProps
+  extends VariantProps<typeof inputVariants>,
+    Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  ref?: React.Ref<HTMLInputElement>;
 }
 
-export { Input, type InputProps };
+/**
+ * This component is based on the `input` element and supports all of its props
+ */
+const Input = ({
+  className,
+  type,
+  /**
+   * The input's size.
+   */
+  size = "base",
+  ref,
+  ...props
+}: InputProps) => {
+  const [typeState, setTypeState] = React.useState(type);
+
+  const isPassword = type === "password";
+  const isSearch = type === "search";
+
+  return (
+    <div className="relative w-full">
+      <input
+        className={cn(
+          inputVariants({ size }),
+          {
+            "pl-8": isSearch && size === "base",
+            "pr-8": isPassword && size === "base",
+            "pl-7": isSearch && size === "small",
+            "pr-7": isPassword && size === "small",
+          },
+          className
+        )}
+        ref={ref}
+        type={isPassword ? typeState : type}
+        {...props}
+      />
+      {isSearch && (
+        <div
+          className={cn(
+            "pointer-events-none absolute bottom-0 left-0 flex items-center justify-center text-ui-fg-muted [&_svg]:size-4",
+            {
+              "h-8 w-8": size === "base",
+              "h-7 w-7": size === "small",
+            }
+          )}
+          role="img"
+        >
+          <RiSearchLine />
+        </div>
+      )}
+      {isPassword && (
+        <div
+          className={cn(
+            "absolute right-0 bottom-0 flex items-center justify-center border-l",
+            {
+              "h-8 w-8": size === "base",
+              "h-7 w-7": size === "small",
+            }
+          )}
+        >
+          <button
+            className="h-fit w-fit rounded-sm text-ui-fg-muted outline-none transition-all hover:text-ui-fg-base focus-visible:text-ui-fg-base focus-visible:shadow-borders-interactive-w-focus active:text-ui-fg-base [&_svg]:size-4"
+            onClick={() => {
+              setTypeState(typeState === "password" ? "text" : "password");
+            }}
+            type="button"
+          >
+            <span className="sr-only">
+              {typeState === "password" ? "Show password" : "Hide password"}
+            </span>
+            {typeState === "password" ? <RiEyeLine /> : <RiEyeOffLine />}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+Input.displayName = "Input";
+
+export { Input, inputBaseStyles, type InputProps };

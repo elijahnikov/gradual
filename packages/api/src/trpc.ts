@@ -20,6 +20,7 @@ export const createTRPCContext = async (opts: {
     authApi,
     session,
     db,
+    headers: opts.headers,
   };
 };
 
@@ -56,8 +57,10 @@ export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
 export const protectedOrganizationProcedure = (
   roles: OrganizationRole[] = []
 ) => {
-  return protectedProcedure.use(async ({ ctx, input, next }) => {
-    const organizationId = (input as { organizationId?: string })
+  return protectedProcedure.use(async (opts) => {
+    const { ctx, next } = opts;
+    const rawInput = await opts.getRawInput();
+    const organizationId = (rawInput as { organizationId?: string })
       ?.organizationId;
 
     if (!organizationId) {

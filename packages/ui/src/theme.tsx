@@ -165,8 +165,8 @@ export function ThemeToggle() {
       <DropdownMenuTrigger
         render={
           <Button
-            className="[&>svg]:absolute [&>svg]:size-4 [&>svg]:scale-0"
-            size="icon-sm"
+            className="size-6 [&>svg]:absolute [&>svg]:size-4 [&>svg]:scale-0"
+            // size="small"
             variant="outline"
           />
         }

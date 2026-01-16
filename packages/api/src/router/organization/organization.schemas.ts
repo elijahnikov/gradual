@@ -8,12 +8,17 @@ export const getOrgnizationByIdSchema = z.object({
 });
 
 export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>;
-export const createOrganizationSchema = createInsertSchema(organization).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
-});
+export const createOrganizationSchema = createInsertSchema(organization)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    deletedAt: true,
+    createdById: true,
+  })
+  .extend({
+    setAsDefault: z.boolean().optional(),
+  });
 
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
 export const updateOrganizationSchema = createUpdateSchema(organization)

@@ -30,10 +30,23 @@ export function initAuth<
     },
     baseURL: options.baseUrl,
     secret: options.secret,
-    session: {
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60,
+    user: {
+      additionalFields: {
+        hasOnboarded: {
+          type: "boolean",
+          defaultValue: false,
+          required: true,
+        },
+        onboardingStep: {
+          type: "number",
+          defaultValue: 0,
+          required: true,
+        },
+        defaultOrganizationId: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+        },
       },
     },
     plugins: [

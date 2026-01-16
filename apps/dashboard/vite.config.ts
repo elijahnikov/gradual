@@ -23,4 +23,10 @@ export default defineConfig({
     viteReact(),
     tailwindcss(),
   ],
+  ssr: {
+    noExternal: ["react-use"],
+  },
+  optimizeDeps: {
+    include: ["react-use"],
+  },
 });

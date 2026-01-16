@@ -1,4 +1,5 @@
-import { authRouter } from "./router/auth";
+import { apiKeyRouter } from "./router/api-key/api-key.router";
+import { authRouter } from "./router/auth/auth.router";
 import { organizationRouter } from "./router/organization/organization.router";
 import { projectRouter } from "./router/project/project.router";
 import { createTRPCRouter } from "./trpc";
@@ -7,6 +8,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   organization: organizationRouter,
   project: projectRouter,
+  apiKey: apiKeyRouter,
 });
 
 export type AppRouter = typeof appRouter;
