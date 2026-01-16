@@ -26,4 +26,7 @@ export default defineConfig({
   ssr: {
     noExternal: ["react-use"],
   },
+  optimizeDeps: {
+    include: ["react-use"],
+  },
 });

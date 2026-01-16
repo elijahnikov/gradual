@@ -124,10 +124,6 @@ export function CreateOrgStep({
           trpc.organization.getAllByUserId.pathFilter()
         );
 
-        if (value.teamMembers && value.teamMembers.length > 0) {
-          console.log("Team members to invite:", value.teamMembers);
-        }
-
         onComplete(organization.id, project.id, organization.slug);
       } catch (err) {
         toastManager.add({
@@ -611,10 +607,10 @@ export function CreateOrgStep({
         <LoadingButton
           className="w-full text-[13px]"
           disabled={
-            (!form.state.canSubmit ||
-              isSubmitting ||
-              isLoading ||
-              !isFormValid) &&
+            !form.state.canSubmit ||
+            isSubmitting ||
+            isLoading ||
+            !isFormValid ||
             slugAvailabilityStatus !== "available"
           }
           loading={isSubmitting || isLoading}

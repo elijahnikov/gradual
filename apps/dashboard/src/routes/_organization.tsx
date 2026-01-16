@@ -10,7 +10,6 @@ export const Route = createFileRoute("/_organization")({
 });
 
 function RouteComponent() {
-  console.log("RouteComponent");
   return (
     <GlobalOrganizationLayout>
       <Outlet />

@@ -54,7 +54,7 @@ interface GettingStartedStepProps {
 
 const gettingStartedSchema = z.object({
   username: z.string().min(1, "Display name is required"),
-  avatarUrl: z.url(),
+  avatarUrl: z.union([z.string().url(), z.undefined()]),
   jobRole: z.union([z.string(), z.undefined()]),
 });
 
@@ -97,11 +97,17 @@ export function GettingStartedStep({
   const form = useForm({
     defaultValues: {
       username: session?.user?.name || "",
-      avatarUrl: session?.user?.image || "",
+      avatarUrl: session?.user?.image || undefined,
       jobRole: undefined as string | undefined,
     },
     validators: {
-      onSubmit: gettingStartedSchema,
+      onSubmit: ({ value }) => {
+        const result = gettingStartedSchema.safeParse(value);
+        if (!result.success) {
+          return z.treeifyError(result.error);
+        }
+        return undefined;
+      },
     },
     onSubmit: async ({ value }) => {
       setIsSubmitting(true);
@@ -131,7 +137,6 @@ export function GettingStartedStep({
           name: value.username,
           image: avatarUrl,
         });
-        onComplete();
       } catch (error) {
         console.error("Error updating user:", error);
       } finally {
@@ -224,9 +229,11 @@ export function GettingStartedStep({
                       if (
                         error &&
                         typeof error === "object" &&
-                        "message" in error
+                        "message" in error &&
+                        typeof (error as { message: unknown }).message ===
+                          "string"
                       ) {
-                        return String(error.message);
+                        return (error as { message: string }).message;
                       }
                       return String(error);
                     })

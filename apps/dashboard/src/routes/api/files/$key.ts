@@ -1,10 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { auth } from "@/auth/server";
 import { getSignedUrlForDownload } from "@/lib/utils/r2";
 
 export const Route = createFileRoute("/api/files/$key")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
+        const session = await auth.api.getSession({
+          headers: request.headers,
+        });
+
+        if (!session?.user) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
         const { key } = params;
 
         try {

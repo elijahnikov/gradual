@@ -116,7 +116,7 @@ if (isEnabled) {
           </FieldDescription>
         </Field>
         <Card className="relative mt-1 flex min-h-12 items-center gap-2 rounded-lg bg-ui-bg-base px-3 py-2 font-mono text-sm">
-          {isLoadingApiKey ? (
+          {isLoadingApiKey && !data ? (
             <Skeleton className="h-4 w-full" />
           ) : (
             <div>
