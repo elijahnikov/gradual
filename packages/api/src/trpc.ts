@@ -70,27 +70,51 @@ export const protectedOrganizationProcedure = (
   return protectedProcedure.use(async (opts) => {
     const { ctx, next } = opts;
     const rawInput = await opts.getRawInput();
-    const organizationId = (rawInput as { organizationId?: string })
-      ?.organizationId;
+    const input = rawInput as {
+      organizationId?: string;
+      organizationSlug?: string;
+    };
 
-    if (!organizationId) {
+    let org: InferSelectModel<typeof organization> | undefined;
+    let organizationId: string | undefined;
+
+    if (input.organizationId) {
+      organizationId = input.organizationId;
+      org = await ctx.db
+        .select()
+        .from(organization)
+        .where(and(eq(organization.id, organizationId)))
+        .limit(1)
+        .then((results) => results[0]);
+    } else if (input.organizationSlug) {
+      org = await ctx.db
+        .select()
+        .from(organization)
+        .where(and(eq(organization.slug, input.organizationSlug)))
+        .limit(1)
+        .then((results) => results[0]);
+
+      if (org) {
+        organizationId = org.id;
+      }
+    } else {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "organizationId is required",
+        message: "organizationId or organizationSlug is required",
       });
     }
-
-    const org = await ctx.db
-      .select()
-      .from(organization)
-      .where(and(eq(organization.id, organizationId)))
-      .limit(1)
-      .then((results) => results[0]);
 
     if (!org) {
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "Organization not found",
+      });
+    }
+
+    if (!organizationId) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to resolve organization ID",
       });
     }
 

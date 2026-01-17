@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_organization/$organizationSlug")({
     try {
       const organization = await queryClient.ensureQueryData(
         trpc.organization.getBySlug.queryOptions({
-          slug: organizationSlug as string,
+          organizationSlug: organizationSlug as string,
         })
       );
       return { organization };

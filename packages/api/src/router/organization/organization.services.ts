@@ -33,7 +33,7 @@ export const getOrganizationBySlug = async ({
 }) => {
   const foundOrganization = await ctx.authApi.getFullOrganization({
     query: {
-      organizationSlug: input.slug,
+      organizationSlug: input.organizationSlug,
     },
     headers: ctx.headers,
   });
