@@ -4,25 +4,25 @@ import * as schemas from "./organization-member.schemas";
 import * as services from "./organization-member.services";
 
 export const organizationMemberRouter = {
-  create: protectedOrganizationProcedure(["owner", "admin"])
+  create: protectedOrganizationProcedure({ members: ["invite"] })
     .input(schemas.createOrganizationMemberSchema)
     .mutation((opts) => {
       return services.createOrganizationMember({ ...opts });
     }),
 
-  getMembers: protectedOrganizationProcedure()
+  getMembers: protectedOrganizationProcedure({ members: ["read"] })
     .input(schemas.getOrganizationMembersSchema)
     .query((opts) => {
       return services.getOrganizationMembers({ ...opts });
     }),
 
-  delete: protectedOrganizationProcedure(["owner", "admin"])
+  delete: protectedOrganizationProcedure({ members: ["remove"] })
     .input(schemas.removeOrganizationMemberSchema)
     .mutation((opts) => {
       return services.removeOrganizationMember({ ...opts });
     }),
 
-  updateMemberRole: protectedOrganizationProcedure(["owner", "admin"])
+  updateMemberRole: protectedOrganizationProcedure({ members: ["update"] })
     .input(schemas.updateMemberRoleSchema)
     .mutation((opts) => {
       return services.updateMemberRole({ ...opts });

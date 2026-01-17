@@ -1,25 +1,19 @@
 import { createInsertSchema, createSelectSchema } from "@gradual/db";
-import { organizationMember } from "@gradual/db/schema";
+import { member } from "@gradual/db/schema";
 import z from "zod/v4";
 
 export type CreateOrganizationMemberInput = z.infer<
   typeof createOrganizationMemberSchema
 >;
-export const createOrganizationMemberSchema = createInsertSchema(
-  organizationMember
-).omit({
+export const createOrganizationMemberSchema = createInsertSchema(member).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
 });
 
 export type GetOrganizationMembersInput = z.infer<
   typeof getOrganizationMembersSchema
 >;
-export const getOrganizationMembersSchema = createSelectSchema(
-  organizationMember
-)
+export const getOrganizationMembersSchema = createSelectSchema(member)
   .pick({ organizationId: true })
   .extend({
     orderDirection: z.enum(["asc", "desc"]).optional().default("asc"),
@@ -34,11 +28,15 @@ export const getOrganizationMembersSchema = createSelectSchema(
 export type RemoveOrganizationMemberInput = z.infer<
   typeof removeOrganizationMemberSchema
 >;
-export const removeOrganizationMemberSchema = createSelectSchema(
-  organizationMember
-).pick({ id: true, organizationId: true });
+export const removeOrganizationMemberSchema = createSelectSchema(member).pick({
+  id: true,
+  organizationId: true,
+});
 
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>;
-export const updateMemberRoleSchema = createSelectSchema(
-  organizationMember
-).pick({ id: true, organizationId: true, role: true });
+export const updateMemberRoleSchema = createSelectSchema(member).pick({
+  id: true,
+  organizationId: true,
+  role: true,
+  userId: true,
+});

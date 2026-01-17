@@ -5,27 +5,25 @@ import * as schemas from "./api-key.schemas";
 import * as services from "./api-key.services";
 
 export const apiKeyRouter = {
-  create: protectedOrganizationProcedure(["owner", "admin"])
+  create: protectedOrganizationProcedure({ apiKeys: ["create"] })
     .input(schemas.createApiKeySchema)
     .mutation((opts) => services.createApiKey({ ...opts })),
 
-  getByOrganizationIdAndProjectId: protectedOrganizationProcedure([
-    "owner",
-    "admin",
-  ])
+  getByOrganizationIdAndProjectId: protectedOrganizationProcedure({
+    apiKeys: ["read"],
+  })
     .input(schemas.getApiKeyByOrganizationIdAndProjectIdSchema)
     .query((opts) =>
       services.getApiKeyByOrganizationIdAndProjectId({ ...opts })
     ),
 
-  revoke: protectedOrganizationProcedure(["owner", "admin"])
+  revoke: protectedOrganizationProcedure({ apiKeys: ["delete"] })
     .input(schemas.revokeApiKeySchema)
     .mutation((opts) => services.revokeApiKey({ ...opts })),
 
-  listByOrganizationIdAndProjectId: protectedOrganizationProcedure([
-    "owner",
-    "admin",
-  ])
+  listByOrganizationIdAndProjectId: protectedOrganizationProcedure({
+    apiKeys: ["read"],
+  })
     .input(schemas.listApiKeysByOrganizationIdAndProjectIdSchema)
     .query((opts) =>
       services.listApiKeysByOrganizationIdAndProjectId({ ...opts })

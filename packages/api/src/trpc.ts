@@ -1,10 +1,9 @@
 import type { Auth } from "@gradual/auth";
 import { and, eq } from "@gradual/db";
 import { db } from "@gradual/db/client";
-import { organization, organizationMember } from "@gradual/db/schema";
+import { member, organization } from "@gradual/db/schema";
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { InferSelectModel } from "drizzle-orm";
-import { isNull } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError, z } from "zod/v4";
 
@@ -54,30 +53,56 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
+
+interface PermissionCheck {
+  organization?: ("read" | "update" | "delete")[];
+  project?: ("read" | "create" | "update" | "delete")[];
+  members?: ("read" | "invite" | "remove" | "update")[];
+  flags?: ("read" | "create" | "update" | "delete")[];
+  environments?: ("read" | "create" | "update" | "delete")[];
+  segments?: ("read" | "create" | "update" | "delete")[];
+  apiKeys?: ("read" | "create" | "update" | "delete")[];
+}
+
 export const protectedOrganizationProcedure = (
-  roles: OrganizationRole[] = []
+  permissions?: PermissionCheck
 ) => {
   return protectedProcedure.use(async (opts) => {
     const { ctx, next } = opts;
     const rawInput = await opts.getRawInput();
-    const organizationId = (rawInput as { organizationId?: string })
-      ?.organizationId;
+    const input = rawInput as {
+      organizationId?: string;
+      organizationSlug?: string;
+    };
 
-    if (!organizationId) {
+    let org: InferSelectModel<typeof organization> | undefined;
+    let organizationId: string | undefined;
+
+    if (input.organizationId) {
+      organizationId = input.organizationId;
+      org = await ctx.db
+        .select()
+        .from(organization)
+        .where(and(eq(organization.id, organizationId)))
+        .limit(1)
+        .then((results) => results[0]);
+    } else if (input.organizationSlug) {
+      org = await ctx.db
+        .select()
+        .from(organization)
+        .where(and(eq(organization.slug, input.organizationSlug)))
+        .limit(1)
+        .then((results) => results[0]);
+
+      if (org) {
+        organizationId = org.id;
+      }
+    } else {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "organizationId is required",
+        message: "organizationId or organizationSlug is required",
       });
     }
-
-    const org = await ctx.db
-      .select()
-      .from(organization)
-      .where(
-        and(eq(organization.id, organizationId), isNull(organization.deletedAt))
-      )
-      .limit(1)
-      .then((results) => results[0]);
 
     if (!org) {
       throw new TRPCError({
@@ -86,38 +111,60 @@ export const protectedOrganizationProcedure = (
       });
     }
 
-    const member = await ctx.db
+    if (!organizationId) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to resolve organization ID",
+      });
+    }
+
+    const memberData = await ctx.db
       .select()
-      .from(organizationMember)
+      .from(member)
       .where(
         and(
-          eq(organizationMember.organizationId, organizationId),
-          eq(organizationMember.userId, ctx.session.user.id),
-          isNull(organizationMember.deletedAt)
+          eq(member.organizationId, organizationId),
+          eq(member.userId, ctx.session.user.id)
         )
       )
       .limit(1)
       .then((results) => results[0]);
 
-    if (!member) {
+    if (!memberData) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You are not a member of this organization",
       });
     }
 
-    if (roles.length > 0 && !roles.includes(member.role as OrganizationRole)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `You must have one of the following roles: ${roles.join(", ")}. Your current role is: ${member.role}`,
+    if (permissions) {
+      const permissionResult = await ctx.authApi.hasPermission({
+        headers: ctx.headers,
+        body: {
+          organizationId,
+          permissions,
+        },
       });
+
+      const hasPermission =
+        typeof permissionResult === "object" && "success" in permissionResult
+          ? permissionResult.success
+          : Boolean(permissionResult);
+
+      if (!hasPermission) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "You do not have the required permissions to perform this action",
+        });
+      }
     }
 
     return next({
       ctx: {
         ...ctx,
         organization: org,
-        organizationMember: member,
+        organizationMember: memberData,
       },
     });
   });
@@ -133,5 +180,5 @@ export type ProtectedTRPCContext = Awaited<
 
 export type ProtectedOrganizationTRPCContext = ProtectedTRPCContext & {
   organization: InferSelectModel<typeof organization>;
-  organizationMember: InferSelectModel<typeof organizationMember>;
+  organizationMember: InferSelectModel<typeof member>;
 };

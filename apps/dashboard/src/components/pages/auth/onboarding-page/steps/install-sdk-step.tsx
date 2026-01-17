@@ -95,7 +95,7 @@ if (isEnabled) {
               <TabsPanel key={packageManager} value={packageManager}>
                 <Card className="flex items-center gap-2 rounded-lg bg-ui-bg-base px-3 py-2 font-mono text-sm">
                   <Text
-                    className="flex-1 font-mono font-semibold text-ui-fg-base text-xs"
+                    className="flex-1 font-medium font-mono text-ui-fg-base text-xs"
                     weight={"plus"}
                   >
                     {selectedInstallCommand}
@@ -120,7 +120,7 @@ if (isEnabled) {
             <Skeleton className="h-4 w-full" />
           ) : (
             <div>
-              <Text className="font-mono font-semibold text-ui-fg-base text-xs">
+              <Text className="font-medium font-mono text-ui-fg-base text-xs">
                 GRADUAL_API_KEY=
                 {showApiKey
                   ? data?.key
@@ -167,7 +167,7 @@ if (isEnabled) {
                   </div>
                 ))}
               </div>
-              <code className="flex-1 font-semibold text-ui-fg-base text-xs">
+              <code className="flex-1 font-medium text-ui-fg-base text-xs">
                 {codeLines.map((line, i) => (
                   <div className="whitespace-pre leading-normal" key={i}>
                     {line || "\u00A0"}
