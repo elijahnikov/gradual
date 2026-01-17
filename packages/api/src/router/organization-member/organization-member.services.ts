@@ -1,5 +1,5 @@
-import { and, eq, isNull } from "@gradual/db";
-import { organizationMember } from "@gradual/db/schema";
+import { and, eq } from "@gradual/db";
+import { member } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
@@ -17,12 +17,20 @@ export const createOrganizationMember = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateOrganizationMemberInput;
 }) => {
-  const [createdOrganizationMember] = await ctx.db
-    .insert(organizationMember)
-    .values(input)
-    .returning();
-
-  return createdOrganizationMember;
+  const createdMember = await ctx.authApi.addMember({
+    body: {
+      userId: input.userId,
+      role: input.role as "member" | "admin" | "owner",
+      organizationId: input.organizationId,
+    },
+  });
+  if (!createdMember) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to create member",
+    });
+  }
+  return createdMember;
 };
 
 export const getOrganizationMembers = async ({
@@ -32,30 +40,17 @@ export const getOrganizationMembers = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: GetOrganizationMembersInput;
 }) => {
-  const organizationMembers = await ctx.db.query.organizationMember.findMany({
-    where: (organizationMember, { eq }) =>
-      and(
-        eq(organizationMember.organizationId, input.organizationId),
-        isNull(organizationMember.deletedAt)
-      ),
-    with: {
-      user: {
-        columns: {
-          id: true,
-          email: true,
-          image: true,
-          name: true,
-          createdAt: true,
-        },
-      },
+  const members = await ctx.authApi.listMembers({
+    query: {
+      organizationId: input.organizationId,
+      limit: 100,
+      offset: 0,
+      sortBy: input.orderBy,
+      sortDirection: input.orderDirection,
     },
-    limit: input.limit,
+    headers: ctx.headers,
   });
-
-  return organizationMembers.map((member) => ({
-    ...member,
-    permissions: calculateMemberPermissions(ctx.organizationMember, member),
-  }));
+  return members;
 };
 
 export const removeOrganizationMember = async ({
@@ -67,12 +62,11 @@ export const removeOrganizationMember = async ({
 }) => {
   const [memberToRemove] = await ctx.db
     .select()
-    .from(organizationMember)
+    .from(member)
     .where(
       and(
-        eq(organizationMember.id, input.id),
-        eq(organizationMember.organizationId, input.organizationId),
-        isNull(organizationMember.deletedAt)
+        eq(member.id, input.id),
+        eq(member.organizationId, input.organizationId)
       )
     )
     .limit(1);
@@ -87,12 +81,11 @@ export const removeOrganizationMember = async ({
   if (memberToRemove.role === "owner") {
     const owners = await ctx.db
       .select()
-      .from(organizationMember)
+      .from(member)
       .where(
         and(
-          eq(organizationMember.organizationId, input.organizationId),
-          eq(organizationMember.role, "owner"),
-          isNull(organizationMember.deletedAt)
+          eq(member.organizationId, input.organizationId),
+          eq(member.role, "owner")
         )
       );
 
@@ -116,14 +109,22 @@ export const removeOrganizationMember = async ({
     });
   }
 
-  await ctx.db
-    .update(organizationMember)
-    .set({
-      deletedAt: new Date(),
-    })
-    .where(eq(organizationMember.id, input.id));
+  const removedMember = await ctx.authApi.removeMember({
+    body: {
+      memberIdOrEmail: memberToRemove.userId,
+      organizationId: input.organizationId,
+    },
+    headers: ctx.headers,
+  });
 
-  return { success: true };
+  if (!removedMember) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to remove member",
+    });
+  }
+
+  return removedMember;
 };
 
 export const updateMemberRole = async ({
@@ -136,12 +137,11 @@ export const updateMemberRole = async ({
   const currentUser = ctx.organizationMember;
   const [memberToUpdate] = await ctx.db
     .select()
-    .from(organizationMember)
+    .from(member)
     .where(
       and(
-        eq(organizationMember.id, input.id),
-        eq(organizationMember.organizationId, input.organizationId),
-        isNull(organizationMember.deletedAt)
+        eq(member.id, input.id),
+        eq(member.organizationId, input.organizationId)
       )
     );
 
@@ -156,12 +156,11 @@ export const updateMemberRole = async ({
   if (memberToUpdate.role === "owner" && input.role !== "owner") {
     const owners = await ctx.db
       .select()
-      .from(organizationMember)
+      .from(member)
       .where(
         and(
-          eq(organizationMember.organizationId, input.organizationId),
-          eq(organizationMember.role, "owner"),
-          isNull(organizationMember.deletedAt)
+          eq(member.organizationId, input.organizationId),
+          eq(member.role, "owner")
         )
       );
 
@@ -186,9 +185,9 @@ export const updateMemberRole = async ({
   }
 
   const [updatedMember] = await ctx.db
-    .update(organizationMember)
+    .update(member)
     .set({ role: input.role })
-    .where(eq(organizationMember.id, input.id))
+    .where(eq(member.id, input.id))
     .returning();
 
   return updatedMember;

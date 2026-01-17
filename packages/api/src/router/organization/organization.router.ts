@@ -11,25 +11,25 @@ export const organizationRouter = {
       return services.createOrganization({ ...opts });
     }),
 
-  getById: protectedOrganizationProcedure()
+  getById: protectedOrganizationProcedure({ organization: ["read"] })
     .input(schemas.getOrgnizationByIdSchema)
     .query(({ ctx }) => {
       return services.getOrganizationById({ ctx });
     }),
 
-  getBySlug: protectedProcedure
+  getBySlug: protectedOrganizationProcedure({ organization: ["read"] })
     .input(schemas.getOrganizationBySlugSchema)
     .query((opts) => {
       return services.getOrganizationBySlug({ ...opts });
     }),
 
-  update: protectedOrganizationProcedure(["admin", "owner"])
+  update: protectedOrganizationProcedure({ organization: ["update"] })
     .input(schemas.updateOrganizationSchema)
     .mutation((opts) => {
       return services.updateOrganization({ ...opts });
     }),
 
-  delete: protectedOrganizationProcedure(["owner"])
+  delete: protectedOrganizationProcedure({ organization: ["delete"] })
     .input(schemas.deleteOrganizationSchema)
     .mutation((opts) => {
       return services.deleteOrganization({ ...opts });

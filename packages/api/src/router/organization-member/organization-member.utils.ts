@@ -1,12 +1,11 @@
-import type {
-  organizationMember,
-  organizationMemberRoleEnum,
-} from "@gradual/db/schema";
+import type { member } from "@gradual/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
+import z from "zod/v4";
 
-export type MemberRole = (typeof organizationMemberRoleEnum.enumValues)[number];
+const memberRoleEnum = z.enum(["member", "admin", "owner"]);
+export type MemberRole = (typeof memberRoleEnum.options)[number];
 
-export type OrganizationMember = InferSelectModel<typeof organizationMember>;
+export type Member = InferSelectModel<typeof member>;
 
 export interface MemberPermissions {
   canDelete: boolean;
@@ -14,8 +13,8 @@ export interface MemberPermissions {
 }
 
 export const calculateMemberPermissions = (
-  currentMember: OrganizationMember,
-  targetMember: OrganizationMember
+  currentMember: Member,
+  targetMember: Member
 ): MemberPermissions => {
   const currentUserRole = currentMember.role as MemberRole;
   const targetMemberRole = targetMember.role as MemberRole;

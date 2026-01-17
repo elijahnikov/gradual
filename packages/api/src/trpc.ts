@@ -53,8 +53,19 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
+
+interface PermissionCheck {
+  organization?: ("read" | "update" | "delete")[];
+  project?: ("read" | "create" | "update" | "delete")[];
+  members?: ("read" | "invite" | "remove" | "update")[];
+  flags?: ("read" | "create" | "update" | "delete")[];
+  environments?: ("read" | "create" | "update" | "delete")[];
+  segments?: ("read" | "create" | "update" | "delete")[];
+  apiKeys?: ("read" | "create" | "update" | "delete")[];
+}
+
 export const protectedOrganizationProcedure = (
-  roles: OrganizationRole[] = []
+  permissions?: PermissionCheck
 ) => {
   return protectedProcedure.use(async (opts) => {
     const { ctx, next } = opts;
@@ -102,14 +113,26 @@ export const protectedOrganizationProcedure = (
       });
     }
 
-    if (
-      roles.length > 0 &&
-      !roles.includes(memberData.role as OrganizationRole)
-    ) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `You must have one of the following roles: ${roles.join(", ")}. Your current role is: ${member.role}`,
+    if (permissions) {
+      const permissionResult = await ctx.authApi.hasPermission({
+        headers: ctx.headers,
+        body: {
+          permissions,
+        },
       });
+
+      const hasPermission =
+        typeof permissionResult === "object" && "success" in permissionResult
+          ? permissionResult.success
+          : Boolean(permissionResult);
+
+      if (!hasPermission) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "You do not have the required permissions to perform this action",
+        });
+      }
     }
 
     return next({
