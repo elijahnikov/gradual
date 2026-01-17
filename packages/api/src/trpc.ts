@@ -117,6 +117,7 @@ export const protectedOrganizationProcedure = (
       const permissionResult = await ctx.authApi.hasPermission({
         headers: ctx.headers,
         body: {
+          organizationId,
           permissions,
         },
       });

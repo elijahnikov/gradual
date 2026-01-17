@@ -34,6 +34,7 @@ export type GetOrganizationBySlugInput = z.infer<
 >;
 export const getOrganizationBySlugSchema = z.object({
   slug: z.string(),
+  organizationId: z.uuid(),
 });
 
 export type CheckSlugAvailabilityInput = z.infer<

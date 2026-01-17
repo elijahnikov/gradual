@@ -50,7 +50,12 @@ export const getOrganizationMembers = async ({
     },
     headers: ctx.headers,
   });
-  return members;
+
+  const membersWithPermissions = members.members.map((member) => ({
+    ...member,
+    permissions: calculateMemberPermissions(ctx.organizationMember, member),
+  }));
+  return membersWithPermissions;
 };
 
 export const removeOrganizationMember = async ({
@@ -152,7 +157,6 @@ export const updateMemberRole = async ({
     });
   }
 
-  // Prevent demoting the last owner
   if (memberToUpdate.role === "owner" && input.role !== "owner") {
     const owners = await ctx.db
       .select()
