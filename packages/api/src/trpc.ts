@@ -116,7 +116,7 @@ export const protectedOrganizationProcedure = (
       ctx: {
         ...ctx,
         organization: org,
-        organizationMember: member,
+        organizationMember: memberData,
       },
     });
   });

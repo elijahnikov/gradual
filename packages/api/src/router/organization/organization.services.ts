@@ -71,15 +71,6 @@ export const createOrganization = async ({
     });
   }
 
-  await ctx.authApi.addMember({
-    body: {
-      userId: currentUser.id,
-      role: "owner",
-      organizationId: createdOrganization.id,
-      teamId: "team-id",
-    },
-  });
-
   return createdOrganization;
 };
 
