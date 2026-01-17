@@ -12,7 +12,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
 export * from "./auth-schema";
 
@@ -77,62 +77,32 @@ export const flagDependencyTypeEnum = pgEnum("flag_dependency_type", [
   "conflicts",
 ]);
 
-export const organization = pgTable(
-  "organization",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    createdById: uuid("created_by_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: varchar("name", { length: 256 }).notNull(),
-    slug: varchar("slug", { length: 256 }).notNull().unique(),
-    description: text("description"),
-    logoUrl: text("logo_url"),
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("organization_created_by_id_idx").on(table.createdById),
-    index("organization_slug_idx").on(table.slug),
-    index("organization_deleted_at_idx").on(table.deletedAt),
-  ]
-);
-
-export const organizationMember = pgTable(
-  "organization_member",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    organizationId: uuid("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    role: organizationMemberRoleEnum("role").notNull().default("member"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("organization_member_org_user_idx").on(
-      table.organizationId,
-      table.userId
-    ),
-    index("organization_member_user_idx").on(table.userId),
-    index("organization_member_org_idx").on(table.organizationId),
-  ]
-);
+// export const organization = pgTable(
+//   "organization",
+//   {
+//     id: uuid("id").notNull().primaryKey().defaultRandom(),
+//     createdById: uuid("created_by_id")
+//       .notNull()
+//       .references(() => user.id, { onDelete: "cascade" }),
+//     name: varchar("name", { length: 256 }).notNull(),
+//     slug: varchar("slug", { length: 256 }).notNull().unique(),
+//     description: text("description"),
+//     logoUrl: text("logo_url"),
+//     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+//     createdAt: timestamp("created_at", { withTimezone: true })
+//       .defaultNow()
+//       .notNull(),
+//     updatedAt: timestamp("updated_at", { withTimezone: true })
+//       .defaultNow()
+//       .$onUpdate(() => new Date())
+//       .notNull(),
+//   },
+//   (table) => [
+//     index("organization_created_by_id_idx").on(table.createdById),
+//     index("organization_slug_idx").on(table.slug),
+//     index("organization_deleted_at_idx").on(table.deletedAt),
+//   ]
+// );
 
 export const project = pgTable(
   "project",
@@ -822,7 +792,6 @@ export const auditLog = pgTable(
 
 // Relations
 export const organizationRelations = relations(organization, ({ many }) => ({
-  members: many(organizationMember),
   projects: many(project),
   environments: many(environment),
   featureFlags: many(featureFlag),
@@ -830,20 +799,6 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   apiKeys: many(apiKey),
   auditLogs: many(auditLog),
 }));
-
-export const organizationMemberRelations = relations(
-  organizationMember,
-  ({ one }) => ({
-    organization: one(organization, {
-      fields: [organizationMember.organizationId],
-      references: [organization.id],
-    }),
-    user: one(user, {
-      fields: [organizationMember.userId],
-      references: [user.id],
-    }),
-  })
-);
 
 export const projectRelations = relations(project, ({ one, many }) => ({
   organization: one(organization, {

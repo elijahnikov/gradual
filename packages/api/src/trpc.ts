@@ -1,10 +1,9 @@
 import type { Auth } from "@gradual/auth";
 import { and, eq } from "@gradual/db";
 import { db } from "@gradual/db/client";
-import { organization, organizationMember } from "@gradual/db/schema";
+import { member, organization } from "@gradual/db/schema";
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { InferSelectModel } from "drizzle-orm";
-import { isNull } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError, z } from "zod/v4";
 
@@ -73,9 +72,7 @@ export const protectedOrganizationProcedure = (
     const org = await ctx.db
       .select()
       .from(organization)
-      .where(
-        and(eq(organization.id, organizationId), isNull(organization.deletedAt))
-      )
+      .where(and(eq(organization.id, organizationId)))
       .limit(1)
       .then((results) => results[0]);
 
@@ -86,27 +83,29 @@ export const protectedOrganizationProcedure = (
       });
     }
 
-    const member = await ctx.db
+    const memberData = await ctx.db
       .select()
-      .from(organizationMember)
+      .from(member)
       .where(
         and(
-          eq(organizationMember.organizationId, organizationId),
-          eq(organizationMember.userId, ctx.session.user.id),
-          isNull(organizationMember.deletedAt)
+          eq(member.organizationId, organizationId),
+          eq(member.userId, ctx.session.user.id)
         )
       )
       .limit(1)
       .then((results) => results[0]);
 
-    if (!member) {
+    if (!memberData) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You are not a member of this organization",
       });
     }
 
-    if (roles.length > 0 && !roles.includes(member.role as OrganizationRole)) {
+    if (
+      roles.length > 0 &&
+      !roles.includes(memberData.role as OrganizationRole)
+    ) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: `You must have one of the following roles: ${roles.join(", ")}. Your current role is: ${member.role}`,
@@ -133,5 +132,5 @@ export type ProtectedTRPCContext = Awaited<
 
 export type ProtectedOrganizationTRPCContext = ProtectedTRPCContext & {
   organization: InferSelectModel<typeof organization>;
-  organizationMember: InferSelectModel<typeof organizationMember>;
+  organizationMember: InferSelectModel<typeof member>;
 };

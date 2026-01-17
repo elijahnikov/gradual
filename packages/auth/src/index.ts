@@ -4,7 +4,7 @@ import { checkout, polar, portal, usage } from "@polar-sh/better-auth";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { emailOTP, oAuthProxy } from "better-auth/plugins";
+import { emailOTP, oAuthProxy, organization } from "better-auth/plugins";
 import { Resend } from "resend";
 import { authEnv } from "../env";
 import { polarClient } from "./polar";
@@ -50,6 +50,7 @@ export function initAuth<
       },
     },
     plugins: [
+      organization(),
       emailOTP({
         async sendVerificationOTP({ email, otp, type }) {
           if (type === "sign-in") {

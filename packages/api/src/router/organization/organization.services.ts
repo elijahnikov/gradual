@@ -1,7 +1,6 @@
-import { and, eq } from "@gradual/db";
-import { organization, organizationMember, user } from "@gradual/db/schema";
+import { member } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
-import { isNull, not } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type {
   ProtectedOrganizationTRPCContext,
   ProtectedTRPCContext,
@@ -32,19 +31,18 @@ export const getOrganizationBySlug = async ({
   ctx: ProtectedTRPCContext;
   input: GetOrganizationBySlugInput;
 }) => {
-  const slug = input.slug;
-  const [foundOrganization] = await ctx.db
-    .select()
-    .from(organization)
-    .where(and(eq(organization.slug, slug), isNull(organization.deletedAt)));
-
+  const foundOrganization = await ctx.authApi.getFullOrganization({
+    query: {
+      organizationSlug: input.slug,
+    },
+    headers: ctx.headers,
+  });
   if (!foundOrganization) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Organization not found",
     });
   }
-
   return foundOrganization;
 };
 
@@ -57,37 +55,32 @@ export const createOrganization = async ({
 }) => {
   const currentUser = ctx.session.user;
 
-  const result = await ctx.db.transaction(async (tx) => {
-    const [createdOrganization] = await tx
-      .insert(organization)
-      .values({
-        ...input,
-        createdById: currentUser.id,
-      })
-      .returning();
-    if (!createdOrganization) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create organization",
-      });
-    }
-    await tx.insert(organizationMember).values({
-      organizationId: createdOrganization.id,
+  const createdOrganization = await ctx.authApi.createOrganization({
+    body: {
+      name: input.name,
+      slug: input.slug,
+      userId: currentUser.id,
+      keepCurrentActiveOrganization: false,
+    },
+    headers: ctx.headers,
+  });
+  if (!createdOrganization) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to create organization",
+    });
+  }
+
+  await ctx.authApi.addMember({
+    body: {
       userId: currentUser.id,
       role: "owner",
-    });
-    if (input.setAsDefault) {
-      await tx
-        .update(user)
-        .set({
-          defaultOrganizationId: createdOrganization.id,
-        })
-        .where(eq(user.id, currentUser.id));
-    }
-    return createdOrganization;
+      organizationId: createdOrganization.id,
+      teamId: "team-id",
+    },
   });
 
-  return result;
+  return createdOrganization;
 };
 
 export const updateOrganization = async ({
@@ -97,20 +90,22 @@ export const updateOrganization = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: UpdateOrganizationInput;
 }) => {
-  const { organizationId: _, ...rest } = input;
-  const [updatedOrganization] = await ctx.db
-    .update(organization)
-    .set(rest)
-    .where(eq(organization.id, ctx.organization.id))
-    .returning();
-
+  const updatedOrganization = await ctx.authApi.updateOrganization({
+    body: {
+      data: {
+        name: input.name,
+        slug: input.slug,
+      },
+      organizationId: input.organizationId,
+    },
+    headers: ctx.headers,
+  });
   if (!updatedOrganization) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "Failed to update organization",
     });
   }
-
   return updatedOrganization;
 };
 
@@ -121,13 +116,12 @@ export const deleteOrganization = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: DeleteOrganizationInput;
 }) => {
-  const [deletedOrganization] = await ctx.db
-    .update(organization)
-    .set({
-      deletedAt: new Date(),
-    })
-    .where(eq(organization.id, input.organizationId))
-    .returning();
+  const deletedOrganization = await ctx.authApi.deleteOrganization({
+    body: {
+      organizationId: input.organizationId,
+    },
+    headers: ctx.headers,
+  });
 
   if (!deletedOrganization) {
     throw new TRPCError({
@@ -144,41 +138,26 @@ export const getAllOrganizationsByUserId = async ({
 }: {
   ctx: ProtectedTRPCContext;
 }) => {
-  const userId = ctx.session.user.id;
+  const organizations = await ctx.authApi.listOrganizations({
+    headers: ctx.headers,
+  });
 
-  const ownedOrganizations = await ctx.db
-    .select()
-    .from(organization)
-    .where(
-      and(eq(organization.createdById, userId), isNull(organization.deletedAt))
-    );
+  const organizationIds = organizations.map((organization) => organization.id);
+  const memberData = await ctx.db.query.member.findMany({
+    where: and(
+      inArray(member.organizationId, organizationIds),
+      eq(member.userId, ctx.session.user.id)
+    ),
+  });
 
-  const memberOrganizations = await ctx.db
-    .select({
-      organization,
-      member: organizationMember,
-    })
-    .from(organizationMember)
-    .innerJoin(
-      organization,
-      eq(organizationMember.organizationId, organization.id)
-    )
-    .where(
-      and(
-        eq(organizationMember.userId, userId),
-        not(eq(organization.createdById, userId)),
-        isNull(organization.deletedAt)
-      )
-    );
+  const organizationsWithMembers = organizations.map((organization) => ({
+    organization,
+    member: memberData.find(
+      (member) => member.organizationId === organization.id
+    ),
+  }));
 
-  return {
-    owned: ownedOrganizations,
-    member: memberOrganizations.map((result) => ({
-      organization: result.organization,
-      role: result.member.role,
-      joinedAt: result.member.createdAt,
-    })),
-  };
+  return organizationsWithMembers;
 };
 
 export const checkSlugAvailability = async ({
@@ -188,10 +167,10 @@ export const checkSlugAvailability = async ({
   ctx: ProtectedTRPCContext;
   input: CheckSlugAvailabilityInput;
 }) => {
-  const slug = input.slug;
-  const slugAvailability = await ctx.db
-    .select()
-    .from(organization)
-    .where(eq(organization.slug, slug));
-  return slugAvailability.length === 0;
+  const data = await ctx.authApi.checkOrganizationSlug({
+    body: {
+      slug: input.slug,
+    },
+  });
+  return data.status;
 };
