@@ -3,6 +3,7 @@ import { project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
+import { createEnvironment } from "../environment";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
@@ -37,6 +38,26 @@ export const createProject = async ({
     },
     ctx,
   });
+  await Promise.all([
+    createEnvironment({
+      input: {
+        name: "Production",
+        slug: "production",
+        organizationId: ctx.organization.id,
+        projectId: createdProject.id,
+      },
+      ctx,
+    }),
+    createEnvironment({
+      input: {
+        name: "Development",
+        slug: "development",
+        organizationId: ctx.organization.id,
+        projectId: createdProject.id,
+      },
+      ctx,
+    }),
+  ]);
   return createdProject;
 };
 

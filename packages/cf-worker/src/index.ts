@@ -97,34 +97,21 @@ function verifyAdminAuth(request: Request, env: Env): boolean {
   return token === env.CLOUDFLARE_WORKERS_ADMIN_KEY;
 }
 
-function extractApiKey(request: Request, requestUrl: URL): string | null {
-  if (request.method === "GET") {
-    return requestUrl.searchParams.get("apiKey");
-  }
-
-  return null;
-}
-
 async function handleVerifyApiKey(
   request: Request,
-  requestUrl: URL,
   env: Env
 ): Promise<Response> {
   if (!verifyAdminAuth(request, env)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  if (request.method !== "GET" && request.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+  if (request.method !== "POST") {
+    return new Response("Method not allowed. Use POST.", { status: 405 });
   }
 
   try {
-    let apiKey = extractApiKey(request, requestUrl);
-
-    if (apiKey === null && request.method === "POST") {
-      const body = (await request.json()) as { apiKey?: string };
-      apiKey = body.apiKey ?? null;
-    }
+    const body = (await request.json()) as { apiKey?: string };
+    const apiKey = body.apiKey ?? null;
 
     if (apiKey === null) {
       return new Response("Missing API key", { status: 401 });
@@ -183,7 +170,7 @@ export default {
     }
 
     if (pathname === "/api/v1/verify") {
-      return await handleVerifyApiKey(request, requestUrl, env);
+      return await handleVerifyApiKey(request, env);
     }
 
     return new Response("Not found", { status: 404 });

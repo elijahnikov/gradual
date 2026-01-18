@@ -34,14 +34,7 @@ curl -X POST "https://YOUR_WORKER_URL/api/v1/submit-api-key" \
   }'
 ```
 
-### 2. Verify API Key (GET)
-
-```bash
-curl -X GET "https://YOUR_WORKER_URL/api/v1/verify?apiKey=grdl_test123456789012345678901234567890" \
-  -H "Authorization: Bearer YOUR_ADMIN_KEY"
-```
-
-### 3. Verify API Key (POST with body)
+### 2. Verify API Key (POST)
 
 ```bash
 curl -X POST "https://YOUR_WORKER_URL/api/v1/verify" \
@@ -52,14 +45,7 @@ curl -X POST "https://YOUR_WORKER_URL/api/v1/verify" \
   }'
 ```
 
-### 4. Verify API Key (with Bearer token)
-
-```bash
-curl -X GET "https://YOUR_WORKER_URL/api/v1/verify" \
-  -H "Authorization: Bearer YOUR_ADMIN_KEY"
-```
-
-### 5. Get Snapshot
+### 3. Get Snapshot
 
 ```bash
 curl -X GET "https://YOUR_WORKER_URL/api/v1/snapshot?id=SNAPSHOT_ID" \
