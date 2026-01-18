@@ -36,7 +36,7 @@ export default function OrganizationDropdown() {
     })
   );
 
-  const { data: organizations, isLoading } = useSuspenseQuery(
+  const { data: organizations } = useSuspenseQuery(
     trpc.organization.getAllByUserId.queryOptions()
   );
 
@@ -77,53 +77,45 @@ export default function OrganizationDropdown() {
                   sideOffset={4}
                   style={{ zIndex: 100 }}
                 >
-                  {isLoading ? (
-                    <div className="p-2">
-                      <Skeleton className="h-8 w-full" />
-                    </div>
-                  ) : (
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-ui-fg-muted">
-                        My organizations
-                      </DropdownMenuLabel>
-                      {organizations?.map((organization) => (
-                        <Link
-                          key={organization.organization.id}
-                          params={{
-                            organizationSlug: organization.organization.slug,
-                          }}
-                          preload="intent"
-                          to={"/$organizationSlug"}
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-ui-fg-muted">
+                      My organizations
+                    </DropdownMenuLabel>
+                    {organizations?.map((organization) => (
+                      <Link
+                        key={organization.organization.id}
+                        params={{
+                          organizationSlug: organization.organization.slug,
+                        }}
+                        preload="intent"
+                        to={"/$organizationSlug"}
+                      >
+                        <ProjectSubmenu
+                          organizationId={organization.organization.id}
+                          organizationSlug={organization.organization.slug}
                         >
-                          <ProjectSubmenu
-                            organizationId={organization.organization.id}
-                            organizationSlug={organization.organization.slug}
+                          <div
+                            className={cn(
+                              "flex items-center gap-x-2 py-0.5",
+                              organizationParams.organizationSlug ===
+                                organization.organization.slug
+                                ? "text-ui-fg-base! [&_svg]:text-ui-fg-base!"
+                                : ""
+                            )}
                           >
-                            <div
-                              className={cn(
-                                "flex items-center gap-x-2 py-0.5",
-                                organizationParams.organizationSlug ===
-                                  organization.organization.slug
-                                  ? "text-ui-fg-base! [&_svg]:text-ui-fg-base!"
-                                  : ""
-                              )}
-                            >
-                              <OrganizationIcon
-                                icon={
-                                  organization.organization.logo ?? undefined
-                                }
-                                name={organization.organization.name}
-                                size="sm"
-                              />
-                            </div>
-                            <span className="truncate font-medium">
-                              {organization.organization.name}
-                            </span>
-                          </ProjectSubmenu>
-                        </Link>
-                      ))}
-                    </DropdownMenuGroup>
-                  )}
+                            <OrganizationIcon
+                              icon={organization.organization.logo ?? undefined}
+                              name={organization.organization.name}
+                              size="sm"
+                            />
+                          </div>
+                          <span className="truncate font-medium">
+                            {organization.organization.name}
+                          </span>
+                        </ProjectSubmenu>
+                      </Link>
+                    ))}
+                  </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

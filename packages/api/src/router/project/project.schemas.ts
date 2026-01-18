@@ -19,7 +19,6 @@ export const getProjectByIdSchema = z.object({
 export type GetProjectBySlugInput = z.infer<typeof getProjectBySlugSchema>;
 export const getProjectBySlugSchema = z.object({
   slug: z.string(),
-  organizationSlug: z.string(),
 });
 
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
