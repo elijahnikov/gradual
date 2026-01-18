@@ -25,7 +25,9 @@ import { Route as OrganizationOrganizationSlugProjectRouteRouteImport } from './
 import { Route as OrganizationOrganizationSlugProjectProjectSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/settings/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/flags/index'
+import { Route as OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/environments/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/audiences/index'
+import { Route as OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/api/index'
 
 const OrganizationRoute = OrganizationRouteImport.update({
   id: '/_organization',
@@ -112,6 +114,14 @@ const OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute =
     path: '/$projectSlug/flags/',
     getParentRoute: () => OrganizationOrganizationSlugProjectRouteRoute,
   } as any)
+const OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute =
+  OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRouteImport.update(
+    {
+      id: '/$projectSlug/environments/',
+      path: '/$projectSlug/environments/',
+      getParentRoute: () => OrganizationOrganizationSlugProjectRouteRoute,
+    } as any,
+  )
 const OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute =
   OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRouteImport.update(
     {
@@ -120,6 +130,12 @@ const OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute =
       getParentRoute: () => OrganizationOrganizationSlugProjectRouteRoute,
     } as any,
   )
+const OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute =
+  OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImport.update({
+    id: '/$projectSlug/api/',
+    path: '/$projectSlug/api/',
+    getParentRoute: () => OrganizationOrganizationSlugProjectRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -133,7 +149,9 @@ export interface FileRoutesByFullPath {
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
   '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
+  '/$organizationSlug/$projectSlug/api': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
   '/$organizationSlug/$projectSlug/audiences': typeof OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute
+  '/$organizationSlug/$projectSlug/environments': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/$organizationSlug/$projectSlug/flags': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/settings': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
 }
@@ -148,7 +166,9 @@ export interface FileRoutesByTo {
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
+  '/$organizationSlug/$projectSlug/api': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
   '/$organizationSlug/$projectSlug/audiences': typeof OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute
+  '/$organizationSlug/$projectSlug/environments': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/$organizationSlug/$projectSlug/flags': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/settings': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
 }
@@ -168,7 +188,9 @@ export interface FileRoutesById {
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
+  '/_organization/$organizationSlug/_project/$projectSlug/api/': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/audiences/': typeof OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute
+  '/_organization/$organizationSlug/_project/$projectSlug/environments/': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/flags/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/settings/': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
 }
@@ -186,7 +208,9 @@ export interface FileRouteTypes {
     | '/api/trpc/$'
     | '/$organizationSlug/'
     | '/$organizationSlug/$projectSlug'
+    | '/$organizationSlug/$projectSlug/api'
     | '/$organizationSlug/$projectSlug/audiences'
+    | '/$organizationSlug/$projectSlug/environments'
     | '/$organizationSlug/$projectSlug/flags'
     | '/$organizationSlug/$projectSlug/settings'
   fileRoutesByTo: FileRoutesByTo
@@ -201,7 +225,9 @@ export interface FileRouteTypes {
     | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug/$projectSlug'
+    | '/$organizationSlug/$projectSlug/api'
     | '/$organizationSlug/$projectSlug/audiences'
+    | '/$organizationSlug/$projectSlug/environments'
     | '/$organizationSlug/$projectSlug/flags'
     | '/$organizationSlug/$projectSlug/settings'
   id:
@@ -220,7 +246,9 @@ export interface FileRouteTypes {
     | '/api/trpc/$'
     | '/_organization/$organizationSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug/'
+    | '/_organization/$organizationSlug/_project/$projectSlug/api/'
     | '/_organization/$organizationSlug/_project/$projectSlug/audiences/'
+    | '/_organization/$organizationSlug/_project/$projectSlug/environments/'
     | '/_organization/$organizationSlug/_project/$projectSlug/flags/'
     | '/_organization/$organizationSlug/_project/$projectSlug/settings/'
   fileRoutesById: FileRoutesById
@@ -349,11 +377,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRouteImport
       parentRoute: typeof OrganizationOrganizationSlugProjectRouteRoute
     }
+    '/_organization/$organizationSlug/_project/$projectSlug/environments/': {
+      id: '/_organization/$organizationSlug/_project/$projectSlug/environments/'
+      path: '/$projectSlug/environments'
+      fullPath: '/$organizationSlug/$projectSlug/environments'
+      preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugProjectRouteRoute
+    }
     '/_organization/$organizationSlug/_project/$projectSlug/audiences/': {
       id: '/_organization/$organizationSlug/_project/$projectSlug/audiences/'
       path: '/$projectSlug/audiences'
       fullPath: '/$organizationSlug/$projectSlug/audiences'
       preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugProjectRouteRoute
+    }
+    '/_organization/$organizationSlug/_project/$projectSlug/api/': {
+      id: '/_organization/$organizationSlug/_project/$projectSlug/api/'
+      path: '/$projectSlug/api'
+      fullPath: '/$organizationSlug/$projectSlug/api'
+      preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImport
       parentRoute: typeof OrganizationOrganizationSlugProjectRouteRoute
     }
   }
@@ -373,7 +415,9 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OrganizationOrganizationSlugProjectRouteRouteChildren {
   OrganizationOrganizationSlugProjectProjectSlugIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
+  OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute
+  OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
 }
@@ -382,8 +426,12 @@ const OrganizationOrganizationSlugProjectRouteRouteChildren: OrganizationOrganiz
   {
     OrganizationOrganizationSlugProjectProjectSlugIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugIndexRoute,
+    OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute:
+      OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugAudiencesIndexRoute,
+    OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute:
+      OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute:
