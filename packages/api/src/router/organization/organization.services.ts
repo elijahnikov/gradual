@@ -71,6 +71,20 @@ export const createOrganization = async ({
     });
   }
 
+  const data = await ctx.authApi.setActiveOrganization({
+    body: {
+      organizationId: createdOrganization.id,
+    },
+    headers: ctx.headers,
+  });
+
+  if (!data) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to set active organization",
+    });
+  }
+
   return createdOrganization;
 };
 

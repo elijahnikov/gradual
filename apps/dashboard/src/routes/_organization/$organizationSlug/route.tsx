@@ -1,8 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_organization/$organizationSlug")({
   component: RouteComponent,
-  beforeLoad: async ({ params, context }) => {
+  loader: async ({ params, context }) => {
     const { organizationSlug } = params;
     const { trpc, queryClient } = context;
     try {
@@ -20,5 +20,5 @@ export const Route = createFileRoute("/_organization/$organizationSlug")({
 });
 
 function RouteComponent() {
-  return <div>Hello "/_organization/$organizationSlug"!</div>;
+  return <Outlet />;
 }

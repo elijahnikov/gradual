@@ -67,7 +67,7 @@ export function GettingStartedStep({
   const { data: session } = useSuspenseQuery(
     trpc.auth.getSession.queryOptions()
   );
-  const { mutate: updateUser } = useMutation(
+  const { mutateAsync: updateUser } = useMutation(
     trpc.auth.updateUser.mutationOptions({
       onSuccess: () => {
         onComplete();
@@ -133,7 +133,7 @@ export function GettingStartedStep({
           avatarUrl = url;
         }
 
-        updateUser({
+        await updateUser({
           name: value.username,
           image: avatarUrl,
         });

@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarProvider } from "@gradual/ui/sidebar";
-import MainSidebar from "../main-sidebar";
+import OrganizationSidebar from "../../organization-sidebar";
 
 export default function GlobalOrganizationLayout({
   children,
@@ -12,7 +12,7 @@ export default function GlobalOrganizationLayout({
       defaultOpen={true}
       open={true}
     >
-      <MainSidebar />
+      <OrganizationSidebar />
       <SidebarInset>
         <main className="h-full overflow-y-auto md:max-h-[calc(100vh-18px)]">
           {children}

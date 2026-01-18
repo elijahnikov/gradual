@@ -14,7 +14,6 @@ import { useTheme } from "@gradual/ui/theme";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
 import {
-  CreditCardIcon,
   LogOutIcon,
   MoonIcon,
   SettingsIcon,
@@ -41,8 +40,8 @@ export default function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Avatar className="size-7">
+      <DropdownMenuTrigger className="flex items-center justify-center">
+        <Avatar className="size-6">
           <AvatarImage alt="User" src={user.user.image ?? undefined} />
           <AvatarFallback>
             {user.user.name.charAt(0).toUpperCase()}
@@ -54,10 +53,6 @@ export default function UserMenu() {
           <DropdownMenuItem>
             <UserIcon />
             Account
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCardIcon />
-            Billing
           </DropdownMenuItem>
           <DropdownMenuItem>
             <SettingsIcon />
