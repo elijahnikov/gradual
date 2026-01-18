@@ -37,7 +37,9 @@ export default function ProjectSidebar() {
         icon: RiTimer2Fill,
         title: "Flags",
         url: `${projectPath}/flags`,
-        isActive: pathname === `${projectPath}/flags`,
+        isActive:
+          pathname === `${projectPath}/flags` ||
+          pathname.startsWith(`${projectPath}/flags/`),
       },
       {
         icon: RiFolder2Fill,
