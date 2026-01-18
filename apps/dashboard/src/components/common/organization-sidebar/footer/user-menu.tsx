@@ -14,7 +14,6 @@ import { useTheme } from "@gradual/ui/theme";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
 import {
-  CreditCardIcon,
   LogOutIcon,
   MoonIcon,
   SettingsIcon,
@@ -54,10 +53,6 @@ export default function UserMenu() {
           <DropdownMenuItem>
             <UserIcon />
             Account
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCardIcon />
-            Billing
           </DropdownMenuItem>
           <DropdownMenuItem>
             <SettingsIcon />

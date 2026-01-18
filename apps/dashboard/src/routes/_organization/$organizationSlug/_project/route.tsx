@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import ProjectLayout from "@/components/common/project-layout";
+import ProjectLayout from "@/components/common/layouts/project-layout";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project"
