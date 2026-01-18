@@ -40,7 +40,7 @@ export default function ProjectSubmenu({
           </DropdownMenuLabel>
           {isLoadingProjects ? (
             <div className="p-1">
-              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-7 w-full" />
             </div>
           ) : (
             <div>

@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarProvider } from "@gradual/ui/sidebar";
-import MainSidebar from "../main-sidebar";
+import MainSidebar from "../organization-sidebar";
 
 export default function GlobalOrganizationLayout({
   children,

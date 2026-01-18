@@ -6,7 +6,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@gradual/ui/dropdown-menu";
-import { Separator } from "@gradual/ui/separator";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -15,8 +14,7 @@ import {
   SidebarMenuItem,
 } from "@gradual/ui/sidebar";
 import { Skeleton } from "@gradual/ui/skeleton";
-import { Text } from "@gradual/ui/text";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import OrganizationIcon from "@/components/common/organization-icon";
@@ -37,13 +35,7 @@ export default function OrganizationDropdown() {
       organizationSlug: organizationParams.organizationSlug as string,
     })
   );
-  const { data: project } = useQuery({
-    ...trpc.project.getBySlug.queryOptions({
-      slug: organizationParams.projectSlug as string,
-      organizationSlug: organization.slug,
-    }),
-    enabled: !!organization.slug && !!organizationParams.projectSlug,
-  });
+
   const { data: organizations, isLoading } = useSuspenseQuery(
     trpc.organization.getAllByUserId.queryOptions()
   );
@@ -63,7 +55,7 @@ export default function OrganizationDropdown() {
                   render={
                     <SidebarMenuButton
                       className={cn([
-                        "after:button-neutral-gradient rounded-sm border bg-ui-button-neutral px-1 text-ui-fg-base",
+                        "after:button-neutral-gradient flex items-center justify-center rounded-full border bg-ui-button-neutral px-0.5 text-ui-fg-base",
                         "hover:after:button-neutral-hover-gradient hover:bg-ui-button-neutral-hover",
                         "active:after:button-neutral-pressed-gradient active:bg-ui-button-neutral-pressed",
                         "items-centers z-50 h-8 ring-0 focus-visible:shadow-buttons-neutral-focus",
@@ -72,27 +64,11 @@ export default function OrganizationDropdown() {
                     />
                   }
                 >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <OrganizationIcon
-                      icon={organization.logo ?? undefined}
-                      name={organization.name}
-                      size="sm"
-                    />
-                    <Text className="max-w-14 truncate font-medium">
-                      {organization.name}
-                    </Text>
-                    {project && (
-                      <>
-                        <Separator
-                          className="-my-1.25"
-                          orientation="vertical"
-                        />
-                        <Text className="ml-0.5 max-w-19 truncate font-medium">
-                          {project.name}
-                        </Text>
-                      </>
-                    )}
-                  </div>
+                  <OrganizationIcon
+                    icon={organization.logo ?? undefined}
+                    name={organization.name}
+                    size="md"
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"

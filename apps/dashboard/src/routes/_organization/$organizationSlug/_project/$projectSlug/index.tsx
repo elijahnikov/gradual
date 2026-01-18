@@ -1,14 +1,14 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
-  "/_organization/$organizationSlug/$projectSlug/"
+  "/_organization/$organizationSlug/_project/$projectSlug/"
 )({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const params = useParams({
-    from: "/_organization/$organizationSlug/$projectSlug/",
+    from: "/_organization/$organizationSlug/_project/$projectSlug/",
   });
   return (
     <div>
