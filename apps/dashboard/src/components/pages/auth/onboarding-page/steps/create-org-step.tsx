@@ -56,14 +56,6 @@ const createOrgSchema = z.object({
       slugRegex,
       "Slug can only contain lowercase letters, numbers, and hyphens"
     ),
-  projectName: z.string().min(1, "Project name is required"),
-  projectSlug: z
-    .string()
-    .min(1, "Project slug is required")
-    .regex(
-      slugRegex,
-      "Slug can only contain lowercase letters, numbers, and hyphens"
-    ),
   teamMembers: z.array(teamMemberSchema),
 });
 
@@ -88,11 +80,9 @@ export function CreateOrgStep({
     defaultValues: {
       orgName: "",
       orgSlug: "",
-      projectName: "",
-      projectSlug: "",
       teamMembers: [] as Array<{
         email: string;
-        role: "owner" | "admin" | "member" | "viewer";
+        role: "admin" | "member" | "viewer";
       }>,
     },
     validators: {
@@ -115,8 +105,8 @@ export function CreateOrgStep({
         });
 
         const project = await createProject.mutateAsync({
-          name: value.projectName,
-          slug: value.projectSlug,
+          name: "Main",
+          slug: "default",
           organizationId: organization.id,
         });
 
@@ -139,12 +129,8 @@ export function CreateOrgStep({
 
   const orgName = useStore(form.store, (state) => state.values.orgName);
   const orgSlug = useStore(form.store, (state) => state.values.orgSlug);
-  const projectName = useStore(form.store, (state) => state.values.projectName);
-  const projectSlug = useStore(form.store, (state) => state.values.projectSlug);
 
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
-  const [isProjectSlugManuallyEdited, setIsProjectSlugManuallyEdited] =
-    useState(false);
 
   useEffect(() => {
     if (!orgName) {
@@ -169,30 +155,6 @@ export function CreateOrgStep({
       }
     }
   }, [orgName, isSlugManuallyEdited, form]);
-
-  useEffect(() => {
-    if (!projectName) {
-      return;
-    }
-
-    const currentSlug = form.baseStore.state.values.projectSlug;
-    const slugIsEmpty = !currentSlug;
-    const slugNotManuallyEdited = !isProjectSlugManuallyEdited;
-    const shouldAutoFill = slugIsEmpty || slugNotManuallyEdited;
-
-    if (shouldAutoFill) {
-      const autoSlug = projectName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-      if (autoSlug) {
-        form.setFieldValue("projectSlug", autoSlug);
-        if (slugIsEmpty) {
-          setIsProjectSlugManuallyEdited(false);
-        }
-      }
-    }
-  }, [projectName, isProjectSlugManuallyEdited, form]);
 
   const [debouncedSlug, setDebouncedSlug] = useState(orgSlug);
 
@@ -246,14 +208,7 @@ export function CreateOrgStep({
   }, [slugAvailabilityStatus, form]);
 
   const isFormValid =
-    !!(
-      orgName &&
-      orgSlug &&
-      projectName &&
-      projectSlug &&
-      slugRegex.test(orgSlug) &&
-      slugRegex.test(projectSlug)
-    ) &&
+    !!(orgName && orgSlug && slugRegex.test(orgSlug)) &&
     slugAvailabilityStatus !== "unavailable" &&
     slugAvailabilityStatus !== "checking";
 
@@ -370,99 +325,6 @@ export function CreateOrgStep({
         />
       </div>
 
-      <div className="flex items-center gap-x-2">
-        <form.Field
-          children={(field) => {
-            const hasErrors = field.state.meta.errors.length > 0;
-            const shouldShowError =
-              hasErrors &&
-              (field.state.meta.isTouched || form.state.isSubmitted);
-            return (
-              <Field data-invalid={shouldShowError}>
-                <FieldLabel>Project</FieldLabel>
-                <Input
-                  aria-invalid={shouldShowError}
-                  className="min-w-42"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="My First Project"
-                  value={field.state.value}
-                />
-                {shouldShowError && (
-                  <FieldError>
-                    {field.state.meta.errors
-                      .map((error) => {
-                        if (typeof error === "string") {
-                          return error;
-                        }
-                        if (
-                          error &&
-                          typeof error === "object" &&
-                          "message" in error
-                        ) {
-                          return String(error.message);
-                        }
-                        return String(error);
-                      })
-                      .join(", ")}
-                  </FieldError>
-                )}
-              </Field>
-            );
-          }}
-          name="projectName"
-        />
-
-        <form.Field
-          children={(field) => {
-            const hasErrors = field.state.meta.errors.length > 0;
-            const shouldShowError =
-              hasErrors &&
-              (field.state.meta.isTouched || form.state.isSubmitted);
-            return (
-              <Field className="w-full" data-invalid={shouldShowError}>
-                <div className="h-4" />
-                <Input
-                  aria-invalid={shouldShowError}
-                  className="w-full"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                    setIsProjectSlugManuallyEdited(true);
-                  }}
-                  placeholder="my-first-project"
-                  value={field.state.value}
-                />
-                {shouldShowError && (
-                  <FieldError>
-                    {field.state.meta.errors
-                      .map((error) => {
-                        if (typeof error === "string") {
-                          return error;
-                        }
-                        if (
-                          error &&
-                          typeof error === "object" &&
-                          "message" in error
-                        ) {
-                          return String(error.message);
-                        }
-                        return String(error);
-                      })
-                      .join(", ")}
-                  </FieldError>
-                )}
-              </Field>
-            );
-          }}
-          name="projectSlug"
-        />
-      </div>
-
       <div className="mt-6 space-y-4">
         <Field className="-space-y-1">
           <FieldLabel>
@@ -518,7 +380,7 @@ export function CreateOrgStep({
 
             const handleRoleChange = (
               index: number,
-              role: "owner" | "admin" | "member" | "viewer"
+              role: "admin" | "member" | "viewer"
             ) => {
               const updated = [...teamMembers];
               if (updated[index]) {

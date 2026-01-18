@@ -21,6 +21,8 @@ import { Route as OrganizationOrganizationSlugIndexRouteImport } from './routes/
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
 import { Route as ApiFilesKeyRouteImport } from './routes/api/files/$key'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as OrganizationOrganizationSlugProjectSlugRouteRouteImport } from './routes/_organization/$organizationSlug/$projectSlug/route'
+import { Route as OrganizationOrganizationSlugProjectSlugIndexRouteImport } from './routes/_organization/$organizationSlug/$projectSlug/index'
 
 const OrganizationRoute = OrganizationRouteImport.update({
   id: '/_organization',
@@ -82,6 +84,18 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganizationOrganizationSlugProjectSlugRouteRoute =
+  OrganizationOrganizationSlugProjectSlugRouteRouteImport.update({
+    id: '/$projectSlug',
+    path: '/$projectSlug',
+    getParentRoute: () => OrganizationOrganizationSlugRouteRoute,
+  } as any)
+const OrganizationOrganizationSlugProjectSlugIndexRoute =
+  OrganizationOrganizationSlugProjectSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => OrganizationOrganizationSlugProjectSlugRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -90,10 +104,12 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
+  '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectSlugRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
+  '/$organizationSlug/$projectSlug/': typeof OrganizationOrganizationSlugProjectSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -105,6 +121,7 @@ export interface FileRoutesByTo {
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
+  '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,10 +133,12 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
+  '/_organization/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectSlugRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
+  '/_organization/$organizationSlug/$projectSlug/': typeof OrganizationOrganizationSlugProjectSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,10 +149,12 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/files'
     | '/api/upload'
+    | '/$organizationSlug/$projectSlug'
     | '/api/auth/$'
     | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug/'
+    | '/$organizationSlug/$projectSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -145,6 +166,7 @@ export interface FileRouteTypes {
     | '/api/files/$key'
     | '/api/trpc/$'
     | '/$organizationSlug'
+    | '/$organizationSlug/$projectSlug'
   id:
     | '__root__'
     | '/'
@@ -155,10 +177,12 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/api/files'
     | '/api/upload'
+    | '/_organization/$organizationSlug/$projectSlug'
     | '/api/auth/$'
     | '/api/files/$key'
     | '/api/trpc/$'
     | '/_organization/$organizationSlug/'
+    | '/_organization/$organizationSlug/$projectSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -257,6 +281,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_organization/$organizationSlug/$projectSlug': {
+      id: '/_organization/$organizationSlug/$projectSlug'
+      path: '/$projectSlug'
+      fullPath: '/$organizationSlug/$projectSlug'
+      preLoaderRoute: typeof OrganizationOrganizationSlugProjectSlugRouteRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugRouteRoute
+    }
+    '/_organization/$organizationSlug/$projectSlug/': {
+      id: '/_organization/$organizationSlug/$projectSlug/'
+      path: '/'
+      fullPath: '/$organizationSlug/$projectSlug/'
+      preLoaderRoute: typeof OrganizationOrganizationSlugProjectSlugIndexRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugProjectSlugRouteRoute
+    }
   }
 }
 
@@ -272,12 +310,30 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface OrganizationOrganizationSlugProjectSlugRouteRouteChildren {
+  OrganizationOrganizationSlugProjectSlugIndexRoute: typeof OrganizationOrganizationSlugProjectSlugIndexRoute
+}
+
+const OrganizationOrganizationSlugProjectSlugRouteRouteChildren: OrganizationOrganizationSlugProjectSlugRouteRouteChildren =
+  {
+    OrganizationOrganizationSlugProjectSlugIndexRoute:
+      OrganizationOrganizationSlugProjectSlugIndexRoute,
+  }
+
+const OrganizationOrganizationSlugProjectSlugRouteRouteWithChildren =
+  OrganizationOrganizationSlugProjectSlugRouteRoute._addFileChildren(
+    OrganizationOrganizationSlugProjectSlugRouteRouteChildren,
+  )
+
 interface OrganizationOrganizationSlugRouteRouteChildren {
+  OrganizationOrganizationSlugProjectSlugRouteRoute: typeof OrganizationOrganizationSlugProjectSlugRouteRouteWithChildren
   OrganizationOrganizationSlugIndexRoute: typeof OrganizationOrganizationSlugIndexRoute
 }
 
 const OrganizationOrganizationSlugRouteRouteChildren: OrganizationOrganizationSlugRouteRouteChildren =
   {
+    OrganizationOrganizationSlugProjectSlugRouteRoute:
+      OrganizationOrganizationSlugProjectSlugRouteRouteWithChildren,
     OrganizationOrganizationSlugIndexRoute:
       OrganizationOrganizationSlugIndexRoute,
   }

@@ -1,14 +1,16 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_organization/$organizationSlug")({
+export const Route = createFileRoute(
+  "/_organization/$organizationSlug/$projectSlug"
+)({
   component: RouteComponent,
   loader: async ({ params, context }) => {
-    const { organizationSlug } = params;
     const { trpc, queryClient } = context;
     try {
       const organization = await queryClient.ensureQueryData(
-        trpc.organization.getBySlug.queryOptions({
-          organizationSlug: organizationSlug as string,
+        trpc.project.getBySlug.queryOptions({
+          organizationSlug: params.organizationSlug as string,
+          slug: params.projectSlug as string,
         })
       );
       return { organization };

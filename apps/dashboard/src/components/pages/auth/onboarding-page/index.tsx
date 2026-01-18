@@ -67,15 +67,15 @@ export default function OnboardingPageComponent() {
     async (step: OnboardingStep, skipToNext = true) => {
       const nextStep = (step + 1) as OnboardingStep;
 
+      if (step < 3) {
+        await updateUser({
+          onboardingStep: nextStep,
+        });
+      }
       if (skipToNext && step < 3) {
         setCurrentStep(nextStep);
       }
 
-      if (step < 3) {
-        updateUser({
-          onboardingStep: nextStep,
-        });
-      }
       await queryClient.invalidateQueries(
         trpc.auth.getUserOnboardingStatus.queryOptions()
       );
