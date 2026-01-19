@@ -155,6 +155,45 @@ async function handleVerifyApiKey(
   }
 }
 
+async function handleRevokeApiKey(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (!verifyAdminAuth(request, env)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as { apiKey?: string };
+    const apiKey = body.apiKey ?? null;
+
+    if (apiKey === null) {
+      return new Response("Missing API key", { status: 400 });
+    }
+
+    const key = `apiKey:${apiKey}`;
+    await env.GRADUAL_API_KEY.delete(key);
+
+    return new Response(
+      JSON.stringify({ success: true, message: "API key revoked" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (err) {
+    console.error("Error revoking API key:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error revoking API key",
+      { status: 500 }
+    );
+  }
+}
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const requestUrl = new URL(request.url);
@@ -171,6 +210,10 @@ export default {
 
     if (pathname === "/api/v1/verify") {
       return await handleVerifyApiKey(request, env);
+    }
+
+    if (pathname === "/api/v1/revoke-api-key") {
+      return await handleRevokeApiKey(request, env);
     }
 
     return new Response("Not found", { status: 404 });
