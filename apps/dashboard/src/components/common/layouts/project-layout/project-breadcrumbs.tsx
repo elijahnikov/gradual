@@ -30,6 +30,7 @@ export default function ProjectBreadcrumbs() {
   const { data: project } = useSuspenseQuery(
     trpc.project.getBySlug.queryOptions({
       slug: projectSlug,
+      organizationSlug,
     })
   );
 

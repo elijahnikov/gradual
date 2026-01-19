@@ -93,7 +93,7 @@ export default function ProjectSidebar() {
 
   return (
     <TooltipProvider>
-      <div className="z-50 flex h-full w-52 flex-col items-center border-r p-2">
+      <div className="z-50 flex h-full w-56 flex-col items-center border-r p-2">
         <div className="flex w-full flex-col gap-y-1">
           {topNavigationItems.map((item) => (
             <Link key={item.title} to={item.url}>
