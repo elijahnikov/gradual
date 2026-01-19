@@ -136,6 +136,10 @@ export const revokeApiKey = async ({
         eq(projectId, input.projectId),
         isNull(revokedAt)
       ),
+    columns: {
+      id: true,
+      key: true,
+    },
   });
   if (!apiKeyToRevoke) {
     throw new TRPCError({ code: "NOT_FOUND", message: "API key not found" });
@@ -154,6 +158,22 @@ export const revokeApiKey = async ({
       message: "Failed to revoke API key",
     });
   }
+
+  try {
+    await fetch(`${authEnv().CLOUDFLARE_WORKERS_API_URL}/revoke-api-key`, {
+      method: "POST",
+      body: JSON.stringify({
+        apiKey: apiKeyToRevoke.key,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authEnv().CLOUDFLARE_WORKERS_ADMIN_KEY}`,
+      },
+    });
+  } catch (err) {
+    console.error("Error revoking API key in Cloudflare Worker:", err);
+  }
+
   return revokedApiKey;
 };
 

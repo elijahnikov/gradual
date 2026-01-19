@@ -28,7 +28,7 @@ const socials: { id: Socials; icon: React.ReactNode; label: string }[] = [
 export default function LoginButtons() {
   const navigate = useNavigate();
   const lastLoginMethod = authClient.getLastUsedLoginMethod();
-  console.log(lastLoginMethod);
+
   return (
     <div className="w-full space-y-3">
       {socials.map((social) => (
