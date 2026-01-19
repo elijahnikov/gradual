@@ -18,6 +18,8 @@ export function authEnv() {
       POLAR_ACCESS_TOKEN: z.string().min(1),
       POLAR_SUCCESS_URL: z.string().min(1),
       AUTH_RESEND_KEY: z.string().min(1),
+      CLOUDFLARE_WORKERS_API_URL: z.string().min(1),
+      CLOUDFLARE_WORKERS_ADMIN_KEY: z.string().min(1),
     },
     runtimeEnv: process.env,
     skipValidation:

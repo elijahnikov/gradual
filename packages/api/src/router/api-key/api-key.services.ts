@@ -1,3 +1,4 @@
+import { authEnv } from "@gradual/auth/env";
 import { eq } from "@gradual/db";
 import { apiKey } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
@@ -55,6 +56,23 @@ export const createApiKey = async ({
       code: "INTERNAL_SERVER_ERROR",
       message: "Failed to create API key",
     });
+  }
+
+  try {
+    await fetch(`${authEnv().CLOUDFLARE_WORKERS_API_URL}/submit-api-key`, {
+      method: "POST",
+      body: JSON.stringify({
+        apiKey: createdApiKey.key,
+        projectId: createdApiKey.projectId,
+        orgId: createdApiKey.organizationId,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authEnv().CLOUDFLARE_WORKERS_ADMIN_KEY}`,
+      },
+    });
+  } catch (err) {
+    console.error("Error submitting API key to Cloudflare Worker:", err);
   }
 
   return {
@@ -118,6 +136,10 @@ export const revokeApiKey = async ({
         eq(projectId, input.projectId),
         isNull(revokedAt)
       ),
+    columns: {
+      id: true,
+      key: true,
+    },
   });
   if (!apiKeyToRevoke) {
     throw new TRPCError({ code: "NOT_FOUND", message: "API key not found" });
@@ -136,6 +158,22 @@ export const revokeApiKey = async ({
       message: "Failed to revoke API key",
     });
   }
+
+  try {
+    await fetch(`${authEnv().CLOUDFLARE_WORKERS_API_URL}/revoke-api-key`, {
+      method: "POST",
+      body: JSON.stringify({
+        apiKey: apiKeyToRevoke.key,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authEnv().CLOUDFLARE_WORKERS_ADMIN_KEY}`,
+      },
+    });
+  } catch (err) {
+    console.error("Error revoking API key in Cloudflare Worker:", err);
+  }
+
   return revokedApiKey;
 };
 

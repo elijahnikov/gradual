@@ -1,3 +1,4 @@
+import { Badge } from "@gradual/ui/badge";
 import { Button } from "@gradual/ui/button";
 import { toastManager } from "@gradual/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
@@ -26,11 +27,13 @@ const socials: { id: Socials; icon: React.ReactNode; label: string }[] = [
 
 export default function LoginButtons() {
   const navigate = useNavigate();
+  const lastLoginMethod = authClient.getLastUsedLoginMethod();
+
   return (
     <div className="w-full space-y-3">
       {socials.map((social) => (
         <Button
-          className="w-full gap-x-2"
+          className="relative w-full gap-x-2"
           key={social.id}
           onClick={async () => {
             const { data, error } = await authClient.signIn.social({
@@ -51,6 +54,11 @@ export default function LoginButtons() {
         >
           {social.icon}
           <p>Continue with {social.label}</p>
+          {lastLoginMethod === social.id && (
+            <div className="absolute -top-1.5 -right-4">
+              <Badge>Last used</Badge>
+            </div>
+          )}
         </Button>
       ))}
     </div>
