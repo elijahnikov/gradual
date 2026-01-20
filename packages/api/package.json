@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./schemas": {
+      "types": "./dist/schemas.d.ts",
+      "default": "./src/schemas.ts"
     }
   },
   "scripts": {

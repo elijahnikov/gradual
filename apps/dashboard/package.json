@@ -36,6 +36,8 @@
     "nuqs": "^2.8.6",
     "react": "catalog:react",
     "react-dom": "catalog:react",
+    "react-hook-form": "catalog:",
+    "react-hotkeys-hook": "^5.2.3",
     "react-use": "^17.5.1",
     "superjson": "2.2.3",
     "zod": "catalog:"

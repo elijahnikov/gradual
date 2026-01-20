@@ -76,7 +76,7 @@ export default function ProjectBreadcrumbs() {
   }, [currentSegment]);
 
   return (
-    <Breadcrumb className="sticky top-0 z-50 w-full border-b bg-ui-bg-base px-2.5 py-2">
+    <Breadcrumb className="sticky top-0 z-50 flex h-10 w-full items-center border-b bg-ui-bg-base px-2.5">
       <BreadcrumbList>
         <BreadcrumbItem className="font-medium text-sm">
           <BreadcrumbLink

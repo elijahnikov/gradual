@@ -5,6 +5,14 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/flags/"
 )({
   component: RouteComponent,
+  beforeLoad: ({ context, params }) => {
+    void context.queryClient.ensureQueryData(
+      context.trpc.featureFlags.getAll.queryOptions({
+        projectSlug: params.projectSlug,
+        organizationSlug: params.organizationSlug,
+      })
+    );
+  },
 });
 
 function RouteComponent() {

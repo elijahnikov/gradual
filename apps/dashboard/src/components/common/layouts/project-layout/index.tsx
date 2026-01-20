@@ -9,9 +9,9 @@ export default function ProjectLayout({
   return (
     <div className="flex h-full bg-ui-bg-base">
       <ProjectSidebar />
-      <main className="h-full w-full overflow-y-auto md:max-h-[calc(100vh-18px)]">
+      <main className="h-full w-full overflow-y-auto md:max-h-[calc(100vh-20px)]">
         <ProjectBreadcrumbs />
-        <div className="p-4">{children}</div>
+        {children}
       </main>
     </div>
   );
