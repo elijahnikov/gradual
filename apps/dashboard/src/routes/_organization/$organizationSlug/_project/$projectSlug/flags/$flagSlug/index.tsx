@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import FlagPageComponent from "@/components/pages/flag-page";
 
 export const Route = createFileRoute(
@@ -9,24 +9,13 @@ export const Route = createFileRoute(
     return <div>Error {JSON.stringify(error)}</div>;
   },
   beforeLoad: ({ context, params }) => {
-    try {
-      void context.queryClient.prefetchQuery(
-        context.trpc.featureFlags.getByKey.queryOptions({
-          projectSlug: params.projectSlug,
-          organizationSlug: params.organizationSlug,
-          key: params.flagSlug,
-        })
-      );
-    } catch (e) {
-      console.error(e);
-      throw redirect({
-        to: "/$organizationSlug/$projectSlug/flags",
-        params: {
-          organizationSlug: params.organizationSlug,
-          projectSlug: params.projectSlug,
-        },
-      });
-    }
+    void context.queryClient.prefetchQuery(
+      context.trpc.featureFlags.getByKey.queryOptions({
+        projectSlug: params.projectSlug,
+        organizationSlug: params.organizationSlug,
+        key: params.flagSlug,
+      })
+    );
   },
 });
 

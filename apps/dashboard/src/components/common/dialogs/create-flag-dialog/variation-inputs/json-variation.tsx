@@ -39,6 +39,8 @@ export default function JsonVariation({
               isDefault: fields.length === 0,
               rolloutPercentage: 0,
               sortOrder: fields.length,
+              isDefaultWhenOff: false,
+              isDefaultWhenOn: false,
             });
           }}
           size="small"
@@ -87,8 +89,22 @@ export default function JsonVariation({
                                 : JSON.stringify(field.value ?? {}, null, 2)
                             }
                             onChange={(value, isValid) => {
-                              field.onChange(value);
-                              if (!isValid && value.trim() !== "") {
+                              if (isValid && value.trim() !== "") {
+                                try {
+                                  const parsed = JSON.parse(value);
+                                  field.onChange(parsed);
+                                  form.clearErrors(`variations.${index}.value`);
+                                } catch {
+                                  form.setError(
+                                    `variations.${index}.value`,
+                                    {
+                                      type: "manual",
+                                      message: "Invalid JSON format",
+                                    },
+                                    { shouldFocus: false }
+                                  );
+                                }
+                              } else if (!isValid && value.trim() !== "") {
                                 form.setError(
                                   `variations.${index}.value`,
                                   {

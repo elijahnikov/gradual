@@ -25,6 +25,7 @@ export default function FlagsList({
 
   return (
     <div>
+      <EmptyFlagsList />
       {flags.data.map((flag) => (
         <div key={flag.id}>
           <Button
