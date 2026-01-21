@@ -12,7 +12,7 @@ function Card({
 }: useRender.ComponentProps<"div">) {
   const defaultProps = {
     className: cn(
-      "w-full rounded-md bg-ui-bg-field px-4 py-3 shadow-elevation-card-rest",
+      "w-full rounded-md bg-ui-bg-field px-4 py-3 shadow-elevation-card-rest dark:border-[0.5px]",
       className
     ),
     "data-slot": "card",

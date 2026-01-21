@@ -29,7 +29,7 @@ export default function JsonVariation({
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-end px-4">
+      <div className="my-2 flex items-center justify-end px-4">
         <Button
           onClick={() => {
             append({
