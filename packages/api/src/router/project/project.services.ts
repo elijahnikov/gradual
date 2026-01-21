@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "@gradual/db";
-import { project } from "@gradual/db/schema";
+import { featureFlag, organization, project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
@@ -8,6 +8,7 @@ import type {
   CreateProjectInput,
   DeleteProjectInput,
   GetAllProjectsByOrganizationIdInput,
+  GetBreadcrumbsInput,
   GetProjectByIdInput,
   GetProjectBySlugInput,
   UpdateProjectInput,
@@ -187,4 +188,66 @@ export const getAllProjectsByOrganizationId = async ({
     );
 
   return projects;
+};
+
+export const getBreadcrumbs = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetBreadcrumbsInput;
+}) => {
+  const { projectSlug, flagSlug } = input;
+
+  // Get project name
+  const [foundProject] = await ctx.db
+    .select({
+      name: project.name,
+    })
+    .from(project)
+    .innerJoin(organization, eq(project.organizationId, organization.id))
+    .where(
+      and(
+        eq(project.slug, projectSlug),
+        eq(organization.slug, ctx.organization.slug),
+        isNull(project.deletedAt),
+        eq(project.organizationId, ctx.organization.id)
+      )
+    )
+    .limit(1);
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  // Optionally get flag name if flagSlug is provided
+  let flagName: string | null = null;
+  if (flagSlug) {
+    const [foundFlag] = await ctx.db
+      .select({
+        name: featureFlag.name,
+      })
+      .from(featureFlag)
+      .innerJoin(project, eq(featureFlag.projectId, project.id))
+      .innerJoin(organization, eq(featureFlag.organizationId, organization.id))
+      .where(
+        and(
+          eq(featureFlag.key, flagSlug),
+          eq(project.slug, projectSlug),
+          eq(organization.slug, ctx.organization.slug),
+          eq(featureFlag.organizationId, ctx.organization.id)
+        )
+      )
+      .limit(1);
+
+    flagName = foundFlag?.name ?? null;
+  }
+
+  return {
+    projectName: foundProject.name,
+    flagName,
+  };
 };

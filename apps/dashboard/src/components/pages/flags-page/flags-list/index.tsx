@@ -1,5 +1,7 @@
+import { Button } from "@gradual/ui/button";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useTRPC } from "@/lib/trpc";
 import EmptyFlagsList from "./empty-state";
 
@@ -23,12 +25,21 @@ export default function FlagsList({
 
   return (
     <div>
-      <h1>Flags</h1>
-      <pre>{JSON.stringify(flags, null, 2)}</pre>
-      <h1>Flags</h1>
-      <pre>{JSON.stringify(flags, null, 2)}</pre>
-      <h1>Flags</h1>
-      <pre>{JSON.stringify(flags, null, 2)}</pre>
+      {flags.data.map((flag) => (
+        <div key={flag.id}>
+          <Button
+            render={
+              <Link
+                params={{ organizationSlug, projectSlug, flagSlug: flag.key }}
+                preload="intent"
+                to={"/$organizationSlug/$projectSlug/flags/$flagSlug"}
+              />
+            }
+          >
+            {flag.name}
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }

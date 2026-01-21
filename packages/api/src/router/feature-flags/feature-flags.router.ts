@@ -15,6 +15,10 @@ export const featureFlagsRouter = {
     .input(schemas.getFeatureFlagByKeySchema)
     .query((opts) => services.getFeatureFlagByKey({ ...opts })),
 
+  getBreadcrumbInfo: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getFeatureFlagBreadcrumbInfoSchema)
+    .query((opts) => services.getFeatureFlagBreadcrumbInfo({ ...opts })),
+
   create: protectedOrganizationProcedure({ flags: ["create"] })
     .input(schemas.createCompleteFeatureFlagSchema)
     .mutation((opts) => services.createCompleteFeatureFlag({ ...opts })),

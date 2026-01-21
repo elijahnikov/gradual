@@ -12,6 +12,7 @@ import { desc } from "drizzle-orm";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateCompleteFeatureFlagInput,
+  GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
 } from "./feature-flags.schemas";
@@ -314,4 +315,41 @@ export const getFeatureFlagByKey = async ({
     variations,
     environmentConfigs,
   };
+};
+
+export const getFeatureFlagBreadcrumbInfo = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetFeatureFlagBreadcrumbInfoInput;
+}) => {
+  const { key, projectSlug } = input;
+
+  const [foundFlag] = await ctx.db
+    .select({
+      name: featureFlag.name,
+      key: featureFlag.key,
+    })
+    .from(featureFlag)
+    .innerJoin(project, eq(featureFlag.projectId, project.id))
+    .innerJoin(organization, eq(featureFlag.organizationId, organization.id))
+    .where(
+      and(
+        eq(featureFlag.key, key),
+        eq(organization.slug, ctx.organization.slug),
+        eq(project.slug, projectSlug),
+        eq(featureFlag.organizationId, ctx.organization.id)
+      )
+    )
+    .limit(1);
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  return foundFlag;
 };

@@ -40,4 +40,10 @@ export const projectRouter = {
     .query((opts) => {
       return services.getAllProjectsByOrganizationId({ ...opts });
     }),
+
+  getBreadcrumbs: protectedOrganizationProcedure({ project: ["read"] })
+    .input(schemas.getBreadcrumbsSchema)
+    .query((opts) => {
+      return services.getBreadcrumbs({ ...opts });
+    }),
 } satisfies TRPCRouterRecord;

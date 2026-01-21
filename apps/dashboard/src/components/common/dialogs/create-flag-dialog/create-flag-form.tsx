@@ -23,7 +23,7 @@ import { toastManager } from "@gradual/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RiCloseLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { type UseFormReturn, useForm } from "react-hook-form";
 import type z from "zod/v4";
@@ -34,6 +34,7 @@ import NumberVariation from "./variation-inputs/number-variation";
 import StringVariation from "./variation-inputs/string-variation";
 
 export default function CreateFlagForm() {
+  const navigate = useNavigate();
   const params = useParams({
     from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
   });
@@ -234,6 +235,16 @@ export default function CreateFlagForm() {
         title: "Feature flag created successfully",
         description: "Redirecting to the feature flag...",
       });
+      setTimeout(() => {
+        navigate({
+          to: "/$organizationSlug/$projectSlug/flags/$flagSlug",
+          params: {
+            flagSlug: data.key,
+            projectSlug: params.projectSlug,
+            organizationSlug: params.organizationSlug,
+          },
+        });
+      }, 1000);
     } catch (error) {
       console.error(error);
       toastManager.add({

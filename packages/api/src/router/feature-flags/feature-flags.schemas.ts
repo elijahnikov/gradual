@@ -144,3 +144,12 @@ export const getFeatureFlagByKeySchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
 });
+
+export type GetFeatureFlagBreadcrumbInfoInput = z.infer<
+  typeof getFeatureFlagBreadcrumbInfoSchema
+>;
+export const getFeatureFlagBreadcrumbInfoSchema = z.object({
+  key: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});

@@ -45,3 +45,10 @@ export type GetAllProjectsByOrganizationIdInput = z.infer<
 export const getAllProjectsByOrganizationIdSchema = z.object({
   organizationId: z.uuid(),
 });
+
+export type GetBreadcrumbsInput = z.infer<typeof getBreadcrumbsSchema>;
+export const getBreadcrumbsSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  flagSlug: z.string().optional(),
+});
