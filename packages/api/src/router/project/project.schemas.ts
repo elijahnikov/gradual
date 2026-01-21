@@ -19,6 +19,7 @@ export const getProjectByIdSchema = z.object({
 export type GetProjectBySlugInput = z.infer<typeof getProjectBySlugSchema>;
 export const getProjectBySlugSchema = z.object({
   slug: z.string(),
+  organizationSlug: z.string(),
 });
 
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
@@ -43,4 +44,11 @@ export type GetAllProjectsByOrganizationIdInput = z.infer<
 >;
 export const getAllProjectsByOrganizationIdSchema = z.object({
   organizationId: z.uuid(),
+});
+
+export type GetBreadcrumbsInput = z.infer<typeof getBreadcrumbsSchema>;
+export const getBreadcrumbsSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  flagSlug: z.string().optional(),
 });

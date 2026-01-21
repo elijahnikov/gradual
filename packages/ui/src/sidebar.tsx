@@ -19,7 +19,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
-import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
 import React, { useCallback, useMemo } from "react";
@@ -448,10 +447,8 @@ const SidebarGroupLabel = ({
   asChild?: boolean;
   ref?: React.Ref<HTMLDivElement>;
 }) => {
-  const Comp = asChild ? Slot : "div";
-
   return (
-    <Comp
+    <div
       className={cn(
         "flex h-8 shrink-0 items-center rounded-md font-medium text-sidebar-foreground/70 text-xs outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
@@ -467,17 +464,14 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel";
 
 const SidebarGroupAction = ({
   className,
-  asChild = false,
   ref,
   ...props
 }: React.ComponentProps<"button"> & {
   asChild?: boolean;
   ref?: React.Ref<HTMLButtonElement>;
 }) => {
-  const Comp = asChild ? Slot : "button";
-
   return (
-    <Comp
+    <button
       className={cn(
         "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
@@ -578,10 +572,8 @@ const SidebarMenuButton = ({
   tooltip?: string | React.ReactNode;
   ref?: React.Ref<HTMLButtonElement>;
 } & VariantProps<typeof sidebarMenuButtonVariants>) => {
-  const Comp = asChild ? Slot : "button";
-
   const button = (
-    <Comp
+    <button
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       data-active={isActive}
       data-sidebar="menu-button"
@@ -606,19 +598,15 @@ SidebarMenuButton.displayName = "SidebarMenuButton";
 
 const SidebarMenuAction = ({
   className,
-  asChild = false,
   showOnHover = false,
   ref,
   ...props
 }: React.ComponentProps<"button"> & {
-  asChild?: boolean;
   showOnHover?: boolean;
   ref?: React.Ref<HTMLButtonElement>;
 }) => {
-  const Comp = asChild ? Slot : "button";
-
   return (
-    <Comp
+    <button
       className={cn(
         "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
@@ -734,22 +722,18 @@ const SidebarMenuSubItem = ({
 SidebarMenuSubItem.displayName = "SidebarMenuSubItem";
 
 const SidebarMenuSubButton = ({
-  asChild = false,
   size = "md",
   isActive,
   className,
   ref,
   ...props
 }: React.ComponentProps<"a"> & {
-  asChild?: boolean;
   size?: "sm" | "md";
   isActive?: boolean;
   ref?: React.Ref<HTMLAnchorElement>;
 }) => {
-  const Comp = asChild ? Slot : "a";
-
   return (
-    <Comp
+    <a
       className={cn(
         "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",

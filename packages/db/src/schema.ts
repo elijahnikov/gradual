@@ -209,6 +209,8 @@ export const featureFlagVariation = pgTable(
     value: jsonb("value").notNull(), // Can be boolean, string, number, or JSON
     description: text("description"),
     isDefault: boolean("is_default").notNull().default(false),
+    isDefaultWhenOn: boolean("is_default_when_on").notNull().default(false),
+    isDefaultWhenOff: boolean("is_default_when_off").notNull().default(false),
     rolloutPercentage: doublePrecision("rollout_percentage")
       .notNull()
       .default(0),
@@ -226,6 +228,14 @@ export const featureFlagVariation = pgTable(
     index("feature_flag_variation_default_idx").on(
       table.featureFlagId,
       table.isDefault
+    ),
+    index("feature_flag_variation_default_when_on_idx").on(
+      table.featureFlagId,
+      table.isDefaultWhenOn
+    ),
+    index("feature_flag_variation_default_when_off_idx").on(
+      table.featureFlagId,
+      table.isDefaultWhenOff
     ),
   ]
 );

@@ -6,7 +6,7 @@ import type * as React from "react";
 
 const buttonVariants = cva(
   [
-    "relative inline-flex w-fit items-center justify-center rounded-md outline-none",
+    "relative inline-flex w-fit items-center justify-center rounded-sm outline-none",
     "disabled:border-ui-border-base disabled:opacity-50 disabled:after:hidden",
     "disabled:pointer-events-none",
     'after:absolute after:inset-0 after:content-[""]',
@@ -15,19 +15,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          "after:button-inverted-gradient bg-gradient-to-t from-ui-button-inverted to-ui-button-inverted-hover text-ui-contrast-fg-primary shadow-buttons-inverted",
+          "after:button-inverted-gradient bg-linear-to-t from-ui-button-inverted to-ui-button-inverted-hover text-ui-contrast-fg-primary shadow-buttons-inverted",
           "hover:after:button-inverted-hover-gradient hover:from-ui-button-inverted-hover hover:to-ui-button-inverted-hover",
           "active:after:button-inverted-pressed-gradient active:from-ui-button-inverted-pressed active:to-ui-button-inverted-pressed",
-          "focus-visible:!shadow-buttons-inverted-focus"
+          "focus-visible:shadow-buttons-inverted-focus!"
         ),
         gradual: cn(
-          "bg-gradient-to-t from-blue-500 to-blue-400 text-white shadow-buttons-recall after:hidden",
+          "bg-linear-to-t from-blue-500 to-blue-400 text-white shadow-buttons-recall after:hidden",
           "hover:from-blue-600 hover:to-blue-500",
           "active:from-blue-700 active:to-blue-600",
           "focus-visible:shadow-buttons-recall-focus disabled:shadow-none"
         ),
         success: cn(
-          "bg-gradient-to-t from-green-500 to-green-400 text-white shadow-buttons-recall after:hidden",
+          "bg-linear-to-t from-green-500 to-green-400 text-white shadow-buttons-recall after:hidden",
           "hover:from-green-600 hover:to-green-500",
           "active:from-green-700 active:to-green-600",
           "focus-visible:shadow-buttons-recall-focus disabled:shadow-none",
@@ -44,7 +44,7 @@ const buttonVariants = cva(
           "hover:bg-[rgba(0,0,0,0.1)] dark:hover:bg-[rgba(255,255,255,0.1)]",
           "active:bg-[rgba(0,0,0,0.15)] dark:active:bg-[rgba(255,255,255,0.15)]",
           "focus-visible:bg-ui-bg-base focus-visible:shadow-buttons-neutral-focus",
-          "disabled:!bg-transparent disabled:!shadow-none"
+          "disabled:bg-transparent! disabled:shadow-none!"
         ),
         ghost: cn(
           "after:hidden",
@@ -52,7 +52,7 @@ const buttonVariants = cva(
           "hover:bg-ui-button-transparent-hover",
           "active:bg-ui-button-transparent-pressed",
           "focus-visible:bg-ui-bg-base focus-visible:shadow-buttons-neutral-focus",
-          "disabled:!bg-transparent disabled:!shadow-none"
+          "disabled:bg-transparent! disabled:shadow-none!"
         ),
         destructive: cn(
           "after:button-danger-gradient bg-ui-button-danger text-ui-fg-on-color shadow-buttons-colored shadow-buttons-danger",

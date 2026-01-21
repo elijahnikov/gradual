@@ -1,5 +1,3 @@
-"use client";
-
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 
 import { cn } from "@gradual/ui";
@@ -14,16 +12,22 @@ function Field({ className, ...props }: FieldPrimitive.Root.Props) {
   );
 }
 
-function FieldLabel({ className, ...props }: FieldPrimitive.Label.Props) {
+function FieldLabel({
+  className,
+  ...props
+}: FieldPrimitive.Label.Props & { required?: boolean }) {
   return (
     <FieldPrimitive.Label
       className={cn(
-        "inline-flex items-center gap-2 font-medium text-base/4.5 sm:text-sm/4",
+        "inline-flex items-center gap-x-0.5 font-medium text-xs",
         className
       )}
       data-slot="field-label"
       {...props}
-    />
+    >
+      {props.children}
+      {props.required && <span className="text-ui-fg-error">*</span>}
+    </FieldPrimitive.Label>
   );
 }
 

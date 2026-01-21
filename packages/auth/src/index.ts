@@ -26,6 +26,7 @@ export function initAuth<
   extraPlugins?: TExtraPlugins;
 }) {
   const config = {
+    appName: "Gradual",
     database: drizzleAdapter(db, {
       provider: "pg",
     }),

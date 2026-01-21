@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_organization/$organizationSlug")({
   component: RouteComponent,
-  loader: async ({ params, context }) => {
+  beforeLoad: async ({ params, context }) => {
     const { organizationSlug } = params;
     const { trpc, queryClient } = context;
     try {

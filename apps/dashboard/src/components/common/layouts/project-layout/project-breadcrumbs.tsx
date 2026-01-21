@@ -6,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@gradual/ui/breadcrumb";
+import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -25,15 +26,29 @@ export default function ProjectBreadcrumbs() {
   const params = useParams({ strict: false });
   const organizationSlug = params.organizationSlug as string;
   const projectSlug = params.projectSlug as string;
+  const flagSlug = params.flagSlug as string | undefined;
 
   const trpc = useTRPC();
-  const { data: project } = useSuspenseQuery(
-    trpc.project.getBySlug.queryOptions({
-      slug: projectSlug,
+  const { data: breadcrumbs } = useSuspenseQuery(
+    trpc.project.getBreadcrumbs.queryOptions({
+      organizationSlug,
+      projectSlug,
+      flagSlug,
     })
   );
 
   const pathname = useLocation({ select: (location) => location.pathname });
+
+  const isFlagDetailPage = useMemo(() => {
+    return Boolean(
+      flagSlug &&
+        organizationSlug &&
+        projectSlug &&
+        pathname.includes(
+          `/${organizationSlug}/${projectSlug}/flags/${flagSlug}`
+        )
+    );
+  }, [pathname, organizationSlug, projectSlug, flagSlug]);
 
   const currentSegment = useMemo(() => {
     if (!organizationSlug) {
@@ -75,9 +90,9 @@ export default function ProjectBreadcrumbs() {
   }, [currentSegment]);
 
   return (
-    <Breadcrumb className="sticky top-0 z-50 w-full border-b bg-ui-bg-base px-2.5 py-2">
+    <Breadcrumb className="sticky top-0 z-50 flex h-10 w-full items-center border-b bg-ui-bg-base px-2.5">
       <BreadcrumbList>
-        <BreadcrumbItem className="font-medium text-sm">
+        <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-sm hover:bg-ui-bg-subtle">
           <BreadcrumbLink
             render={
               <Link
@@ -86,18 +101,47 @@ export default function ProjectBreadcrumbs() {
               />
             }
           >
-            {project.name}
+            {breadcrumbs.projectName}
           </BreadcrumbLink>
         </BreadcrumbItem>
         {segmentDisplayName && (
           <>
             <BreadcrumbSeparator />
-            <BreadcrumbItem className="font-medium text-sm">
-              <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
-            </BreadcrumbItem>
+            {isFlagDetailPage && breadcrumbs.flagName ? (
+              <>
+                <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-sm hover:bg-ui-bg-subtle">
+                  <BreadcrumbLink
+                    render={
+                      <Link
+                        params={{ organizationSlug, projectSlug }}
+                        to="/$organizationSlug/$projectSlug/flags"
+                      />
+                    }
+                  >
+                    {segmentDisplayName}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
+                  <BreadcrumbPage>{breadcrumbs.flagName}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            ) : (
+              <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
+                <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
           </>
         )}
       </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
+export function ProjectBreadcrumbsSkeleton() {
+  return (
+    <Breadcrumb className="sticky top-0 z-50 flex h-10 w-full items-center border-b bg-ui-bg-base px-2.5">
+      <Skeleton className="h-7 w-full" />
     </Breadcrumb>
   );
 }
