@@ -1,8 +1,6 @@
 "use client";
 
 import { cn } from "@gradual/ui";
-import { Slot } from "@radix-ui/react-slot";
-import type { Label as LabelPrimitive } from "radix-ui";
 import React from "react";
 import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
 import {
@@ -93,11 +91,11 @@ const FormLabel = ({
   optional,
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+}: React.ComponentPropsWithoutRef<typeof Label> & {
   description?: React.ReactNode;
   required?: boolean;
   optional?: boolean;
-  ref?: React.Ref<React.ElementRef<typeof LabelPrimitive.Root>>;
+  ref?: React.Ref<React.ElementRef<typeof Label>>;
 }) => {
   const { error, formItemId } = useFormField();
 
@@ -127,14 +125,14 @@ FormLabel.displayName = "FormLabel";
 const FormControl = ({
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof Slot> & {
-  ref?: React.Ref<React.ElementRef<typeof Slot>>;
+}: React.HTMLAttributes<HTMLDivElement> & {
+  ref?: React.Ref<HTMLDivElement>;
 }) => {
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 
   return (
-    <Slot
+    <div
       aria-describedby={
         error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`
       }
