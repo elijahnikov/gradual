@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "@gradual/tailwind-config/theme";
+
+@import "@fontsource/inter";
+
+@source "../../../../packages/ui/src/*.{ts,tsx}";
+
+@config "../../tailwind.config.ts";
+
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/CommitMono-400-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/CommitMono-700-Regular.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-VariableFont_opsz,wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Inter", "sans-serif";
+  --font-mono: "CommitMono", "monospace";
+}

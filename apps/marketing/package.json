@@ -1,5 +1,5 @@
 {
-  "name": "marketing",
+  "name": "@gradual/marketing",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -10,6 +10,12 @@
   },
   "dependencies": {
     "@astrojs/vercel": "^9.0.4",
+    "@fontsource/inter": "^5.2.8",
     "astro": "^5.16.12"
+  },
+  "devDependencies": {
+    "@gradual/tailwind-config": "*",
+    "@tailwindcss/vite": "catalog:tailwind",
+    "tailwindcss": "catalog:tailwind"
   }
 }

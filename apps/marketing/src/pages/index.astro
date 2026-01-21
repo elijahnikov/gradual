@@ -1,4 +1,6 @@
 ---
+import "../styles/global.css";
+
 import Welcome from "../components/welcome.astro";
 import Layout from "../layouts/layout.astro";
 
@@ -6,6 +8,7 @@ import Layout from "../layouts/layout.astro";
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
+<h1 class="text-lg font-sans bg-ui-bg-subtle">Hello world!</h1>
 <Layout>
   <Welcome />
 </Layout>
