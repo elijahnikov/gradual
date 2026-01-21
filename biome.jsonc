@@ -3,7 +3,8 @@
   "extends": [
     "ultracite/biome/core",
     "ultracite/biome/react",
-    "ultracite/biome/remix"
+    "ultracite/biome/remix",
+    "ultracite/biome/astro"
   ],
   "linter": {
     "rules": {
