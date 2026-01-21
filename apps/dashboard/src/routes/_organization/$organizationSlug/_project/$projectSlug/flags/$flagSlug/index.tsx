@@ -11,13 +11,6 @@ export const Route = createFileRoute(
   beforeLoad: ({ context, params }) => {
     try {
       void context.queryClient.prefetchQuery(
-        context.trpc.project.getBreadcrumbs.queryOptions({
-          organizationSlug: params.organizationSlug,
-          projectSlug: params.projectSlug,
-          flagSlug: params.flagSlug,
-        })
-      );
-      void context.queryClient.prefetchQuery(
         context.trpc.featureFlags.getByKey.queryOptions({
           projectSlug: params.projectSlug,
           organizationSlug: params.organizationSlug,

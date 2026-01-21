@@ -6,6 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@gradual/ui/breadcrumb";
+import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -121,18 +122,26 @@ export default function ProjectBreadcrumbs() {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
-                <BreadcrumbItem className="font-medium text-sm">
+                <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
                   <BreadcrumbPage>{breadcrumbs.flagName}</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             ) : (
-              <BreadcrumbItem className="font-medium text-sm">
+              <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
                 <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
               </BreadcrumbItem>
             )}
           </>
         )}
       </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
+export function ProjectBreadcrumbsSkeleton() {
+  return (
+    <Breadcrumb className="sticky top-0 z-50 flex h-10 w-full items-center border-b bg-ui-bg-base px-2.5">
+      <Skeleton className="h-7 w-full" />
     </Breadcrumb>
   );
 }
