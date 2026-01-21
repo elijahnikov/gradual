@@ -87,13 +87,7 @@ export const createCompleteFeatureFlag = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateCompleteFeatureFlagInput;
 }) => {
-  const {
-    projectSlug,
-    variations,
-    defaultVariations,
-    environmentConfigs,
-    ...flagData
-  } = input;
+  const { projectSlug, variations, environmentConfigs, ...flagData } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
     where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
@@ -145,19 +139,17 @@ export const createCompleteFeatureFlag = async ({
     const createdVariations = (await tx
       .insert(featureFlagVariation)
       .values(
-        variations.map(
-          (variation: (typeof variations)[number], index: number) => ({
-            featureFlagId: createdFlag.id,
-            name: variation.name,
-            value: variation.value,
-            description: variation.description,
-            isDefault: variation.isDefault,
-            isDefaultWhenOn: index === defaultVariations.whenOn,
-            isDefaultWhenOff: index === defaultVariations.whenOff,
-            rolloutPercentage: variation.rolloutPercentage,
-            sortOrder: variation.sortOrder,
-          })
-        )
+        variations.map((variation: (typeof variations)[number]) => ({
+          featureFlagId: createdFlag.id,
+          name: variation.name,
+          value: variation.value,
+          description: variation.description,
+          isDefault: variation.isDefault,
+          isDefaultWhenOn: variation.isDefaultWhenOn,
+          isDefaultWhenOff: variation.isDefaultWhenOff,
+          rolloutPercentage: variation.rolloutPercentage,
+          sortOrder: variation.sortOrder,
+        }))
       )
       .returning()) as Array<{
       id: string;

@@ -12,10 +12,10 @@ import {
 import { Input } from "@gradual/ui/input";
 import { ScrollArea } from "@gradual/ui/scroll-area";
 import { Text } from "@gradual/ui/text";
-import { Textarea } from "@gradual/ui/textarea";
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
 import type { UseFormReturn } from "react-hook-form";
 import type z from "zod/v4";
+import { JsonEditor } from "@/components/common/json-editor";
 
 export default function JsonVariation({
   form,
@@ -33,7 +33,7 @@ export default function JsonVariation({
         <Button
           onClick={() => {
             append({
-              name: "",
+              name: `Variation #${fields.length + 1}`,
               value: {},
               description: undefined,
               isDefault: fields.length === 0,
@@ -53,14 +53,11 @@ export default function JsonVariation({
       <ScrollArea className="h-102" scrollFade>
         <div className="flex flex-col gap-2 p-4">
           {fields.map((field, index) => (
-            <div className="flex items-center gap-2" key={field.id}>
-              <Text className="font-medium font-mono text-ui-fg-muted text-xs">
+            <div className="flex items-start gap-2" key={field.id}>
+              <Text className="mt-2 font-medium font-mono text-ui-fg-muted text-xs">
                 #{index + 1}
               </Text>
-              <Card
-                className="group relative max-w-76 px-3 pt-1 pb-3"
-                key={field.id}
-              >
+              <Card className="group relative px-3 pt-1 pb-3" key={field.id}>
                 <div className="flex-1 space-y-1">
                   <FormField
                     control={form.control}
@@ -83,26 +80,27 @@ export default function JsonVariation({
                       <FormItem>
                         <FormLabel required>Value (JSON)</FormLabel>
                         <FormControl>
-                          <Textarea
-                            className="font-mono! [&>textarea]:font-mono!"
-                            {...field}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              try {
-                                const parsed =
-                                  value.trim() === "" ? {} : JSON.parse(value);
-                                field.onChange(parsed);
-                              } catch {
-                                field.onChange(value);
-                              }
-                            }}
-                            placeholder='{"key": "value"}'
-                            size="sm"
-                            value={
+                          <JsonEditor
+                            initialValue={
                               typeof field.value === "string"
                                 ? field.value
                                 : JSON.stringify(field.value ?? {}, null, 2)
                             }
+                            onChange={(value, isValid) => {
+                              field.onChange(value);
+                              if (!isValid && value.trim() !== "") {
+                                form.setError(
+                                  `variations.${index}.value`,
+                                  {
+                                    type: "manual",
+                                    message: "Invalid JSON format",
+                                  },
+                                  { shouldFocus: false }
+                                );
+                              } else {
+                                form.clearErrors(`variations.${index}.value`);
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage className="text-ui-fg-error" />

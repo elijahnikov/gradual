@@ -32,8 +32,8 @@ export default function NumberVariation({
         <Button
           onClick={() => {
             append({
-              name: "",
-              value: 0,
+              name: `Variation #${fields.length + 1}`,
+              value: fields.length + 1,
               description: undefined,
               isDefault: fields.length === 0,
               rolloutPercentage: 0,
@@ -82,7 +82,14 @@ export default function NumberVariation({
                           <Input
                             onChange={(e) => {
                               const value = e.target.value;
-                              field.onChange(value === "" ? 0 : Number(value));
+                              if (value === "") {
+                                field.onChange("");
+                              } else {
+                                const numValue = Number(value);
+                                field.onChange(
+                                  Number.isNaN(numValue) ? "" : numValue
+                                );
+                              }
                             }}
                             placeholder="Number value"
                             type="number"

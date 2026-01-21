@@ -32,8 +32,8 @@ export default function StringVariation({
         <Button
           onClick={() => {
             append({
-              name: "",
-              value: "",
+              name: `Variation #${fields.length + 1}`,
+              value: `variation-value-${fields.length + 1}`,
               description: undefined,
               isDefault: fields.length === 0,
               rolloutPercentage: 0,

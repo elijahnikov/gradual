@@ -1,6 +1,5 @@
 import { createCompleteFeatureFlagSchema } from "@gradual/api/schemas";
 import { Badge } from "@gradual/ui/badge";
-import { Button } from "@gradual/ui/button";
 import { DialogFooter } from "@gradual/ui/dialog";
 import {
   Form,
@@ -11,6 +10,7 @@ import {
   FormMessage,
 } from "@gradual/ui/form";
 import { Input } from "@gradual/ui/input";
+import { LoadingButton } from "@gradual/ui/loading-button";
 import {
   Select,
   SelectContent,
@@ -19,12 +19,15 @@ import {
   SelectValue,
 } from "@gradual/ui/select";
 import { Textarea } from "@gradual/ui/textarea";
+import { toastManager } from "@gradual/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RiCloseLine } from "@remixicon/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { type UseFormReturn, useForm } from "react-hook-form";
 import type z from "zod/v4";
+import { useTRPC } from "@/lib/trpc";
 import BooleanVariation from "./variation-inputs/boolean-variation";
 import JsonVariation from "./variation-inputs/json-variation";
 import NumberVariation from "./variation-inputs/number-variation";
@@ -37,7 +40,18 @@ export default function CreateFlagForm() {
 
   const tagInputRef = useRef<HTMLInputElement>(null);
 
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+  const { mutateAsync: createFlag, isPending: isCreatingFlag } = useMutation(
+    trpc.featureFlags.create.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries(trpc.featureFlags.pathFilter());
+      },
+    })
+  );
+
   const form = useForm({
+    mode: "onChange",
     resolver: zodResolver(createCompleteFeatureFlagSchema),
     defaultValues: {
       projectSlug: params.projectSlug,
@@ -48,11 +62,6 @@ export default function CreateFlagForm() {
       type: "boolean",
       status: "draft",
       tags: [] as string[],
-      maintainerId: undefined,
-      defaultVariations: {
-        whenOn: 0,
-        whenOff: 1,
-      },
       variations: [
         {
           name: "true",
@@ -110,8 +119,8 @@ export default function CreateFlagForm() {
         case "string":
           return [
             {
-              name: "Default",
-              value: "",
+              name: "Variation #1",
+              value: "variation-value-1",
               description: undefined,
               isDefault: true,
               isDefaultWhenOn: true,
@@ -120,8 +129,8 @@ export default function CreateFlagForm() {
               sortOrder: 0,
             },
             {
-              name: "Alternative",
-              value: "",
+              name: "Variation #2",
+              value: "variation-value-2",
               description: undefined,
               isDefault: false,
               isDefaultWhenOn: false,
@@ -133,7 +142,7 @@ export default function CreateFlagForm() {
         case "number":
           return [
             {
-              name: "Default",
+              name: "Variation #1",
               value: 0,
               description: undefined,
               isDefault: true,
@@ -143,8 +152,8 @@ export default function CreateFlagForm() {
               sortOrder: 0,
             },
             {
-              name: "Alternative",
-              value: 0,
+              name: "Variation #2",
+              value: 1,
               description: undefined,
               isDefault: false,
               isDefaultWhenOn: false,
@@ -156,7 +165,7 @@ export default function CreateFlagForm() {
         case "json":
           return [
             {
-              name: "Default",
+              name: "Variation #1",
               value: {},
               description: undefined,
               isDefault: true,
@@ -166,7 +175,7 @@ export default function CreateFlagForm() {
               sortOrder: 0,
             },
             {
-              name: "Alternative",
+              name: "Variation #2",
               value: {},
               description: undefined,
               isDefault: false,
@@ -184,7 +193,6 @@ export default function CreateFlagForm() {
     if (currentType) {
       const defaultVariations = getDefaultVariations(currentType);
 
-      // Set isDefaultWhenOn and isDefaultWhenOff based on type
       if (currentType === "boolean") {
         const trueVariationIndex = defaultVariations.findIndex(
           (v) => v.value === true
@@ -199,13 +207,8 @@ export default function CreateFlagForm() {
             isDefaultWhenOff: idx === falseVariationIndex,
           }));
           form.setValue("variations", updatedVariations);
-          form.setValue("defaultVariations", {
-            whenOn: trueVariationIndex,
-            whenOff: falseVariationIndex,
-          });
         }
       } else {
-        // For non-boolean types, set the default variation as the ON state default
         const defaultVariationIndex = defaultVariations.findIndex(
           (v) => v.isDefault
         );
@@ -216,17 +219,29 @@ export default function CreateFlagForm() {
             isDefaultWhenOff: idx === defaultVariationIndex,
           }));
           form.setValue("variations", updatedVariations);
-          form.setValue("defaultVariations", {
-            whenOn: defaultVariationIndex,
-            whenOff: defaultVariationIndex,
-          });
         }
       }
     }
   }, [currentType, form]);
 
-  const onSubmit = (data: z.infer<typeof createCompleteFeatureFlagSchema>) => {
-    console.log("Form submitted:", data);
+  const onSubmit = async (
+    data: z.infer<typeof createCompleteFeatureFlagSchema>
+  ) => {
+    try {
+      await createFlag(data);
+      toastManager.add({
+        type: "success",
+        title: "Feature flag created successfully",
+        description: "Redirecting to the feature flag...",
+      });
+    } catch (error) {
+      console.error(error);
+      toastManager.add({
+        type: "error",
+        title: "Failed to create feature flag",
+        description: "Please try again.",
+      });
+    }
   };
 
   return (
@@ -244,7 +259,7 @@ export default function CreateFlagForm() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel required>Name</FormLabel>
                     <FormControl>
                       <Input placeholder="My Feature Flag" {...field} />
                     </FormControl>
@@ -257,7 +272,7 @@ export default function CreateFlagForm() {
                 name="key"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Key</FormLabel>
+                    <FormLabel required>Key</FormLabel>
                     <FormControl>
                       <Input placeholder="my-feature-flag" {...field} />
                     </FormControl>
@@ -445,7 +460,6 @@ export default function CreateFlagForm() {
       <div className="flex w-full items-center justify-between gap-4">
         {(() => {
           const variations = form.watch("variations");
-          const defaultVariations = form.watch("defaultVariations");
 
           const validVariations = variations.filter(
             (v: (typeof variations)[number]) => v.name && v.name.trim() !== ""
@@ -460,6 +474,14 @@ export default function CreateFlagForm() {
               v.name && v.name.trim() !== "" ? index : -1
             )
             .filter((idx: number) => idx !== -1);
+
+          // Find the current default variation indices
+          const currentDefaultWhenOnIndex = variations.findIndex(
+            (v: (typeof variations)[number]) => v.isDefaultWhenOn
+          );
+          const currentDefaultWhenOffIndex = variations.findIndex(
+            (v: (typeof variations)[number]) => v.isDefaultWhenOff
+          );
 
           return (
             <div className="flex w-full items-center gap-2 border-t px-3 py-4">
@@ -490,12 +512,6 @@ export default function CreateFlagForm() {
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      const currentDefaultVariations =
-                        form.getValues("defaultVariations");
-                      form.setValue("defaultVariations", {
-                        ...currentDefaultVariations,
-                        whenOn: selectedIndex,
-                      });
                       // Set isDefaultWhenOn flags on variations
                       const currentVariations = form.getValues("variations");
                       currentVariations.forEach(
@@ -517,8 +533,8 @@ export default function CreateFlagForm() {
                     }
                   }}
                   value={
-                    defaultVariations?.whenOn !== undefined
-                      ? String(defaultVariations.whenOn)
+                    currentDefaultWhenOnIndex !== -1
+                      ? String(currentDefaultWhenOnIndex)
                       : undefined
                   }
                 >
@@ -562,12 +578,6 @@ export default function CreateFlagForm() {
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      const currentDefaultVariations =
-                        form.getValues("defaultVariations");
-                      form.setValue("defaultVariations", {
-                        ...currentDefaultVariations,
-                        whenOff: selectedIndex,
-                      });
                       // Set isDefaultWhenOff flags on variations
                       const currentVariations = form.getValues("variations");
                       currentVariations.forEach(
@@ -584,8 +594,8 @@ export default function CreateFlagForm() {
                     }
                   }}
                   value={
-                    defaultVariations?.whenOff !== undefined
-                      ? String(defaultVariations.whenOff)
+                    currentDefaultWhenOffIndex !== -1
+                      ? String(currentDefaultWhenOffIndex)
                       : undefined
                   }
                 >
@@ -614,15 +624,20 @@ export default function CreateFlagForm() {
         })()}
       </div>
       <DialogFooter className="bottom-0 mt-auto border-t p-4">
-        <Button
+        <LoadingButton
           className="ml-auto"
+          disabled={
+            !form.formState.isValid ||
+            Object.keys(form.formState.errors).length > 0
+          }
           form="login-form"
+          loading={isCreatingFlag}
           size="small"
           type="submit"
           variant="gradual"
         >
           Create flag
-        </Button>
+        </LoadingButton>
       </DialogFooter>
     </>
   );

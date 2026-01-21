@@ -14,12 +14,22 @@ export const createFeatureFlagSchema = createInsertSchema(featureFlag).omit({
   updatedAt: true,
 });
 
-const createVariationSchema = createInsertSchema(featureFlagVariation).omit({
-  id: true,
-  featureFlagId: true,
-  createdAt: true,
-  updatedAt: true,
-});
+const createVariationSchema = createInsertSchema(featureFlagVariation)
+  .omit({
+    id: true,
+    featureFlagId: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    name: z.string().min(1, "Variation name is required"),
+    value: z.union([
+      z.string().min(1, "Variation value is required"),
+      z.number(),
+      z.boolean(),
+      z.any(),
+    ]),
+  });
 
 const createEnvironmentConfigSchema = createInsertSchema(
   featureFlagEnvironment
@@ -41,14 +51,45 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
     archivedAt: true,
     createdAt: true,
     updatedAt: true,
+    maintainerId: true,
   })
   .extend({
     projectSlug: z.string(),
     organizationSlug: z.string(),
+    name: z.string().min(1, "Name is required"),
+    key: z
+      .string()
+      .min(1, "Key is required")
+      .regex(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*(?:-)?$/,
+        "Key must contain lowercase letters, numbers, and hyphens only, e.g., 'my-feature-flag'"
+      ),
     variations: z
       .array(createVariationSchema)
       .min(1, "At least one variation is required")
       .superRefine((variations, ctx) => {
+        variations.forEach((variation, index) => {
+          if (!variation.name || variation.name.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Variation name is required",
+              path: [index, "name"],
+            });
+          }
+          // Check if value is empty string, null, or undefined
+          if (
+            variation.value === undefined ||
+            variation.value === null ||
+            (typeof variation.value === "string" &&
+              variation.value.trim() === "")
+          ) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Variation value is required",
+              path: [index, "value"],
+            });
+          }
+        });
         const defaultCount = variations.filter((v) => v.isDefault).length;
         if (defaultCount !== 1) {
           ctx.addIssue({
@@ -75,10 +116,6 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
           });
         }
       }),
-    defaultVariations: z.object({
-      whenOn: z.number().int().nonnegative(),
-      whenOff: z.number().int().nonnegative(),
-    }),
     environmentConfigs: z
       .array(
         createEnvironmentConfigSchema.extend({
@@ -87,18 +124,6 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
       )
       .optional()
       .default([]),
-  })
-  .superRefine((data, ctx) => {
-    if (
-      data.defaultVariations.whenOn >= data.variations.length ||
-      data.defaultVariations.whenOff >= data.variations.length
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Default variation indices must be valid variation indices",
-        path: ["defaultVariations"],
-      });
-    }
   });
 
 export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<

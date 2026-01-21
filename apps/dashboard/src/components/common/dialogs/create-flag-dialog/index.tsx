@@ -26,7 +26,7 @@ export default function CreateFlagDialog({
       <DialogTrigger render={<Button size="small" variant="gradual" />}>
         {children}
       </DialogTrigger>
-      <DialogContent className="flex min-h-[80vh] min-w-[50vw] flex-col">
+      <DialogContent className="flex min-h-[80vh] min-w-[70vw] flex-col">
         <DialogHeader>
           <DialogTitle className="font-medium text-md">
             Create a new flag
