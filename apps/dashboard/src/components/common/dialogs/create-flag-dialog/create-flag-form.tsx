@@ -49,20 +49,28 @@ export default function CreateFlagForm() {
       status: "draft",
       tags: [] as string[],
       maintainerId: undefined,
+      defaultVariations: {
+        whenOn: 0,
+        whenOff: 1,
+      },
       variations: [
         {
-          name: "On",
+          name: "true",
           value: true,
           description: undefined,
           isDefault: true,
+          isDefaultWhenOn: true,
+          isDefaultWhenOff: false,
           rolloutPercentage: 0,
           sortOrder: 0,
         },
         {
-          name: "Off",
+          name: "false",
           value: false,
           description: undefined,
           isDefault: false,
+          isDefaultWhenOn: false,
+          isDefaultWhenOff: true,
           rolloutPercentage: 0,
           sortOrder: 1,
         },
@@ -83,6 +91,8 @@ export default function CreateFlagForm() {
               value: true,
               description: undefined,
               isDefault: true,
+              isDefaultWhenOn: true,
+              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -91,6 +101,8 @@ export default function CreateFlagForm() {
               value: false,
               description: undefined,
               isDefault: false,
+              isDefaultWhenOn: false,
+              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -102,6 +114,8 @@ export default function CreateFlagForm() {
               value: "",
               description: undefined,
               isDefault: true,
+              isDefaultWhenOn: true,
+              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -110,6 +124,8 @@ export default function CreateFlagForm() {
               value: "",
               description: undefined,
               isDefault: false,
+              isDefaultWhenOn: false,
+              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -121,6 +137,8 @@ export default function CreateFlagForm() {
               value: 0,
               description: undefined,
               isDefault: true,
+              isDefaultWhenOn: true,
+              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -129,6 +147,8 @@ export default function CreateFlagForm() {
               value: 0,
               description: undefined,
               isDefault: false,
+              isDefaultWhenOn: false,
+              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -140,6 +160,8 @@ export default function CreateFlagForm() {
               value: {},
               description: undefined,
               isDefault: true,
+              isDefaultWhenOn: true,
+              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -148,6 +170,8 @@ export default function CreateFlagForm() {
               value: {},
               description: undefined,
               isDefault: false,
+              isDefaultWhenOn: false,
+              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -158,7 +182,46 @@ export default function CreateFlagForm() {
     };
 
     if (currentType) {
-      form.setValue("variations", getDefaultVariations(currentType));
+      const defaultVariations = getDefaultVariations(currentType);
+
+      // Set isDefaultWhenOn and isDefaultWhenOff based on type
+      if (currentType === "boolean") {
+        const trueVariationIndex = defaultVariations.findIndex(
+          (v) => v.value === true
+        );
+        const falseVariationIndex = defaultVariations.findIndex(
+          (v) => v.value === false
+        );
+        if (trueVariationIndex !== -1 && falseVariationIndex !== -1) {
+          const updatedVariations = defaultVariations.map((v, idx) => ({
+            ...v,
+            isDefaultWhenOn: idx === trueVariationIndex,
+            isDefaultWhenOff: idx === falseVariationIndex,
+          }));
+          form.setValue("variations", updatedVariations);
+          form.setValue("defaultVariations", {
+            whenOn: trueVariationIndex,
+            whenOff: falseVariationIndex,
+          });
+        }
+      } else {
+        // For non-boolean types, set the default variation as the ON state default
+        const defaultVariationIndex = defaultVariations.findIndex(
+          (v) => v.isDefault
+        );
+        if (defaultVariationIndex !== -1) {
+          const updatedVariations = defaultVariations.map((v, idx) => ({
+            ...v,
+            isDefaultWhenOn: idx === defaultVariationIndex,
+            isDefaultWhenOff: idx === defaultVariationIndex,
+          }));
+          form.setValue("variations", updatedVariations);
+          form.setValue("defaultVariations", {
+            whenOn: defaultVariationIndex,
+            whenOff: defaultVariationIndex,
+          });
+        }
+      }
     }
   }, [currentType, form]);
 
@@ -301,42 +364,44 @@ export default function CreateFlagForm() {
             />
           </div>
 
-          <div className="space-y-4 p-4">
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => {
-                const items = [
-                  { value: "boolean", label: "Boolean" },
-                  { value: "string", label: "String" },
-                  { value: "number", label: "Number" },
-                  { value: "json", label: "JSON" },
-                ];
-                return (
-                  <FormItem>
-                    <FormLabel required>Type</FormLabel>
-                    <FormControl>
-                      <Select
-                        items={items}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent alignItemWithTrigger={false}>
-                          {items.map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                  </FormItem>
-                );
-              }}
-            />
+          <div>
+            <div className="px-4 pt-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => {
+                  const items = [
+                    { value: "boolean", label: "Boolean" },
+                    { value: "string", label: "String" },
+                    { value: "number", label: "Number" },
+                    { value: "json", label: "JSON" },
+                  ];
+                  return (
+                    <FormItem>
+                      <FormLabel required>Type</FormLabel>
+                      <FormControl>
+                        <Select
+                          items={items}
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent alignItemWithTrigger={false}>
+                            {items.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
             {currentType === "boolean" && (
               <BooleanVariation
                 form={
@@ -376,23 +441,28 @@ export default function CreateFlagForm() {
           </div>
         </form>
       </Form>
-      <DialogFooter className="bottom-0 mt-auto border-t p-4">
-        <div className="flex w-full items-center justify-between gap-4">
-          {(() => {
-            const variations = form.watch("variations");
-            const defaultVariationIndex = variations.findIndex(
-              (v) => v.isDefault === true
-            );
 
-            const validVariations = variations.filter(
-              (v) => v.name && v.name.trim() !== ""
-            );
+      <div className="flex w-full items-center justify-between gap-4">
+        {(() => {
+          const variations = form.watch("variations");
+          const defaultVariations = form.watch("defaultVariations");
 
-            if (validVariations.length === 0) {
-              return null;
-            }
+          const validVariations = variations.filter(
+            (v: (typeof variations)[number]) => v.name && v.name.trim() !== ""
+          );
 
-            return (
+          if (validVariations.length === 0) {
+            return null;
+          }
+
+          const validVariationIndices = variations
+            .map((v: (typeof variations)[number], index: number) =>
+              v.name && v.name.trim() !== "" ? index : -1
+            )
+            .filter((idx: number) => idx !== -1);
+
+          return (
+            <div className="flex w-full items-center gap-2 border-t px-3 py-4">
               <div className="flex items-center gap-2">
                 <span className="whitespace-nowrap text-ui-fg-muted text-xs">
                   When flag is{" "}
@@ -405,57 +475,154 @@ export default function CreateFlagForm() {
                   serve:
                 </span>
                 <Select
-                  items={validVariations.map((variation) => ({
-                    value: variation.name,
-                    label: variation.name,
-                  }))}
+                  items={validVariations.map(
+                    (
+                      variation: (typeof validVariations)[number],
+                      index: number
+                    ) => ({
+                      value: String(validVariationIndices[index]),
+                      label: variation.name || `Variation ${index + 1}`,
+                    })
+                  )}
                   onValueChange={(value) => {
                     if (!value) {
                       return;
                     }
-                    const currentVariations = form.getValues("variations");
-                    const selectedIndex = currentVariations.findIndex(
-                      (v) => v.name === value
-                    );
-                    if (selectedIndex !== -1) {
-                      currentVariations.forEach((_, index) => {
-                        form.setValue(
-                          `variations.${index}.isDefault`,
-                          index === selectedIndex
-                        );
+                    const selectedIndex = Number.parseInt(value, 10);
+                    if (!Number.isNaN(selectedIndex)) {
+                      const currentDefaultVariations =
+                        form.getValues("defaultVariations");
+                      form.setValue("defaultVariations", {
+                        ...currentDefaultVariations,
+                        whenOn: selectedIndex,
                       });
+                      // Set isDefaultWhenOn flags on variations
+                      const currentVariations = form.getValues("variations");
+                      currentVariations.forEach(
+                        (
+                          _: (typeof currentVariations)[number],
+                          index: number
+                        ) => {
+                          form.setValue(
+                            `variations.${index}.isDefaultWhenOn`,
+                            index === selectedIndex
+                          );
+                          // Also set as isDefault for backward compatibility
+                          form.setValue(
+                            `variations.${index}.isDefault`,
+                            index === selectedIndex
+                          );
+                        }
+                      );
                     }
                   }}
                   value={
-                    defaultVariationIndex !== -1 &&
-                    variations[defaultVariationIndex]?.name?.trim() !== ""
-                      ? variations[defaultVariationIndex]?.name
+                    defaultVariations?.whenOn !== undefined
+                      ? String(defaultVariations.whenOn)
                       : undefined
                   }
                 >
-                  <SelectTrigger className="h-7 w-[140px]">
+                  <SelectTrigger size="sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent alignItemWithTrigger={false}>
-                    {validVariations.map((variation, index) => (
-                      <SelectItem key={index} value={variation.name}>
-                        {variation.name}
-                      </SelectItem>
-                    ))}
+                    {validVariations.map(
+                      (
+                        variation: (typeof validVariations)[number],
+                        index: number
+                      ) => (
+                        <SelectItem
+                          key={index}
+                          value={String(validVariationIndices[index])}
+                        >
+                          {variation.name || `Variation ${index + 1}`}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-            );
-          })()}
-          <Button
-            form="login-form"
-            size="small"
-            type="submit"
-            variant="gradual"
-          >
-            Create flag
-          </Button>
-        </div>
+              <div className="flex items-center gap-2">
+                <span className="whitespace-nowrap text-ui-fg-muted text-xs">
+                  When flag is <Badge variant={"destructive"}>OFF</Badge> serve:
+                </span>
+                <Select
+                  items={validVariations.map(
+                    (
+                      variation: (typeof validVariations)[number],
+                      index: number
+                    ) => ({
+                      value: String(validVariationIndices[index]),
+                      label: variation.name || `Variation ${index + 1}`,
+                    })
+                  )}
+                  onValueChange={(value) => {
+                    if (!value) {
+                      return;
+                    }
+                    const selectedIndex = Number.parseInt(value, 10);
+                    if (!Number.isNaN(selectedIndex)) {
+                      const currentDefaultVariations =
+                        form.getValues("defaultVariations");
+                      form.setValue("defaultVariations", {
+                        ...currentDefaultVariations,
+                        whenOff: selectedIndex,
+                      });
+                      // Set isDefaultWhenOff flags on variations
+                      const currentVariations = form.getValues("variations");
+                      currentVariations.forEach(
+                        (
+                          _: (typeof currentVariations)[number],
+                          index: number
+                        ) => {
+                          form.setValue(
+                            `variations.${index}.isDefaultWhenOff`,
+                            index === selectedIndex
+                          );
+                        }
+                      );
+                    }
+                  }}
+                  value={
+                    defaultVariations?.whenOff !== undefined
+                      ? String(defaultVariations.whenOff)
+                      : undefined
+                  }
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    {validVariations.map(
+                      (
+                        variation: (typeof validVariations)[number],
+                        index: number
+                      ) => (
+                        <SelectItem
+                          key={index}
+                          value={String(validVariationIndices[index])}
+                        >
+                          {variation.name || `Variation ${index + 1}`}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      <DialogFooter className="bottom-0 mt-auto border-t p-4">
+        <Button
+          className="ml-auto"
+          form="login-form"
+          size="small"
+          type="submit"
+          variant="gradual"
+        >
+          Create flag
+        </Button>
       </DialogFooter>
     </>
   );

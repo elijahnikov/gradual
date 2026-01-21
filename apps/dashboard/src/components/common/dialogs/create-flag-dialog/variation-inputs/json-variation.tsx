@@ -1,5 +1,6 @@
 import type { createCompleteFeatureFlagSchema } from "@gradual/api/schemas";
 import { Button } from "@gradual/ui/button";
+import { Card } from "@gradual/ui/card";
 import {
   FormControl,
   FormField,
@@ -9,7 +10,8 @@ import {
   useFieldArray,
 } from "@gradual/ui/form";
 import { Input } from "@gradual/ui/input";
-import { Label } from "@gradual/ui/label";
+import { ScrollArea } from "@gradual/ui/scroll-area";
+import { Text } from "@gradual/ui/text";
 import { Textarea } from "@gradual/ui/textarea";
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
 import type { UseFormReturn } from "react-hook-form";
@@ -26,9 +28,8 @@ export default function JsonVariation({
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-ui-fg-base">Variations</Label>
+    <div>
+      <div className="mb-2 flex items-center justify-end px-4">
         <Button
           onClick={() => {
             append({
@@ -49,71 +50,83 @@ export default function JsonVariation({
         </Button>
       </div>
 
-      {fields.map((field, index) => (
-        <div className="space-y-3 rounded-md border p-4" key={field.id}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-3">
-              <FormField
-                control={form.control}
-                name={`variations.${index}.name`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Variation name" {...field} />
-                    </FormControl>
-                    <FormMessage className="text-ui-fg-error" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`variations.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Value (JSON)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          try {
-                            const parsed =
-                              value.trim() === "" ? {} : JSON.parse(value);
-                            field.onChange(parsed);
-                          } catch {
-                            // Keep the string value if invalid JSON
-                            field.onChange(value);
-                          }
-                        }}
-                        placeholder='{"key": "value"}'
-                        value={
-                          typeof field.value === "string"
-                            ? field.value
-                            : JSON.stringify(field.value ?? {}, null, 2)
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage className="text-ui-fg-error" />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {fields.length > 2 && (
-              <Button
-                onClick={() => remove(index)}
-                size="small"
-                type="button"
-                variant="ghost"
+      <ScrollArea className="h-102" scrollFade>
+        <div className="flex flex-col gap-2 p-4">
+          {fields.map((field, index) => (
+            <div className="flex items-center gap-2" key={field.id}>
+              <Text className="font-medium font-mono text-ui-fg-muted text-xs">
+                #{index + 1}
+              </Text>
+              <Card
+                className="group relative max-w-76 px-3 pt-1 pb-3"
+                key={field.id}
               >
-                <RiDeleteBinLine className="size-4" />
-              </Button>
-            )}
-          </div>
+                <div className="flex-1 space-y-1">
+                  <FormField
+                    control={form.control}
+                    name={`variations.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel required>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Variation name" {...field} />
+                        </FormControl>
+                        <FormMessage className="text-ui-fg-error" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`variations.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel required>Value (JSON)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="font-mono! [&>textarea]:font-mono!"
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              try {
+                                const parsed =
+                                  value.trim() === "" ? {} : JSON.parse(value);
+                                field.onChange(parsed);
+                              } catch {
+                                field.onChange(value);
+                              }
+                            }}
+                            placeholder='{"key": "value"}'
+                            size="sm"
+                            value={
+                              typeof field.value === "string"
+                                ? field.value
+                                : JSON.stringify(field.value ?? {}, null, 2)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage className="text-ui-fg-error" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {fields.length > 2 && (
+                  <Button
+                    className="absolute top-1 right-1 size-6 opacity-0 transition-opacity duration-100 group-hover:opacity-100"
+                    onClick={() => remove(index)}
+                    size="small"
+                    type="button"
+                    variant="destructive"
+                  >
+                    <RiDeleteBinLine className="size-4 shrink-0" />
+                  </Button>
+                )}
+              </Card>
+            </div>
+          ))}
         </div>
-      ))}
+      </ScrollArea>
     </div>
   );
 }

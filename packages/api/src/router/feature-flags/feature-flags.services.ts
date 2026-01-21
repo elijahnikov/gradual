@@ -87,7 +87,13 @@ export const createCompleteFeatureFlag = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateCompleteFeatureFlagInput;
 }) => {
-  const { projectSlug, variations, environmentConfigs, ...flagData } = input;
+  const {
+    projectSlug,
+    variations,
+    defaultVariations,
+    environmentConfigs,
+    ...flagData
+  } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
     where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
@@ -118,14 +124,16 @@ export const createCompleteFeatureFlag = async ({
   }
 
   return await ctx.db.transaction(async (tx) => {
-    const [createdFlag] = await tx
+    const createdFlags = (await tx
       .insert(featureFlag)
       .values({
         ...flagData,
         projectId: foundProject.id,
         organizationId: ctx.organization.id,
       })
-      .returning();
+      .returning()) as Array<typeof featureFlag.$inferInsert & { id: string }>;
+
+    const createdFlag = createdFlags[0];
 
     if (!createdFlag) {
       throw new TRPCError({
@@ -134,20 +142,31 @@ export const createCompleteFeatureFlag = async ({
       });
     }
 
-    const createdVariations = await tx
+    const createdVariations = (await tx
       .insert(featureFlagVariation)
       .values(
-        variations.map((variation) => ({
-          featureFlagId: createdFlag.id,
-          name: variation.name,
-          value: variation.value,
-          description: variation.description,
-          isDefault: variation.isDefault,
-          rolloutPercentage: variation.rolloutPercentage,
-          sortOrder: variation.sortOrder,
-        }))
+        variations.map(
+          (variation: (typeof variations)[number], index: number) => ({
+            featureFlagId: createdFlag.id,
+            name: variation.name,
+            value: variation.value,
+            description: variation.description,
+            isDefault: variation.isDefault,
+            isDefaultWhenOn: index === defaultVariations.whenOn,
+            isDefaultWhenOff: index === defaultVariations.whenOff,
+            rolloutPercentage: variation.rolloutPercentage,
+            sortOrder: variation.sortOrder,
+          })
+        )
       )
-      .returning();
+      .returning()) as Array<{
+      id: string;
+      name: string;
+      value: unknown;
+      isDefault: boolean;
+      isDefaultWhenOn: boolean;
+      isDefaultWhenOff: boolean;
+    }>;
 
     if (createdVariations.length === 0) {
       throw new TRPCError({
@@ -166,7 +185,7 @@ export const createCompleteFeatureFlag = async ({
 
     if (environmentConfigs && environmentConfigs.length > 0) {
       const environmentIds = environmentConfigs.map(
-        (config) => config.environmentId
+        (config: (typeof environmentConfigs)[number]) => config.environmentId
       );
       const environments = await tx.query.environment.findMany({
         where: (
@@ -190,12 +209,15 @@ export const createCompleteFeatureFlag = async ({
       }
 
       await tx.insert(featureFlagEnvironment).values(
-        environmentConfigs.map((config) => ({
-          featureFlagId: createdFlag.id,
-          environmentId: config.environmentId,
-          enabled: config.enabled,
-          defaultVariationId: config.defaultVariationId ?? defaultVariation.id,
-        }))
+        environmentConfigs.map(
+          (config: (typeof environmentConfigs)[number]) => ({
+            featureFlagId: createdFlag.id,
+            environmentId: config.environmentId,
+            enabled: config.enabled,
+            defaultVariationId:
+              config.defaultVariationId ?? defaultVariation.id,
+          })
+        )
       );
     }
 

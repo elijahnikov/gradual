@@ -10,7 +10,8 @@ import {
   useFieldArray,
 } from "@gradual/ui/form";
 import { Input } from "@gradual/ui/input";
-import { Label } from "@gradual/ui/label";
+import { ScrollArea } from "@gradual/ui/scroll-area";
+import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
 import type { UseFormReturn } from "react-hook-form";
 import type z from "zod/v4";
@@ -26,9 +27,8 @@ export default function StringVariation({
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-ui-fg-base">Variations</Label>
+    <div>
+      <div className="mb-2 flex items-center justify-end px-4">
         <Button
           onClick={() => {
             append({
@@ -49,62 +49,70 @@ export default function StringVariation({
         </Button>
       </div>
 
-      {fields.map((field, index) => (
-        <Card key={field.id}>
-          <div className="flex items-start justify-between">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name={`variations.${index}.name`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Variation name" {...field} />
-                    </FormControl>
-                    <FormMessage className="text-ui-fg-error" />
-                  </FormItem>
-                )}
-              />
+      <ScrollArea className="h-102" scrollFade>
+        <div className="flex flex-col gap-2 p-4">
+          {fields.map((field, index) => (
+            <div className="flex items-center gap-2" key={field.id}>
+              <Text className="font-medium font-mono text-ui-fg-muted text-xs">
+                #{index + 1}
+              </Text>
+              <Card className="group relative px-3 pt-1 pb-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`variations.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel required>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Variation name" {...field} />
+                        </FormControl>
+                        <FormMessage className="text-ui-fg-error" />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name={`variations.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel required>Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        name={field.name}
-                        onBlur={field.onBlur}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        placeholder="String value"
-                        ref={field.ref}
-                        type="text"
-                        value={
-                          typeof field.value === "string" ? field.value : ""
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage className="text-ui-fg-error" />
-                  </FormItem>
+                  <FormField
+                    control={form.control}
+                    name={`variations.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel required>Value</FormLabel>
+                        <FormControl>
+                          <Input
+                            name={field.name}
+                            onBlur={field.onBlur}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            placeholder="String value"
+                            ref={field.ref}
+                            type="text"
+                            value={
+                              typeof field.value === "string" ? field.value : ""
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage className="text-ui-fg-error" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {fields.length > 2 && (
+                  <Button
+                    className="absolute top-1 right-1 size-6 opacity-0 transition-opacity duration-100 group-hover:opacity-100"
+                    onClick={() => remove(index)}
+                    size="small"
+                    type="button"
+                    variant="destructive"
+                  >
+                    <RiDeleteBinLine className="size-4 shrink-0" />
+                  </Button>
                 )}
-              />
+              </Card>
             </div>
-
-            {fields.length > 2 && (
-              <Button
-                onClick={() => remove(index)}
-                size="small"
-                type="button"
-                variant="ghost"
-              >
-                <RiDeleteBinLine className="size-4" />
-              </Button>
-            )}
-          </div>
-        </Card>
-      ))}
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

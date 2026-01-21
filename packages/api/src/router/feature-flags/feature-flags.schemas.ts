@@ -56,7 +56,29 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
             message: "Exactly one variation must be marked as default",
           });
         }
+        const defaultWhenOnCount = variations.filter(
+          (v) => v.isDefaultWhenOn
+        ).length;
+        if (defaultWhenOnCount !== 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Exactly one variation must be marked as default when ON",
+          });
+        }
+        const defaultWhenOffCount = variations.filter(
+          (v) => v.isDefaultWhenOff
+        ).length;
+        if (defaultWhenOffCount !== 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Exactly one variation must be marked as default when OFF",
+          });
+        }
       }),
+    defaultVariations: z.object({
+      whenOn: z.number().int().nonnegative(),
+      whenOff: z.number().int().nonnegative(),
+    }),
     environmentConfigs: z
       .array(
         createEnvironmentConfigSchema.extend({
@@ -65,6 +87,18 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
       )
       .optional()
       .default([]),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.defaultVariations.whenOn >= data.variations.length ||
+      data.defaultVariations.whenOff >= data.variations.length
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Default variation indices must be valid variation indices",
+        path: ["defaultVariations"],
+      });
+    }
   });
 
 export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<
