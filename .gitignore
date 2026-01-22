@@ -57,3 +57,4 @@ dist/
 packages/cf-worker/.wrangler/
 
 .astro/
+apps/marketing/.astro
