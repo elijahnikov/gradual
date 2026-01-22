@@ -54,6 +54,7 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
     maintainerId: true,
   })
   .extend({
+    maintainerId: z.string().optional(),
     projectSlug: z.string(),
     organizationSlug: z.string(),
     name: z.string().min(1, "Name is required"),

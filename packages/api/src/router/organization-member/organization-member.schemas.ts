@@ -13,17 +13,18 @@ export const createOrganizationMemberSchema = createInsertSchema(member).omit({
 export type GetOrganizationMembersInput = z.infer<
   typeof getOrganizationMembersSchema
 >;
-export const getOrganizationMembersSchema = createSelectSchema(member)
-  .pick({ organizationId: true })
-  .extend({
-    orderDirection: z.enum(["asc", "desc"]).optional().default("asc"),
-    orderBy: z
-      .enum(["createdAt", "updatedAt", "role"])
-      .optional()
-      .default("createdAt"),
-    limit: z.number().optional().default(10),
-    offset: z.number().optional().default(0),
-  });
+export const getOrganizationMembersSchema = z.object({
+  organizationSlug: z.string(),
+  orderDirection: z.enum(["asc", "desc"]).optional().default("asc"),
+  orderBy: z
+    .enum(["createdAt", "updatedAt", "role"])
+    .optional()
+    .default("createdAt"),
+  limit: z.number().optional().default(10),
+  offset: z.number().optional().default(0),
+  getWithPermissions: z.boolean().optional().default(false),
+  textSearch: z.string().optional().default(""),
+});
 
 export type RemoveOrganizationMemberInput = z.infer<
   typeof removeOrganizationMemberSchema

@@ -125,6 +125,7 @@ export const createCompleteFeatureFlag = async ({
         ...flagData,
         projectId: foundProject.id,
         organizationId: ctx.organization.id,
+        createdById: ctx.session.user.id,
       })
       .returning()) as Array<typeof featureFlag.$inferInsert & { id: string }>;
 

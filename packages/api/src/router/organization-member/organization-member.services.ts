@@ -1,6 +1,7 @@
-import { and, eq } from "@gradual/db";
-import { member } from "@gradual/db/schema";
+import { and, eq, ilike, or } from "@gradual/db";
+import { member, user } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
+import { asc, desc } from "drizzle-orm";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateOrganizationMemberInput,
@@ -40,22 +41,69 @@ export const getOrganizationMembers = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: GetOrganizationMembersInput;
 }) => {
-  const members = await ctx.authApi.listMembers({
-    query: {
-      organizationId: input.organizationId,
-      limit: 100,
-      offset: 0,
-      sortBy: input.orderBy,
-      sortDirection: input.orderDirection,
-    },
-    headers: ctx.headers,
-  });
+  const whereConditions = [eq(member.organizationId, ctx.organization.id)];
 
-  const membersWithPermissions = members.members.map((member) => ({
-    ...member,
-    permissions: calculateMemberPermissions(ctx.organizationMember, member),
+  if (input.textSearch?.trim()) {
+    const searchTerm = `%${input.textSearch.trim()}%`;
+    const searchCondition = or(
+      ilike(user.name, searchTerm),
+      ilike(user.email, searchTerm)
+    );
+    if (searchCondition) {
+      whereConditions.push(searchCondition);
+    }
+  }
+
+  const getOrderBy = () => {
+    if (input.orderBy === "role") {
+      return input.orderDirection === "desc"
+        ? desc(member.role)
+        : asc(member.role);
+    }
+    return input.orderDirection === "desc"
+      ? desc(member.createdAt)
+      : asc(member.createdAt);
+  };
+  const orderByClause = getOrderBy();
+
+  const dbMembers = await ctx.db
+    .select({
+      id: member.id,
+      organizationId: member.organizationId,
+      userId: member.userId,
+      role: member.role,
+      createdAt: member.createdAt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      },
+    })
+    .from(member)
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(and(...whereConditions))
+    .orderBy(orderByClause)
+    .limit(input.limit ?? 100)
+    .offset(input.offset ?? 0);
+
+  const mappedMembers = dbMembers.map((dbMember) => ({
+    id: dbMember.id,
+    organizationId: dbMember.organizationId,
+    userId: dbMember.userId,
+    role: dbMember.role,
+    createdAt: dbMember.createdAt,
+    user: dbMember.user,
   }));
-  return membersWithPermissions;
+
+  if (input.getWithPermissions) {
+    return mappedMembers.map((member) => ({
+      ...member,
+      permissions: calculateMemberPermissions(ctx.organizationMember, member),
+    }));
+  }
+
+  return mappedMembers;
 };
 
 export const removeOrganizationMember = async ({

@@ -28,12 +28,17 @@ import { useEffect, useRef } from "react";
 import { type UseFormReturn, useForm } from "react-hook-form";
 import type z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
+import Assignee from "./assignee";
 import BooleanVariation from "./variation-inputs/boolean-variation";
 import JsonVariation from "./variation-inputs/json-variation";
 import NumberVariation from "./variation-inputs/number-variation";
 import StringVariation from "./variation-inputs/string-variation";
 
-export default function CreateFlagForm() {
+export default function CreateFlagForm({
+  isDialogOpen,
+}: {
+  isDialogOpen: boolean;
+}) {
   const navigate = useNavigate();
   const params = useParams({
     from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
@@ -55,6 +60,7 @@ export default function CreateFlagForm() {
     mode: "onChange",
     resolver: zodResolver(createCompleteFeatureFlagSchema),
     defaultValues: {
+      maintainerId: undefined,
       projectSlug: params.projectSlug,
       organizationSlug: params.organizationSlug,
       key: "",
@@ -486,7 +492,6 @@ export default function CreateFlagForm() {
             )
             .filter((idx: number) => idx !== -1);
 
-          // Find the current default variation indices
           const currentDefaultWhenOnIndex = variations.findIndex(
             (v: (typeof variations)[number]) => v.isDefaultWhenOn
           );
@@ -523,7 +528,6 @@ export default function CreateFlagForm() {
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      // Set isDefaultWhenOn flags on variations
                       const currentVariations = form.getValues("variations");
                       currentVariations.forEach(
                         (
@@ -534,7 +538,6 @@ export default function CreateFlagForm() {
                             `variations.${index}.isDefaultWhenOn`,
                             index === selectedIndex
                           );
-                          // Also set as isDefault for backward compatibility
                           form.setValue(
                             `variations.${index}.isDefault`,
                             index === selectedIndex
@@ -589,7 +592,6 @@ export default function CreateFlagForm() {
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      // Set isDefaultWhenOff flags on variations
                       const currentVariations = form.getValues("variations");
                       currentVariations.forEach(
                         (
@@ -635,6 +637,15 @@ export default function CreateFlagForm() {
         })()}
       </div>
       <DialogFooter className="bottom-0 mt-auto border-t p-4">
+        <Assignee
+          form={
+            form as UseFormReturn<
+              z.infer<typeof createCompleteFeatureFlagSchema>
+            >
+          }
+          isDialogOpen={isDialogOpen}
+          organizationSlug={params.organizationSlug}
+        />
         <LoadingButton
           className="ml-auto"
           disabled={

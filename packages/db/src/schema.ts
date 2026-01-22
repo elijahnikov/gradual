@@ -179,6 +179,7 @@ export const featureFlag = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     tags: jsonb("tags").$type<string[]>().default([]),
     maintainerId: uuid("maintainer_id").references(() => user.id),
+    createdById: uuid("created_by_id").references(() => user.id),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

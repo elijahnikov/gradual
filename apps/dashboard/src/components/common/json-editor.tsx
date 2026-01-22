@@ -264,7 +264,7 @@ export function JsonEditor({
           </TooltipProvider>
         )}
         <div
-          className="flex max-h-[600px] overflow-y-auto"
+          className="flex h-max max-h-[600px] overflow-y-auto"
           ref={scrollContainerRef}
         >
           <div className="h-full min-w-12 select-none border-border border-r bg-muted/30 px-2 py-4 text-right font-mono text-muted-foreground text-sm">
@@ -276,7 +276,7 @@ export function JsonEditor({
           </div>
           <textarea
             className={cn(
-              "min-h-full flex-1 resize-none overflow-y-hidden bg-transparent p-4 font-mono text-foreground text-sm leading-6 outline-none placeholder:text-muted-foreground",
+              "flex-1 resize-none overflow-y-hidden bg-transparent p-4 font-mono text-foreground text-sm leading-6 outline-none placeholder:text-muted-foreground",
               !isValid && value.trim() && "text-destructive"
             )}
             onChange={(e) => handleChange(e.target.value)}

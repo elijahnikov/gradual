@@ -28,11 +28,11 @@ export default function CreateFlagDialog({
       </DialogTrigger>
       <DialogContent className="flex min-h-[80vh] min-w-[70vw] flex-col">
         <DialogHeader>
-          <DialogTitle className="font-medium text-md">
+          <DialogTitle className="font-medium text-[14px]">
             Create a new flag
           </DialogTitle>
         </DialogHeader>
-        <CreateFlagForm />
+        <CreateFlagForm isDialogOpen={isOpen} />
       </DialogContent>
     </Dialog>
   );
