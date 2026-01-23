@@ -1,4 +1,4 @@
-import { member } from "@gradual/db/schema";
+import { member, project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import type {
@@ -85,6 +85,13 @@ export const createOrganization = async ({
     });
   }
 
+  await ctx.authApi.setActiveOrganization({
+    body: {
+      organizationId: createdOrganization.id,
+    },
+    headers: ctx.headers,
+  });
+
   return createdOrganization;
 };
 
@@ -155,14 +162,29 @@ export const getAllOrganizationsByUserId = async ({
     ),
   });
 
-  const organizationsWithMembers = organizations.map((organization) => ({
-    organization,
-    member: memberData.find(
-      (member) => member.organizationId === organization.id
-    ),
-  }));
+  const projects = await ctx.db.query.project.findMany({
+    where: inArray(project.organizationId, organizationIds),
+    columns: {
+      id: true,
+      name: true,
+      slug: true,
+      organizationId: true,
+    },
+  });
 
-  return organizationsWithMembers;
+  const organizationsWithMembersAndProjects = organizations.map(
+    (organization) => ({
+      organization,
+      projects: projects.filter(
+        (project) => project.organizationId === organization.id
+      ),
+      member: memberData.find(
+        (member) => member.organizationId === organization.id
+      ),
+    })
+  );
+
+  return organizationsWithMembersAndProjects;
 };
 
 export const checkSlugAvailability = async ({

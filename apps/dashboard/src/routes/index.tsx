@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { authClient } from "@/auth/client";
 import { AuthShowcase } from "@/components/auth-showcase";
 
 export const Route = createFileRoute("/")({
@@ -11,13 +12,15 @@ export const Route = createFileRoute("/")({
 });
 
 function RouteComponent() {
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+
   return (
     <main className="container h-screen py-16">
       <div className="flex flex-col items-center justify-center gap-4">
         <h1 className="font-extrabold text-5xl tracking-tight sm:text-[5rem]">
           Create <span className="text-primary">T3</span> Turbo
         </h1>
-
+        <pre>{JSON.stringify(activeOrganization, null, 2)}</pre>
         <div className="h-24 w-24 bg-ui-bg-subtle">1</div>
         <AuthShowcase />
         {/* <CreatePostForm />

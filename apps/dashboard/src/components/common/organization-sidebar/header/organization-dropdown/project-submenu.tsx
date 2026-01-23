@@ -1,3 +1,4 @@
+import type { RouterOutputs } from "@gradual/api";
 import {
   DropdownMenuGroup,
   DropdownMenuLabel,
@@ -6,45 +7,28 @@ import {
   DropdownMenuSubTrigger,
   MenuItem,
 } from "@gradual/ui/dropdown-menu";
-import { Skeleton } from "@gradual/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { useTRPC } from "@/lib/trpc";
 
 export default function ProjectSubmenu({
   children,
-  organizationId,
   organizationSlug,
+  projects,
 }: {
   children: React.ReactNode;
-  organizationId: string;
   organizationSlug: string;
+  projects: RouterOutputs["organization"]["getAllByUserId"][number]["projects"];
 }) {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-
-  const trpc = useTRPC();
-  const { data: projects, isLoading: isLoadingProjects } = useQuery({
-    ...trpc.project.getAllByOrganizationId.queryOptions({
-      organizationId,
-    }),
-    enabled: isOpen,
-  });
   return (
-    <DropdownMenuSub onOpenChange={setIsOpen} open={isOpen}>
+    <DropdownMenuSub>
       <DropdownMenuSubTrigger>{children}</DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
         <DropdownMenuGroup>
           <DropdownMenuLabel className="text-ui-fg-muted">
             Projects
           </DropdownMenuLabel>
-          {isLoadingProjects ? (
-            <div className="p-1">
-              <Skeleton className="h-7 w-full" />
-            </div>
-          ) : (
+          {projects.length > 0 ? (
             <div>
-              {projects?.map((project) => (
+              {projects.map((project) => (
                 <Link
                   key={project.id}
                   params={{
@@ -59,6 +43,10 @@ export default function ProjectSubmenu({
                   </MenuItem>
                 </Link>
               ))}
+            </div>
+          ) : (
+            <div className="px-2 py-1.5 text-sm text-ui-fg-muted">
+              No projects
             </div>
           )}
         </DropdownMenuGroup>

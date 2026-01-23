@@ -29,6 +29,7 @@ export default function OrganizationDropdown() {
   const trpc = useTRPC();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [_openSubmenuId, _setOpenSubmenuIdd] = useState<string | null>(null);
 
   const { data: organization } = useSuspenseQuery(
     trpc.organization.getBySlug.queryOptions({
@@ -91,8 +92,8 @@ export default function OrganizationDropdown() {
                         to={"/$organizationSlug"}
                       >
                         <ProjectSubmenu
-                          organizationId={organization.organization.id}
                           organizationSlug={organization.organization.slug}
+                          projects={organization.projects}
                         >
                           <div
                             className={cn(

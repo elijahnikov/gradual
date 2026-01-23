@@ -58,3 +58,5 @@ packages/cf-worker/.wrangler/
 
 .astro/
 apps/marketing/.astro
+apps/marketing/.astro/types.d.ts
+apps/marketing/.astro/*
