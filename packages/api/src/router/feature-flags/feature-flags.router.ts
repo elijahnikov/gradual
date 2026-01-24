@@ -23,7 +23,11 @@ export const featureFlagsRouter = {
     .input(schemas.createCompleteFeatureFlagSchema)
     .mutation((opts) => services.createCompleteFeatureFlag({ ...opts })),
 
-  insertFakeEvaluations: protectedOrganizationProcedure({ flags: ["create"] })
-    .input(schemas.insertFakeEvaluationsSchema)
-    .mutation((opts) => services.insertFakeEvaluations({ ...opts })),
+  getPreviewEvaluations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getPreviewEvaluationsSchema)
+    .query((opts) => services.getPreviewEvaluations({ ...opts })),
+
+  seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.seedEvaluationsSchema)
+    .mutation((opts) => services.seedEvaluations({ ...opts })),
 } satisfies TRPCRouterRecord;

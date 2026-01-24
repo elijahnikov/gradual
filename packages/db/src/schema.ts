@@ -78,6 +78,12 @@ export const flagDependencyTypeEnum = pgEnum("flag_dependency_type", [
   "conflicts",
 ]);
 
+export const targetTypeEnum = pgEnum("target_type", [
+  "rule",
+  "individual",
+  "segment",
+]);
+
 export const project = pgTable(
   "project",
   {
@@ -242,6 +248,93 @@ export const featureFlagEnvironment = pgTable(
       table.environmentId
     ),
     index("feature_flag_environment_env_idx").on(table.environmentId),
+  ]
+);
+
+export const featureFlagTarget = pgTable(
+  "feature_flag_target",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    featureFlagEnvironmentId: uuid("feature_flag_environment_id")
+      .notNull()
+      .references(() => featureFlagEnvironment.id, { onDelete: "cascade" }),
+    variationId: uuid("variation_id")
+      .notNull()
+      .references(() => featureFlagVariation.id, { onDelete: "cascade" }),
+    type: targetTypeEnum("type").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("feature_flag_target_env_idx").on(table.featureFlagEnvironmentId),
+    index("feature_flag_target_env_sort_idx").on(
+      table.featureFlagEnvironmentId,
+      table.sortOrder
+    ),
+    index("feature_flag_target_type_idx").on(table.type),
+  ]
+);
+
+export const featureFlagTargetingRule = pgTable(
+  "feature_flag_targeting_rule",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
+      .unique(),
+    attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
+    operator: targetingOperatorEnum("operator").notNull(),
+    value: jsonb("value").notNull(),
+  },
+  (table) => [
+    index("feature_flag_targeting_rule_target_idx").on(table.targetId),
+  ]
+);
+
+export const featureFlagIndividualTarget = pgTable(
+  "feature_flag_individual_target",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
+      .unique(),
+    attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
+    attributeValue: text("attribute_value").notNull(),
+    attributeValueJson: jsonb("attribute_value_json"),
+  },
+  (table) => [
+    index("feature_flag_individual_target_target_idx").on(table.targetId),
+    index("feature_flag_individual_target_key_value_idx").on(
+      table.attributeKey,
+      table.attributeValue
+    ),
+  ]
+);
+
+// Segment Targeting - Target users by segment membership (child of featureFlagTarget)
+export const featureFlagSegmentTarget = pgTable(
+  "feature_flag_segment_target",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
+      .unique(),
+    segmentId: uuid("segment_id")
+      .notNull()
+      .references(() => segment.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("feature_flag_segment_target_target_idx").on(table.targetId),
+    index("feature_flag_segment_target_segment_idx").on(table.segmentId),
   ]
 );
 
@@ -688,12 +781,13 @@ export const featureFlagVariationRelations = relations(
     }),
     defaultForEnvironments: many(featureFlagEnvironment),
     evaluations: many(featureFlagEvaluation),
+    targets: many(featureFlagTarget),
   })
 );
 
 export const featureFlagEnvironmentRelations = relations(
   featureFlagEnvironment,
-  ({ one }) => ({
+  ({ one, many }) => ({
     featureFlag: one(featureFlag, {
       fields: [featureFlagEnvironment.featureFlagId],
       references: [featureFlag.id],
@@ -705,6 +799,58 @@ export const featureFlagEnvironmentRelations = relations(
     defaultVariation: one(featureFlagVariation, {
       fields: [featureFlagEnvironment.defaultVariationId],
       references: [featureFlagVariation.id],
+    }),
+    targets: many(featureFlagTarget),
+  })
+);
+
+export const featureFlagTargetRelations = relations(
+  featureFlagTarget,
+  ({ one }) => ({
+    featureFlagEnvironment: one(featureFlagEnvironment, {
+      fields: [featureFlagTarget.featureFlagEnvironmentId],
+      references: [featureFlagEnvironment.id],
+    }),
+    variation: one(featureFlagVariation, {
+      fields: [featureFlagTarget.variationId],
+      references: [featureFlagVariation.id],
+    }),
+    rule: one(featureFlagTargetingRule),
+    individual: one(featureFlagIndividualTarget),
+    segment: one(featureFlagSegmentTarget),
+  })
+);
+
+export const featureFlagTargetingRuleRelations = relations(
+  featureFlagTargetingRule,
+  ({ one }) => ({
+    target: one(featureFlagTarget, {
+      fields: [featureFlagTargetingRule.targetId],
+      references: [featureFlagTarget.id],
+    }),
+  })
+);
+
+export const featureFlagIndividualTargetRelations = relations(
+  featureFlagIndividualTarget,
+  ({ one }) => ({
+    target: one(featureFlagTarget, {
+      fields: [featureFlagIndividualTarget.targetId],
+      references: [featureFlagTarget.id],
+    }),
+  })
+);
+
+export const featureFlagSegmentTargetRelations = relations(
+  featureFlagSegmentTarget,
+  ({ one }) => ({
+    target: one(featureFlagTarget, {
+      fields: [featureFlagSegmentTarget.targetId],
+      references: [featureFlagTarget.id],
+    }),
+    segment: one(segment, {
+      fields: [featureFlagSegmentTarget.segmentId],
+      references: [segment.id],
     }),
   })
 );
@@ -736,7 +882,7 @@ export const attributeValueRelations = relations(attributeValue, ({ one }) => ({
   }),
 }));
 
-export const segmentRelations = relations(segment, ({ one }) => ({
+export const segmentRelations = relations(segment, ({ one, many }) => ({
   project: one(project, {
     fields: [segment.projectId],
     references: [project.id],
@@ -745,6 +891,7 @@ export const segmentRelations = relations(segment, ({ one }) => ({
     fields: [segment.organizationId],
     references: [organization.id],
   }),
+  flagTargets: many(featureFlagSegmentTarget),
 }));
 
 export const apiKeyRelations = relations(apiKey, ({ one }) => ({

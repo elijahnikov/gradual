@@ -8,14 +8,15 @@ import {
   project,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
-import { count, desc } from "drizzle-orm";
+import { count, desc, gte, sql } from "drizzle-orm";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateCompleteFeatureFlagInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
-  InsertFakeEvaluationsInput,
+  GetPreviewEvaluationsInput,
+  SeedEvaluationsInput,
 } from "./feature-flags.schemas";
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
@@ -332,192 +333,285 @@ export const getFeatureFlagBreadcrumbInfo = async ({
   return foundFlag;
 };
 
-const USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
-  "Mozilla/5.0 (Android 12; Mobile; rv:109.0) Gecko/109.0",
-] as const;
-
-const COUNTRIES = [
-  "US",
-  "GB",
-  "CA",
-  "AU",
-  "DE",
-  "FR",
-  "JP",
-  "BR",
-  "IN",
-  "CN",
-] as const;
-const PLANS = ["free", "basic", "pro", "enterprise"] as const;
-const DEVICES = ["desktop", "mobile", "tablet"] as const;
-const OS = ["Windows", "macOS", "Linux", "iOS", "Android"] as const;
-
-function getRandomItem<T>(items: readonly T[]): T {
-  const index = Math.floor(Math.random() * items.length);
-  const item = items[index];
-  if (!item) {
-    throw new Error("Empty array");
-  }
-  return item;
-}
-
-function generateFakeContext() {
-  const userId = `user_${Math.floor(Math.random() * 10_000)}`;
-  const userPlan = getRandomItem(PLANS);
-  const country = getRandomItem(COUNTRIES);
-  const device = getRandomItem(DEVICES);
-  const userOs = getRandomItem(OS);
-
-  return {
-    user: {
-      id: userId,
-      email: `user${Math.floor(Math.random() * 10_000)}@example.com`,
-      plan: userPlan,
-      createdAt: new Date(
-        Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-    },
-    device: {
-      type: device,
-      os: userOs,
-    },
-    location: {
-      country,
-    },
-    company: {
-      id: `company_${Math.floor(Math.random() * 1000)}`,
-      name: `Company ${Math.floor(Math.random() * 100)}`,
-    },
-  };
-}
-
-function generateRandomIp(): string {
-  return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-}
-
-function generateEvaluationsForFlag(
-  flag: {
-    id: string;
-    environments: Array<{
-      enabled: boolean;
-      environment: { id: string } | null;
-    }>;
-    variations: Array<{
-      id: string;
-      value: unknown;
-      isDefault: boolean;
-    }>;
-  },
-  evaluationsPerFlag: number
-): (typeof featureFlagEvaluation.$inferInsert)[] {
-  if (flag.environments.length === 0 || flag.variations.length === 0) {
-    return [];
-  }
-
-  const evaluations: (typeof featureFlagEvaluation.$inferInsert)[] = [];
-  const defaultVariation = flag.variations.find((v) => v.isDefault);
-  const firstVariation = flag.variations[0];
-
-  for (let i = 0; i < evaluationsPerFlag; i++) {
-    const envConfigIndex = Math.floor(Math.random() * flag.environments.length);
-    const envConfig = flag.environments[envConfigIndex];
-    if (!envConfig) {
-      continue;
-    }
-    const env = envConfig.environment;
-    if (!env) {
-      continue;
-    }
-
-    const isEnabled = envConfig.enabled && Math.random() > 0.3;
-    const variationIndex = Math.floor(Math.random() * flag.variations.length);
-    const randomVariation = flag.variations[variationIndex];
-    const variation = isEnabled
-      ? (randomVariation ?? firstVariation)
-      : (defaultVariation ?? firstVariation);
-    if (!variation) {
-      continue;
-    }
-
-    const context = generateFakeContext();
-    const ipAddress = generateRandomIp();
-    const createdAt = new Date(
-      Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-    );
-    const userAgent = getRandomItem(USER_AGENTS);
-
-    evaluations.push({
-      featureFlagId: flag.id,
-      environmentId: env.id,
-      variationId: variation.id,
-      context: context as Record<string, unknown>,
-      ipAddress,
-      userAgent,
-      value: variation.value,
-      reason: isEnabled ? "matched_variation" : "default_variation",
-      sdkKey: `sdk_key_${Math.floor(Math.random() * 1000)}`,
-      sdkVersion: `1.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
-      createdAt,
-    });
-  }
-
-  return evaluations;
-}
-
-export const insertFakeEvaluations = async ({
+export const getPreviewEvaluations = async ({
   ctx,
   input,
 }: {
   ctx: ProtectedOrganizationTRPCContext;
-  input: InsertFakeEvaluationsInput;
+  input: GetPreviewEvaluationsInput;
 }) => {
-  const { flagIds, evaluationsPerFlag } = input;
+  const { flagId, organizationId: organizationIdToCheck, projectId } = input;
 
-  const flags = await ctx.db.query.featureFlag.findMany({
-    where: ({ id, organizationId }, { eq, and, inArray: inArrayFn }) =>
-      and(inArrayFn(id, flagIds), eq(organizationId, ctx.organization.id)),
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, organizationId, projectId }, { eq, and }) =>
+      and(
+        eq(id, flagId),
+        eq(organizationId, organizationIdToCheck),
+        eq(projectId, projectId)
+      ),
     with: {
+      project: true,
+    },
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  if (foundFlag.project.id !== projectId) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found in the specified project",
+    });
+  }
+
+  const twentyFourHoursAgo = new Date();
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24, 0, 0, 0);
+
+  const environments = await ctx.db.query.environment.findMany({
+    where: ({ projectId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(projectId, foundFlag.project.id), isNull(deletedAt)),
+  });
+
+  const variations = await ctx.db.query.featureFlagVariation.findMany({
+    where: (table, { eq }) => eq(table.featureFlagId, flagId),
+  });
+
+  const evaluations = await ctx.db
+    .select({
+      time: sql<string>`DATE_TRUNC('hour', ${featureFlagEvaluation.createdAt})`,
+      environmentId: featureFlagEvaluation.environmentId,
+      variationId: featureFlagEvaluation.variationId,
+      count: count(),
+    })
+    .from(featureFlagEvaluation)
+    .where(
+      and(
+        eq(featureFlagEvaluation.featureFlagId, flagId),
+        gte(featureFlagEvaluation.createdAt, twentyFourHoursAgo)
+      )
+    )
+    .groupBy(
+      sql`DATE_TRUNC('hour', ${featureFlagEvaluation.createdAt})`,
+      featureFlagEvaluation.environmentId,
+      featureFlagEvaluation.variationId
+    )
+    .orderBy(sql`DATE_TRUNC('hour', ${featureFlagEvaluation.createdAt})`);
+
+  const today = new Date();
+  const { hourlyData, totals } = transformEvaluationsToHourlyData(
+    evaluations,
+    environments,
+    variations,
+    today
+  );
+
+  return {
+    data: hourlyData,
+    variations: variations.map((v) => ({ id: v.id, name: v.name })),
+    totals,
+  };
+};
+
+const initializeHourlyStructures = (
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>
+) => {
+  const totals: Record<string, Record<string, number>> = {};
+  for (const env of environments) {
+    const envTotals: Record<string, number> = {};
+    for (const variation of variations) {
+      envTotals[variation.name] = 0;
+    }
+    totals[env.name] = envTotals;
+  }
+  return totals;
+};
+
+const processHourData = (
+  hourDate: Date,
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  environmentMap: Map<string, string>,
+  variationMap: Map<string, string>,
+  totals: Record<string, Record<string, number>>
+) => {
+  const formattedTime = hourDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    hour12: true,
+  });
+
+  const byEnvironment: Record<string, Record<string, number>> = {};
+  for (const env of environments) {
+    const envData: Record<string, number> = {};
+    for (const variation of variations) {
+      envData[variation.name] = 0;
+    }
+    byEnvironment[env.name] = envData;
+  }
+
+  const evaluationsForHour = evaluations.filter((e) => {
+    const eDate = new Date(e.time);
+    return eDate.getTime() === hourDate.getTime();
+  });
+
+  for (const evalEntry of evaluationsForHour) {
+    const envName = environmentMap.get(evalEntry.environmentId);
+    const varName = evalEntry.variationId
+      ? variationMap.get(evalEntry.variationId)
+      : null;
+
+    if (envName && varName) {
+      const c = Number(evalEntry.count);
+      const envData = byEnvironment[envName];
+      const envTotals = totals[envName];
+      if (envData) {
+        envData[varName] = c;
+      }
+      if (envTotals) {
+        envTotals[varName] = (envTotals[varName] ?? 0) + c;
+      }
+    }
+  }
+
+  return { time: formattedTime, byEnvironment };
+};
+
+const transformEvaluationsToHourlyData = (
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  today: Date
+) => {
+  const environmentMap = new Map(environments.map((e) => [e.id, e.name]));
+  const variationMap = new Map(variations.map((v) => [v.id, v.name]));
+
+  const totals = initializeHourlyStructures(environments, variations);
+  const hourlyData: Array<{
+    time: string;
+    byEnvironment: Record<string, Record<string, number>>;
+  }> = [];
+
+  for (let i = 23; i >= 0; i--) {
+    const hourDate = new Date(today);
+    hourDate.setHours(hourDate.getHours() - i, 0, 0, 0);
+    const hourEntry = processHourData(
+      hourDate,
+      evaluations,
+      environments,
+      variations,
+      environmentMap,
+      variationMap,
+      totals
+    );
+    hourlyData.push(hourEntry);
+  }
+
+  return { hourlyData, totals };
+};
+
+export const seedEvaluations = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: SeedEvaluationsInput;
+}) => {
+  const { flagId, organizationId, count: totalToInsert } = input;
+
+  // 1. Fetch the flag and its variations/environments
+  const flag = await ctx.db.query.featureFlag.findFirst({
+    where: (table, { and, eq }) =>
+      and(eq(table.id, flagId), eq(table.organizationId, organizationId)),
+    with: {
+      variations: true,
       environments: {
         with: {
           environment: true,
         },
       },
-      variations: true,
     },
   });
 
-  if (flags.length === 0) {
+  if (!flag) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "No flags found with the provided IDs",
+      message: "Feature flag not found",
     });
   }
 
-  const evaluations: (typeof featureFlagEvaluation.$inferInsert)[] = [];
+  const variations = flag.variations;
+  const envs = flag.environments.map((fe) => fe.environmentId);
 
-  for (const flag of flags) {
-    const flagEvaluations = generateEvaluationsForFlag(
-      flag,
-      evaluationsPerFlag
-    );
-    evaluations.push(...flagEvaluations);
+  if (variations.length === 0 || envs.length === 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Flag must have variations and environments to seed data",
+    });
   }
 
-  const batchSize = 500;
-  let inserted = 0;
-
-  for (let i = 0; i < evaluations.length; i += batchSize) {
-    const batch = evaluations.slice(i, i + batchSize);
-    await ctx.db.insert(featureFlagEvaluation).values(batch);
-    inserted += batch.length;
-  }
-
-  return {
-    inserted,
-    flagsProcessed: flags.length,
+  // 2. Helper generators for random data
+  const getRandomElement = <T>(arr: T[]): T => {
+    const element = arr[Math.floor(Math.random() * arr.length)];
+    if (element === undefined) {
+      throw new Error("Array is empty");
+    }
+    return element;
   };
+
+  const userAgents = [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+  ];
+
+  const ips = ["192.168.1.1", "10.0.0.5", "172.16.0.10", "8.8.8.8", "1.1.1.1"];
+
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  // 3. Generate records
+  const evaluationValues: (typeof featureFlagEvaluation.$inferInsert)[] = [];
+  for (let i = 0; i < totalToInsert; i++) {
+    const variation = getRandomElement(variations);
+    const environmentId = getRandomElement(envs);
+
+    // Random time in the last 24 hours
+    const createdAt = new Date(
+      twentyFourHoursAgo.getTime() +
+        Math.random() * (now.getTime() - twentyFourHoursAgo.getTime())
+    );
+
+    evaluationValues.push({
+      featureFlagId: flagId,
+      environmentId,
+      variationId: variation.id,
+      value: variation.value,
+      context: { userId: `user_${Math.floor(Math.random() * 5000)}` },
+      ipAddress: getRandomElement(ips),
+      userAgent: getRandomElement(userAgents),
+      reason: "seeded",
+      createdAt,
+    });
+  }
+
+  // 4. Batch insert
+  await ctx.db.insert(featureFlagEvaluation).values(evaluationValues);
+
+  return { success: true, inserted: totalToInsert };
 };

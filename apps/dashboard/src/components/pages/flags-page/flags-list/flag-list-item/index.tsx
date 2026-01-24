@@ -1,31 +1,11 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@gradual/ui/avatar";
 import { Badge } from "@gradual/ui/badge";
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@gradual/ui/chart";
+import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
+import { RiUserSmileLine } from "@remixicon/react";
 import dayjs from "dayjs";
-import { Area, AreaChart } from "recharts";
-
-const chartData = [
-  { month: "January", mobile: 80 },
-  { month: "February", mobile: 200 },
-  { month: "March", mobile: 120 },
-  { month: "April", mobile: 190 },
-  { month: "May", mobile: 130 },
-  { month: "June", mobile: 140 },
-];
-
-const chartConfig = {
-  mobile: {
-    label: "Mobile",
-    color: "#60a5fa",
-  },
-} satisfies ChartConfig;
+import EvaluationsPreviewChart from "./evaluations-chart";
 
 export default function FlagListItem({
   flag,
@@ -42,55 +22,27 @@ export default function FlagListItem({
       </div>
       <div className="ml-auto flex items-center gap-2">
         <div className="p-2">
-          <ChartContainer className="h-12 w-36" config={chartConfig}>
-            <AreaChart accessibilityLayer data={chartData}>
-              <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-              <defs>
-                <linearGradient id="fillDesktop" x1="0" x2="0" y1="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-desktop)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-desktop)"
-                    stopOpacity={0.1}
-                  />
-                </linearGradient>
-                <linearGradient id="fillMobile" x1="0" x2="0" y1="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-mobile)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-mobile)"
-                    stopOpacity={0.1}
-                  />
-                </linearGradient>
-              </defs>
-              <Area
-                dataKey="mobile"
-                fill="url(#fillMobile)"
-                fillOpacity={0.4}
-                stackId="a"
-                stroke="var(--color-mobile)"
-                type="linear"
-              />
-            </AreaChart>
-          </ChartContainer>
+          <EvaluationsPreviewChart
+            flagId={flag.id}
+            organizationId={flag.organizationId}
+            projectId={flag.projectId}
+          />
         </div>
-        <Avatar className="shadow-buttons-neutral">
-          <AvatarImage src={flag.maintainer?.image ?? undefined} />
-          <AvatarFallback>{flag.maintainer?.name?.charAt(0)}</AvatarFallback>
-        </Avatar>
         <Badge variant="secondary">
           <Text size="xsmall" weight="plus">
             {dayjs(flag.createdAt).format("MMM D")}
           </Text>
         </Badge>
+        {flag.maintainer ? (
+          <Avatar className="shadow-buttons-neutral">
+            <AvatarImage src={flag.maintainer?.image ?? undefined} />
+            <AvatarFallback>{flag.maintainer?.name?.charAt(0)}</AvatarFallback>
+          </Avatar>
+        ) : (
+          <Card className="flex size-8 items-center justify-center rounded-full">
+            <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
+          </Card>
+        )}
       </div>
     </div>
   );

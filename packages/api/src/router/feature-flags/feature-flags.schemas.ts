@@ -117,11 +117,19 @@ export const getFeatureFlagBreadcrumbInfoSchema = z.object({
   organizationSlug: z.string(),
 });
 
-export type InsertFakeEvaluationsInput = z.infer<
-  typeof insertFakeEvaluationsSchema
+export type GetPreviewEvaluationsInput = z.infer<
+  typeof getPreviewEvaluationsSchema
 >;
-export const insertFakeEvaluationsSchema = z.object({
-  organizationSlug: z.string(),
-  flagIds: z.array(z.string().uuid()).min(1),
-  evaluationsPerFlag: z.number().int().positive().max(1000).default(100),
+export const getPreviewEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationId: z.string(),
+  projectId: z.string(),
 });
+
+export const seedEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationId: z.string(),
+  projectId: z.string(),
+  count: z.number().int().min(1).max(5000).default(1000),
+});
+export type SeedEvaluationsInput = z.infer<typeof seedEvaluationsSchema>;
