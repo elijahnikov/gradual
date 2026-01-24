@@ -1,6 +1,5 @@
 import { and, eq } from "@gradual/db";
 import {
-  environment,
   featureFlag,
   featureFlagEnvironment,
   featureFlagEvaluation,
@@ -286,42 +285,14 @@ export const getFeatureFlagByKey = async ({
     .where(eq(featureFlagVariation.featureFlagId, foundFlag.id))
     .orderBy(featureFlagVariation.sortOrder);
 
-  const environmentConfigsRaw = await ctx.db
-    .select({
-      id: featureFlagEnvironment.id,
-      environmentId: featureFlagEnvironment.environmentId,
-      enabled: featureFlagEnvironment.enabled,
-      defaultVariationId: featureFlagEnvironment.defaultVariationId,
-      envId: environment.id,
-      envName: environment.name,
-      envSlug: environment.slug,
-      envColor: environment.color,
-    })
-    .from(featureFlagEnvironment)
-    .innerJoin(
-      environment,
-      eq(featureFlagEnvironment.environmentId, environment.id)
-    )
-    .where(eq(featureFlagEnvironment.featureFlagId, foundFlag.id));
-
-  const environmentConfigs = environmentConfigsRaw.map((config) => ({
-    id: config.id,
-    environmentId: config.environmentId,
-    enabled: config.enabled,
-    defaultVariationId: config.defaultVariationId,
-    environment: {
-      id: config.envId,
-      name: config.envName,
-      slug: config.envSlug,
-      color: config.envColor,
+  const environments = await ctx.db.query.featureFlagEnvironment.findMany({
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+    with: {
+      environment: true,
     },
-  }));
+  });
 
-  return {
-    flag: foundFlag,
-    variations,
-    environmentConfigs,
-  };
+  return { flag: foundFlag, variations, environments };
 };
 
 export const getFeatureFlagBreadcrumbInfo = async ({
