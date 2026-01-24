@@ -95,8 +95,19 @@ export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<
 export const getFeatureFlagsByProjectAndOrganizationSchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
-  page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
+  cursor: z
+    .object({
+      // Value is either a number (for evaluationCount) or ISO date string (for date columns)
+      value: z.union([z.number(), z.string()]),
+      id: z.string(),
+    })
+    .optional(),
+  sortBy: z
+    .enum(["createdAt", "updatedAt", "evaluationCount"])
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  search: z.string().optional(),
 });
 
 export type GetFeatureFlagByKeyInput = z.infer<

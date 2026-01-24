@@ -1,4 +1,17 @@
-import { and, eq } from "@gradual/db";
+import {
+  alias,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  lt,
+  or,
+  sql,
+} from "@gradual/db";
 import {
   featureFlag,
   featureFlagEnvironment,
@@ -6,9 +19,10 @@ import {
   featureFlagVariation,
   organization,
   project,
+  user,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
-import { count, desc, gte, sql } from "drizzle-orm";
+
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateCompleteFeatureFlagInput,
@@ -26,7 +40,7 @@ export const getAllFeatureFlagsByProjectAndOrganization = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: GetFeatureFlagsByProjectAndOrganizationInput;
 }) => {
-  const { projectSlug } = input;
+  const { projectSlug, limit, cursor, sortBy, sortOrder, search } = input;
 
   const project = await ctx.db.query.project.findFirst({
     where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
@@ -44,28 +58,115 @@ export const getAllFeatureFlagsByProjectAndOrganization = async ({
     });
   }
 
+  const evaluationCountExpr = sql<number>`count(distinct ${featureFlagEvaluation.id})`;
+  const evaluationCount = evaluationCountExpr.as("evaluation_count");
+
+  const sortColumnMap = {
+    createdAt: featureFlag.createdAt,
+    updatedAt: featureFlag.updatedAt,
+    evaluationCount,
+  } as const;
+
+  const baseWhereClauses = [
+    eq(featureFlag.projectId, project.id),
+    eq(featureFlag.organizationId, ctx.organization.id),
+  ];
+
+  if (search) {
+    const searchPattern = `%${search}%`;
+    baseWhereClauses.push(
+      // biome-ignore lint/style/noNonNullAssertion: or() returns defined when given conditions
+      or(
+        ilike(featureFlag.name, searchPattern),
+        ilike(featureFlag.key, searchPattern)
+      )!
+    );
+  }
+
   const total = await ctx.db
     .select({ count: count() })
     .from(featureFlag)
-    .where(
-      and(
-        eq(featureFlag.projectId, project.id),
-        eq(featureFlag.organizationId, ctx.organization.id)
-      )
-    );
+    .where(and(...baseWhereClauses));
 
-  const result = await ctx.db.query.featureFlag.findMany({
-    where: ({ projectId, organizationId }, { eq, and }) =>
-      and(eq(projectId, project.id), eq(organizationId, ctx.organization.id)),
-    with: {
-      maintainer: true,
-      creator: true,
-    },
-    orderBy: desc(featureFlag.createdAt),
-  });
+  const sortColumn = sortColumnMap[sortBy];
+  const operator = sortOrder === "asc" ? gt : lt;
+
+  const whereClauses = [...baseWhereClauses];
+
+  const createdBy = alias(user, "created_by");
+  const maintainer = alias(user, "maintainer");
+
+  if (cursor && sortBy !== "evaluationCount") {
+    const sortCol =
+      sortBy === "createdAt" ? featureFlag.createdAt : featureFlag.updatedAt;
+    const cursorDate = new Date(cursor.value as string);
+    whereClauses.push(
+      // biome-ignore lint/style/noNonNullAssertion: or() returns defined when given conditions
+      or(
+        operator(sortCol, cursorDate),
+        and(eq(sortCol, cursorDate), operator(featureFlag.id, cursor.id))
+      )!
+    );
+  }
+
+  const havingCondition =
+    cursor && sortBy === "evaluationCount"
+      ? sql`(${evaluationCountExpr} ${sortOrder === "asc" ? sql`>` : sql`<`} ${cursor.value} OR (${evaluationCountExpr} = ${cursor.value} AND ${featureFlag.id} ${sortOrder === "asc" ? sql`>` : sql`<`} ${cursor.id}))`
+      : undefined;
+
+  const query = ctx.db
+    .select({
+      featureFlag,
+      createdBy,
+      maintainer,
+      evaluationCount,
+    })
+    .from(featureFlag)
+    .leftJoin(
+      featureFlagEvaluation,
+      eq(featureFlag.id, featureFlagEvaluation.featureFlagId)
+    )
+    .leftJoin(
+      featureFlagVariation,
+      eq(featureFlag.id, featureFlagVariation.featureFlagId)
+    )
+    .leftJoin(createdBy, eq(featureFlag.createdById, createdBy.id))
+    .leftJoin(maintainer, eq(featureFlag.maintainerId, maintainer.id))
+    .where(and(...whereClauses))
+    .groupBy(featureFlag.id, createdBy.id, maintainer.id);
+
+  const result = await (havingCondition
+    ? query
+        .having(havingCondition)
+        .orderBy(
+          sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn),
+          sortOrder === "asc" ? asc(featureFlag.id) : desc(featureFlag.id)
+        )
+        .limit(limit + 1)
+    : query
+        .orderBy(
+          sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn),
+          sortOrder === "asc" ? asc(featureFlag.id) : desc(featureFlag.id)
+        )
+        .limit(limit + 1));
+
+  const hasNextPage = result.length > limit;
+  const items = hasNextPage ? result.slice(0, limit) : result;
+
+  const last = items.at(-1);
 
   return {
-    data: result,
+    items,
+    nextCursor:
+      hasNextPage && last
+        ? {
+            value:
+              sortBy === "evaluationCount"
+                ? last.evaluationCount
+                : last.featureFlag[sortBy],
+            id: last.featureFlag.id,
+          }
+        : null,
     total: total[0]?.count ?? 0,
   };
 };

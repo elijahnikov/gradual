@@ -60,9 +60,7 @@ export default function CopyButton({
           <RiFileCopyLine aria-hidden="true" size={16} />
         </div>
       </TooltipTrigger>
-      <TooltipContent className="px-2 py-1 text-xs">
-        Click to copy
-      </TooltipContent>
+      <TooltipContent className="text-xs">Click to copy</TooltipContent>
     </Tooltip>
   );
 }

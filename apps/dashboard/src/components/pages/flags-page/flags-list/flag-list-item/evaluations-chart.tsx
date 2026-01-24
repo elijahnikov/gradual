@@ -17,6 +17,10 @@ const VARIATION_COLORS = [
   "#ec4899", // Pink
 ];
 
+// Sanitize name for use as CSS variable name
+const sanitizeCssVarName = (name: string) =>
+  name.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+
 interface EvaluationsChartProps {
   flagId: string;
   organizationId: string;
@@ -37,35 +41,49 @@ export default function EvaluationsPreviewChart({
     })
   );
 
-  const { developmentData, productionData, chartConfig } = useMemo(() => {
-    if (!evaluations) {
-      return { developmentData: [], productionData: [], chartConfig: {} };
-    }
+  const { developmentData, productionData, chartConfig, variationsWithCssKey } =
+    useMemo(() => {
+      if (!evaluations) {
+        return {
+          developmentData: [],
+          productionData: [],
+          chartConfig: {},
+          variationsWithCssKey: [],
+        };
+      }
 
-    const devData = evaluations.data.map((d) => ({
-      time: d.time,
-      ...d.byEnvironment.Development,
-    }));
+      const devData = evaluations.data.map((d) => ({
+        time: d.time,
+        ...d.byEnvironment.Development,
+      }));
 
-    const prodData = evaluations.data.map((d) => ({
-      time: d.time,
-      ...d.byEnvironment.Production,
-    }));
+      const prodData = evaluations.data.map((d) => ({
+        time: d.time,
+        ...d.byEnvironment.Production,
+      }));
 
-    const config: ChartConfig = {};
-    evaluations.variations.forEach((v, i) => {
-      config[v.name] = {
-        label: v.name,
+      // Create variations with sanitized CSS keys
+      const variations = evaluations.variations.map((v, i) => ({
+        ...v,
+        cssKey: sanitizeCssVarName(v.name),
         color: VARIATION_COLORS[i % VARIATION_COLORS.length],
-      };
-    });
+      }));
 
-    return {
-      developmentData: devData,
-      productionData: prodData,
-      chartConfig: config,
-    };
-  }, [evaluations]);
+      const config: ChartConfig = {};
+      for (const v of variations) {
+        config[v.name] = {
+          label: v.name,
+          color: v.color,
+        };
+      }
+
+      return {
+        developmentData: devData,
+        productionData: prodData,
+        chartConfig: config,
+        variationsWithCssKey: variations,
+      };
+    }, [evaluations]);
 
   if (isLoading) {
     return (
@@ -83,42 +101,44 @@ export default function EvaluationsPreviewChart({
   return (
     <div className="flex items-center justify-center gap-2">
       <ChartContainer className="h-10 w-36" config={chartConfig}>
-        <AreaChart accessibilityLayer data={developmentData}>
+        <AreaChart
+          accessibilityLayer
+          className="relative"
+          data={developmentData}
+        >
           <XAxis dataKey="time" hide />
           <YAxis domain={[0, "auto"]} hide />
           <ChartTooltip
             animationDuration={0}
-            content={<ChartTooltipContent className="z-100!" />}
+            content={<ChartTooltipContent className="absolute top-10" />}
             isAnimationActive={false}
             position={{ y: 40 }}
           />
-          {evaluations.variations.map((v) => (
-            <defs key={v.id}>
-              <linearGradient id={`fill-${v.name}`} x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={`var(--color-${v.name})`}
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={`var(--color-${v.name})`}
-                  stopOpacity={0.1}
-                />
+          {variationsWithCssKey.map((v) => (
+            <defs key={`dev-def-${v.id}`}>
+              <linearGradient
+                id={`fill-dev-${v.cssKey}`}
+                x1="0"
+                x2="0"
+                y1="0"
+                y2="1"
+              >
+                <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
               </linearGradient>
             </defs>
           ))}
 
-          {evaluations.variations.map((v) => (
+          {variationsWithCssKey.map((v) => (
             <Area
               activeDot={false}
               dataKey={v.name}
-              fill={`url(#fill-${v.name})`}
+              fill={`url(#fill-dev-${v.cssKey})`}
               fillOpacity={0.4}
               isAnimationActive={false}
               key={v.id}
               stackId="a"
-              stroke={`var(--color-${v.name})`}
+              stroke={v.color}
               strokeWidth={1.25}
               type="linear"
             />
@@ -131,38 +151,36 @@ export default function EvaluationsPreviewChart({
           <YAxis domain={[0, "auto"]} hide />
           <ChartTooltip
             animationDuration={0}
-            content={<ChartTooltipContent />}
+            content={<ChartTooltipContent className="absolute top-10" />}
             isAnimationActive={false}
             position={{ y: 40 }}
           />
 
-          {evaluations.variations.map((v) => (
-            <defs key={v.id}>
-              <linearGradient id={`fill-${v.name}`} x1="0" x2="0" y1="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={`var(--color-${v.name})`}
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={`var(--color-${v.name})`}
-                  stopOpacity={0.1}
-                />
+          {variationsWithCssKey.map((v) => (
+            <defs key={`prod-def-${v.id}`}>
+              <linearGradient
+                id={`fill-prod-${v.cssKey}`}
+                x1="0"
+                x2="0"
+                y1="0"
+                y2="1"
+              >
+                <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
               </linearGradient>
             </defs>
           ))}
 
-          {evaluations.variations.map((v) => (
+          {variationsWithCssKey.map((v) => (
             <Area
               activeDot={false}
               dataKey={v.name}
-              fill={`url(#fill-${v.name})`}
+              fill={`url(#fill-prod-${v.cssKey})`}
               fillOpacity={0.4}
               isAnimationActive={false}
               key={v.id}
               stackId="a"
-              stroke={`var(--color-${v.name})`}
+              stroke={v.color}
               strokeWidth={1.25}
               type="linear"
             />

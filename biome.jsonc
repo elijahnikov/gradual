@@ -13,7 +13,8 @@
         "noBarrelFile": "off"
       },
       "complexity": {
-        "noVoid": "off"
+        "noVoid": "off",
+        "noExcessiveCognitiveComplexity": "off"
       },
       "correctness": {
         "noChildrenProp": "off"

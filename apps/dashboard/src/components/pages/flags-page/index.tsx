@@ -1,6 +1,7 @@
 import { useParams } from "@tanstack/react-router";
 import { Suspense } from "react";
 import FlagsList, { FlagsListSkeleton } from "./flags-list";
+import FlagFilterBar from "./flags-list/flag-filter-bar";
 
 export default function FlagsPageComponent() {
   const params = useParams({
@@ -8,7 +9,8 @@ export default function FlagsPageComponent() {
   });
 
   return (
-    <div className="w-full">
+    <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col">
+      <FlagFilterBar />
       <Suspense fallback={<FlagsListSkeleton />}>
         <FlagsList
           organizationSlug={params.organizationSlug}
