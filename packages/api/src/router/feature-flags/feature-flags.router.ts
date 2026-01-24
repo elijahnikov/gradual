@@ -22,4 +22,8 @@ export const featureFlagsRouter = {
   create: protectedOrganizationProcedure({ flags: ["create"] })
     .input(schemas.createCompleteFeatureFlagSchema)
     .mutation((opts) => services.createCompleteFeatureFlag({ ...opts })),
+
+  insertFakeEvaluations: protectedOrganizationProcedure({ flags: ["create"] })
+    .input(schemas.insertFakeEvaluationsSchema)
+    .mutation((opts) => services.insertFakeEvaluations({ ...opts })),
 } satisfies TRPCRouterRecord;

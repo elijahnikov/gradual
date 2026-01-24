@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -76,33 +77,6 @@ export const flagDependencyTypeEnum = pgEnum("flag_dependency_type", [
   "requires",
   "conflicts",
 ]);
-
-// export const organization = pgTable(
-//   "organization",
-//   {
-//     id: uuid("id").notNull().primaryKey().defaultRandom(),
-//     createdById: uuid("created_by_id")
-//       .notNull()
-//       .references(() => user.id, { onDelete: "cascade" }),
-//     name: varchar("name", { length: 256 }).notNull(),
-//     slug: varchar("slug", { length: 256 }).notNull().unique(),
-//     description: text("description"),
-//     logoUrl: text("logo_url"),
-//     deletedAt: timestamp("deleted_at", { withTimezone: true }),
-//     createdAt: timestamp("created_at", { withTimezone: true })
-//       .defaultNow()
-//       .notNull(),
-//     updatedAt: timestamp("updated_at", { withTimezone: true })
-//       .defaultNow()
-//       .$onUpdate(() => new Date())
-//       .notNull(),
-//   },
-//   (table) => [
-//     index("organization_created_by_id_idx").on(table.createdById),
-//     index("organization_slug_idx").on(table.slug),
-//     index("organization_deleted_at_idx").on(table.deletedAt),
-//   ]
-// );
 
 export const project = pgTable(
   "project",
@@ -207,11 +181,9 @@ export const featureFlagVariation = pgTable(
       .notNull()
       .references(() => featureFlag.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 256 }).notNull(),
-    value: jsonb("value").notNull(), // Can be boolean, string, number, or JSON
+    value: jsonb("value").notNull(),
     description: text("description"),
     isDefault: boolean("is_default").notNull().default(false),
-    isDefaultWhenOn: boolean("is_default_when_on").notNull().default(false),
-    isDefaultWhenOff: boolean("is_default_when_off").notNull().default(false),
     rolloutPercentage: doublePrecision("rollout_percentage")
       .notNull()
       .default(0),
@@ -229,14 +201,6 @@ export const featureFlagVariation = pgTable(
     index("feature_flag_variation_default_idx").on(
       table.featureFlagId,
       table.isDefault
-    ),
-    index("feature_flag_variation_default_when_on_idx").on(
-      table.featureFlagId,
-      table.isDefaultWhenOn
-    ),
-    index("feature_flag_variation_default_when_off_idx").on(
-      table.featureFlagId,
-      table.isDefaultWhenOff
     ),
   ]
 );
@@ -256,6 +220,10 @@ export const featureFlagEnvironment = pgTable(
       () => featureFlagVariation.id,
       { onDelete: "set null" }
     ),
+    offVariationId: uuid("off_variation_id").references(
+      () => featureFlagVariation.id,
+      { onDelete: "set null" }
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -265,6 +233,10 @@ export const featureFlagEnvironment = pgTable(
       .notNull(),
   },
   (table) => [
+    unique("feature_flag_environment_flag_env_unique").on(
+      table.featureFlagId,
+      table.environmentId
+    ),
     index("feature_flag_environment_flag_env_idx").on(
       table.featureFlagId,
       table.environmentId
@@ -273,35 +245,24 @@ export const featureFlagEnvironment = pgTable(
   ]
 );
 
-// Attribute Definition - Tracks attributes for UI dropdowns (both manually defined and auto-discovered)
 export const attribute = pgTable(
   "attribute",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
-    // Dot-notation key path (e.g., "user.plan", "device.os", "location.country")
     key: varchar("key", { length: 256 }).notNull(),
-    // Display name for UI (e.g., "User Plan", "Device OS", "Country")
     displayName: varchar("display_name", { length: 256 }),
-    // Description for UI tooltips/help text
     description: text("description"),
-    // Data type (string, number, boolean, array, object) - can be set manually or inferred
-    type: varchar("type", { length: 32 }), // 'string', 'number', 'boolean', 'array', 'object'
-    // Whether this was manually defined by user or auto-discovered from evaluations
+    type: varchar("type", { length: 32 }),
     isManual: boolean("is_manual").notNull().default(false),
-    // User who manually created this (if isManual = true)
     createdById: uuid("created_by_id").references(() => user.id),
-    // Which project this attribute belongs to
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    // Count of how many times this attribute has been seen in evaluations (for sorting/popularity)
     usageCount: integer("usage_count").notNull().default(0),
-    // First time this attribute was seen (null if manually created before any usage)
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }),
-    // Last time this attribute was seen
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -320,7 +281,6 @@ export const attribute = pgTable(
   ]
 );
 
-// Attribute Values - Tracks distinct values for each attribute (both manually defined and discovered)
 export const attributeValue = pgTable(
   "attribute_value",
   {
@@ -328,21 +288,13 @@ export const attributeValue = pgTable(
     attributeId: uuid("attribute_id")
       .notNull()
       .references(() => attribute.id, { onDelete: "cascade" }),
-    // The actual value as text (for string/number/boolean)
     value: text("value").notNull(),
-    // The value as JSONB (for complex values)
     valueJson: jsonb("value_json"),
-    // Display label for UI (e.g., "Premium Plan" instead of just "premium")
     displayLabel: varchar("display_label", { length: 256 }),
-    // Whether this value was manually defined or auto-discovered
     isManual: boolean("is_manual").notNull().default(false),
-    // User who manually created this (if isManual = true)
     createdById: uuid("created_by_id").references(() => user.id),
-    // Count of how many times this value has been seen in evaluations
     usageCount: integer("usage_count").notNull().default(0),
-    // First time this value was seen (null if manually created before any usage)
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }),
-    // Last time this value was seen
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -363,7 +315,6 @@ export const attributeValue = pgTable(
   ]
 );
 
-// Targeting & Segmentation
 export const segment = pgTable(
   "segment",
   {
@@ -401,49 +352,6 @@ export const segment = pgTable(
   ]
 );
 
-export const featureFlagTargeting = pgTable(
-  "feature_flag_targeting",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    featureFlagId: uuid("feature_flag_id")
-      .notNull()
-      .references(() => featureFlag.id, { onDelete: "cascade" }),
-    environmentId: uuid("environment_id")
-      .notNull()
-      .references(() => environment.id, { onDelete: "cascade" }),
-    segmentId: uuid("segment_id").references(() => segment.id, {
-      onDelete: "cascade",
-    }),
-    variationId: uuid("variation_id")
-      .notNull()
-      .references(() => featureFlagVariation.id, { onDelete: "cascade" }),
-    rolloutPercentage: doublePrecision("rollout_percentage")
-      .notNull()
-      .default(0),
-    priority: integer("priority").notNull().default(0), // Higher priority = evaluated first
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("feature_flag_targeting_flag_env_idx").on(
-      table.featureFlagId,
-      table.environmentId
-    ),
-    index("feature_flag_targeting_segment_idx").on(table.segmentId),
-    index("feature_flag_targeting_priority_idx").on(
-      table.featureFlagId,
-      table.environmentId,
-      table.priority
-    ),
-  ]
-);
-
-// API Keys
 export const apiKey = pgTable(
   "api_key",
   {
@@ -497,14 +405,11 @@ export const featureFlagEvaluation = pgTable(
         onDelete: "set null",
       }
     ),
-    // Full context object from SDK initialization - stores exactly what developers pass
-    // Example: { user: {...}, device: {...}, location: {...}, company: {...}, ... }
     context: jsonb("context").$type<Record<string, unknown>>(),
-    ipAddress: text("ip_address"), // Auto-detected from request
-    userAgent: text("user_agent"), // Auto-detected from request
-    // Evaluation result
-    value: jsonb("value"), // The evaluated value
-    reason: text("reason"), // Why this value was returned (e.g., "matched_segment", "default_variation")
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    value: jsonb("value"),
+    reason: text("reason"),
     sdkKey: text("sdk_key"),
     sdkVersion: text("sdk_version"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -517,10 +422,6 @@ export const featureFlagEvaluation = pgTable(
       table.environmentId
     ),
     index("feature_flag_evaluation_created_at_idx").on(table.createdAt),
-    // Note: GIN index for JSONB context should be added via migrations for optimal query performance:
-    // CREATE INDEX feature_flag_evaluation_context_gin_idx ON feature_flag_evaluation USING gin (context);
-    // This enables fast queries like: WHERE context->'user'->>'email' = 'user@example.com'
-    // Partitioning-friendly index for time-series queries
     index("feature_flag_evaluation_flag_created_idx").on(
       table.featureFlagId,
       table.createdAt
@@ -553,36 +454,6 @@ export const contextAttribute = pgTable(
   ]
 );
 
-// Flag Dependencies - Track flag relationships (e.g., Flag A requires Flag B to be enabled)
-export const featureFlagDependency = pgTable(
-  "feature_flag_dependency",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    featureFlagId: uuid("feature_flag_id")
-      .notNull()
-      .references(() => featureFlag.id, { onDelete: "cascade" }),
-    dependsOnFlagId: uuid("depends_on_flag_id")
-      .notNull()
-      .references(() => featureFlag.id, { onDelete: "cascade" }),
-    dependencyType: flagDependencyTypeEnum("dependency_type")
-      .notNull()
-      .default("requires"),
-    // Environment-specific dependency (null = all environments)
-    environmentId: uuid("environment_id").references(() => environment.id, {
-      onDelete: "cascade",
-    }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index("feature_flag_dependency_flag_idx").on(table.featureFlagId),
-    index("feature_flag_dependency_depends_on_idx").on(table.dependsOnFlagId),
-    index("feature_flag_dependency_env_idx").on(table.environmentId),
-  ]
-);
-
-// Flag Scheduling - Schedule flag enable/disable at specific times
 export const featureFlagSchedule = pgTable(
   "feature_flag_schedule",
   {
@@ -593,22 +464,15 @@ export const featureFlagSchedule = pgTable(
     environmentId: uuid("environment_id")
       .notNull()
       .references(() => environment.id, { onDelete: "cascade" }),
-    // What action to take (enable/disable/change_variation)
-    action: varchar("action", { length: 64 }).notNull(), // 'enable', 'disable', 'set_variation'
-    // Target variation if action is 'set_variation'
+    action: varchar("action", { length: 64 }).notNull(),
     targetVariationId: uuid("target_variation_id").references(
       () => featureFlagVariation.id,
       { onDelete: "set null" }
     ),
-    // When to execute this schedule
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
-    // Whether this is a one-time or recurring schedule
     isRecurring: boolean("is_recurring").notNull().default(false),
-    // Recurrence pattern (cron expression or interval)
     recurrencePattern: text("recurrence_pattern"),
-    // Whether this schedule has been executed
     executedAt: timestamp("executed_at", { withTimezone: true }),
-    // Whether this schedule is active
     enabled: boolean("enabled").notNull().default(true),
     createdById: uuid("created_by_id")
       .notNull()
@@ -631,7 +495,6 @@ export const featureFlagSchedule = pgTable(
   ]
 );
 
-// Change Requests - Approval workflow for flag changes
 export const changeRequest = pgTable(
   "change_request",
   {
@@ -639,7 +502,6 @@ export const changeRequest = pgTable(
     title: varchar("title", { length: 256 }).notNull(),
     description: text("description"),
     status: changeRequestStatusEnum("status").notNull().default("draft"),
-    // The changes being requested (JSONB for flexibility)
     changes: jsonb("changes").notNull().$type<{
       featureFlagId: string;
       environmentId: string;
@@ -658,9 +520,7 @@ export const changeRequest = pgTable(
     createdById: uuid("created_by_id")
       .notNull()
       .references(() => user.id),
-    // Reviewers who need to approve
     reviewerIds: jsonb("reviewer_ids").$type<string[]>().default([]),
-    // Approvals received
     approvals: jsonb("approvals")
       .$type<
         Array<{
@@ -691,14 +551,12 @@ export const changeRequest = pgTable(
   ]
 );
 
-// Flag Templates - Reusable flag configurations
 export const flagTemplate = pgTable(
   "flag_template",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     name: varchar("name", { length: 256 }).notNull(),
     description: text("description"),
-    // Template configuration (variations, default values, etc.)
     config: jsonb("config").notNull().$type<{
       type: string;
       variations: Array<{
@@ -711,7 +569,6 @@ export const flagTemplate = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    // Whether this is a system template or user-created
     isSystem: boolean("is_system").notNull().default(false),
     createdById: uuid("created_by_id")
       .notNull()
@@ -731,42 +588,6 @@ export const flagTemplate = pgTable(
   ]
 );
 
-// Flag Version History - Snapshot of flag state at each version
-export const featureFlagVersion = pgTable(
-  "feature_flag_version",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    featureFlagId: uuid("feature_flag_id")
-      .notNull()
-      .references(() => featureFlag.id, { onDelete: "cascade" }),
-    version: integer("version").notNull(),
-    // Snapshot of flag state at this version
-    snapshot: jsonb("snapshot").notNull().$type<{
-      name: string;
-      description: string;
-      type: string;
-      variations: unknown[];
-      targetings: unknown[];
-    }>(),
-    // What changed in this version
-    changeDescription: text("change_description"),
-    createdById: uuid("created_by_id")
-      .notNull()
-      .references(() => user.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index("feature_flag_version_flag_version_idx").on(
-      table.featureFlagId,
-      table.version
-    ),
-    index("feature_flag_version_flag_idx").on(table.featureFlagId),
-  ]
-);
-
-// Audit Logging
 export const auditLog = pgTable(
   "audit_log",
   {
@@ -801,7 +622,6 @@ export const auditLog = pgTable(
   ]
 );
 
-// Relations
 export const organizationRelations = relations(organization, ({ many }) => ({
   projects: many(project),
   environments: many(environment),
@@ -834,7 +654,6 @@ export const environmentRelations = relations(environment, ({ one, many }) => ({
     references: [organization.id],
   }),
   featureFlagEnvironments: many(featureFlagEnvironment),
-  featureFlagTargetings: many(featureFlagTargeting),
   evaluations: many(featureFlagEvaluation),
 }));
 
@@ -851,9 +670,12 @@ export const featureFlagRelations = relations(featureFlag, ({ one, many }) => ({
     fields: [featureFlag.maintainerId],
     references: [user.id],
   }),
+  creator: one(user, {
+    fields: [featureFlag.createdById],
+    references: [user.id],
+  }),
   variations: many(featureFlagVariation),
   environments: many(featureFlagEnvironment),
-  targetings: many(featureFlagTargeting),
   evaluations: many(featureFlagEvaluation),
 }));
 
@@ -865,7 +687,6 @@ export const featureFlagVariationRelations = relations(
       references: [featureFlag.id],
     }),
     defaultForEnvironments: many(featureFlagEnvironment),
-    targetings: many(featureFlagTargeting),
     evaluations: many(featureFlagEvaluation),
   })
 );
@@ -915,7 +736,7 @@ export const attributeValueRelations = relations(attributeValue, ({ one }) => ({
   }),
 }));
 
-export const segmentRelations = relations(segment, ({ one, many }) => ({
+export const segmentRelations = relations(segment, ({ one }) => ({
   project: one(project, {
     fields: [segment.projectId],
     references: [project.id],
@@ -924,30 +745,7 @@ export const segmentRelations = relations(segment, ({ one, many }) => ({
     fields: [segment.organizationId],
     references: [organization.id],
   }),
-  targetings: many(featureFlagTargeting),
 }));
-
-export const featureFlagTargetingRelations = relations(
-  featureFlagTargeting,
-  ({ one }) => ({
-    featureFlag: one(featureFlag, {
-      fields: [featureFlagTargeting.featureFlagId],
-      references: [featureFlag.id],
-    }),
-    environment: one(environment, {
-      fields: [featureFlagTargeting.environmentId],
-      references: [environment.id],
-    }),
-    segment: one(segment, {
-      fields: [featureFlagTargeting.segmentId],
-      references: [segment.id],
-    }),
-    variation: one(featureFlagVariation, {
-      fields: [featureFlagTargeting.variationId],
-      references: [featureFlagVariation.id],
-    }),
-  })
-);
 
 export const apiKeyRelations = relations(apiKey, ({ one }) => ({
   project: one(project, {

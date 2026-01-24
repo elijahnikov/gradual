@@ -11,6 +11,7 @@ import {
   ComboboxTrigger,
   ComboboxValue,
 } from "@gradual/ui/combobox";
+import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
 import { RiArrowDownSLine, RiUserSmileLine } from "@remixicon/react";
 import { useQuery } from "@tanstack/react-query";
@@ -38,13 +39,13 @@ export default function Assignee({
   const maintainerId = form.watch("maintainerId");
 
   const trpc = useTRPC();
-  const { data: members } = useQuery({
+  const { data: members, isLoading: isLoadingMembers } = useQuery({
     ...trpc.organizationMember.getMembers.queryOptions({
       organizationSlug,
       getWithPermissions: false,
       orderBy: "createdAt",
       orderDirection: "asc",
-      limit: 1,
+      limit: 20,
       offset: 0,
       textSearch: searchTerm,
     }),
@@ -61,7 +62,7 @@ export default function Assignee({
     }
 
     const formattedMembers: MemberItem[] = members.map((member) => ({
-      value: member.id,
+      value: member.user.id,
       label: member.user.name,
       avatar: member.user.image ?? undefined,
     }));
@@ -137,32 +138,43 @@ export default function Assignee({
             value={searchTerm}
           />
         </div>
-        <ComboboxEmpty>No members found.</ComboboxEmpty>
-        <ComboboxList>
-          {(member: MemberItem) => (
-            <ComboboxItem
-              className="w-full"
-              key={member.value}
-              value={member.value}
-            >
-              <div className="flex items-center justify-center gap-2 py-0.5">
-                {member.avatar === "no-maintainer" ? (
-                  <RiUserSmileLine className="size-4" />
-                ) : (
-                  <Avatar className="size-4">
-                    <AvatarImage alt="User" src={member.avatar ?? undefined} />
-                    <AvatarFallback>
-                      {member.label.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <span className="whitespace-nowrap text-sm">
-                  {member.label}
-                </span>
-              </div>
-            </ComboboxItem>
-          )}
-        </ComboboxList>
+        {isLoadingMembers ? (
+          <div className="p-2">
+            <Skeleton className="h-7 w-full" />
+          </div>
+        ) : (
+          <>
+            <ComboboxEmpty>No members found.</ComboboxEmpty>
+            <ComboboxList>
+              {(member: MemberItem) => (
+                <ComboboxItem
+                  className="w-full"
+                  key={member.value}
+                  value={member.value}
+                >
+                  <div className="flex items-center justify-center gap-2 py-0.5">
+                    {member.avatar === "no-maintainer" ? (
+                      <RiUserSmileLine className="size-4" />
+                    ) : (
+                      <Avatar className="size-4">
+                        <AvatarImage
+                          alt="User"
+                          src={member.avatar ?? undefined}
+                        />
+                        <AvatarFallback>
+                          {member.label.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <span className="whitespace-nowrap text-sm">
+                      {member.label}
+                    </span>
+                  </div>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </>
+        )}
       </ComboboxPopup>
     </Combobox>
   );

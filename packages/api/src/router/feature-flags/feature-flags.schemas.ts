@@ -1,9 +1,5 @@
 import { createInsertSchema } from "@gradual/db";
-import {
-  featureFlag,
-  featureFlagEnvironment,
-  featureFlagVariation,
-} from "@gradual/db/schema";
+import { featureFlag, featureFlagVariation } from "@gradual/db/schema";
 import z from "zod/v4";
 
 export type CreateFeatureFlagInput = z.infer<typeof createFeatureFlagSchema>;
@@ -30,15 +26,6 @@ const createVariationSchema = createInsertSchema(featureFlagVariation)
       z.any(),
     ]),
   });
-
-const createEnvironmentConfigSchema = createInsertSchema(
-  featureFlagEnvironment
-).omit({
-  id: true,
-  featureFlagId: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 export type CreateCompleteFeatureFlagInput = z.infer<
   typeof createCompleteFeatureFlagSchema
@@ -77,7 +64,6 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
               path: [index, "name"],
             });
           }
-          // Check if value is empty string, null, or undefined
           if (
             variation.value === undefined ||
             variation.value === null ||
@@ -98,33 +84,9 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
             message: "Exactly one variation must be marked as default",
           });
         }
-        const defaultWhenOnCount = variations.filter(
-          (v) => v.isDefaultWhenOn
-        ).length;
-        if (defaultWhenOnCount !== 1) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Exactly one variation must be marked as default when ON",
-          });
-        }
-        const defaultWhenOffCount = variations.filter(
-          (v) => v.isDefaultWhenOff
-        ).length;
-        if (defaultWhenOffCount !== 1) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Exactly one variation must be marked as default when OFF",
-          });
-        }
       }),
-    environmentConfigs: z
-      .array(
-        createEnvironmentConfigSchema.extend({
-          defaultVariationId: z.uuid().optional(),
-        })
-      )
-      .optional()
-      .default([]),
+    defaultWhenOnVariationIndex: z.number().int().nonnegative().optional(),
+    defaultWhenOffVariationIndex: z.number().int().nonnegative().optional(),
   });
 
 export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<
@@ -153,4 +115,13 @@ export const getFeatureFlagBreadcrumbInfoSchema = z.object({
   key: z.string(),
   projectSlug: z.string(),
   organizationSlug: z.string(),
+});
+
+export type InsertFakeEvaluationsInput = z.infer<
+  typeof insertFakeEvaluationsSchema
+>;
+export const insertFakeEvaluationsSchema = z.object({
+  organizationSlug: z.string(),
+  flagIds: z.array(z.string().uuid()).min(1),
+  evaluationsPerFlag: z.number().int().positive().max(1000).default(100),
 });
