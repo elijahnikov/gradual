@@ -17,6 +17,7 @@ export const createEnvironmentSchema = createInsertSchema(environment).omit({
 export type ListEnvironmentsInput = z.infer<typeof listEnvironmentsSchema>;
 export const listEnvironmentsSchema = createSelectSchema(environment).pick({
   organizationId: true,
+  projectId: true,
 });
 
 export type GetEnvironmentInput = z.infer<typeof getEnvironmentSchema>;

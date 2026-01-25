@@ -10,7 +10,10 @@ export default function FlagsPageComponent() {
 
   return (
     <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col">
-      <FlagFilterBar />
+      <FlagFilterBar
+        organizationSlug={params.organizationSlug}
+        projectSlug={params.projectSlug}
+      />
       <Suspense fallback={<FlagsListSkeleton />}>
         <FlagsList
           organizationSlug={params.organizationSlug}

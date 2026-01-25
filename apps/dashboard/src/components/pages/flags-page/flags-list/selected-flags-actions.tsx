@@ -24,6 +24,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
+import { getBaseUrl } from "@/lib/url";
 
 export default function SelectedFlagsActions({
   organizationSlug,
@@ -88,8 +89,7 @@ export default function SelectedFlagsActions({
 
   const handleCopyFlagUrls = async () => {
     const flagUrls = selectedFlags.map(
-      (f) =>
-        `${window.location.origin}/${organizationSlug}/${projectSlug}/flags/${f.key}`
+      (f) => `${getBaseUrl()}/${organizationSlug}/${projectSlug}/flags/${f.key}`
     );
     const flagUrlsString = flagUrls.join("\n");
     try {

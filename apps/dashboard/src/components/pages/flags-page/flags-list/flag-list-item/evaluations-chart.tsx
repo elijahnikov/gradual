@@ -8,6 +8,7 @@ import { Skeleton } from "@gradual/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
 
 const VARIATION_COLORS = [
@@ -33,36 +34,41 @@ export default function EvaluationsPreviewChart({
   projectId,
 }: EvaluationsChartProps) {
   const trpc = useTRPC();
+  const { getSelectedEnvironments } = useChartEnvironmentsStore();
+  const selectedEnvIds = getSelectedEnvironments(projectId);
+
   const { data: evaluations, isLoading } = useQuery(
-    trpc.featureFlags.getPreviewEvaluations.queryOptions({
-      flagId,
-      organizationId,
-      projectId,
-    })
+    trpc.featureFlags.getPreviewEvaluations.queryOptions(
+      {
+        flagId,
+        organizationId,
+        projectId,
+        environmentIds: selectedEnvIds,
+      },
+      {
+        enabled: selectedEnvIds.length > 0,
+      }
+    )
   );
 
-  const { developmentData, productionData, chartConfig, variationsWithCssKey } =
+  const { chartDataByEnvironment, chartConfig, variationsWithCssKey } =
     useMemo(() => {
       if (!evaluations) {
         return {
-          developmentData: [],
-          productionData: [],
+          chartDataByEnvironment: [],
           chartConfig: {},
           variationsWithCssKey: [],
         };
       }
 
-      const devData = evaluations.data.map((d) => ({
-        time: d.time,
-        ...d.byEnvironment.Development,
+      const dataByEnv = evaluations.environments.map((env) => ({
+        env,
+        data: evaluations.data.map((d) => ({
+          time: d.time,
+          ...d.byEnvironment[env.name],
+        })),
       }));
 
-      const prodData = evaluations.data.map((d) => ({
-        time: d.time,
-        ...d.byEnvironment.Production,
-      }));
-
-      // Create variations with sanitized CSS keys
       const variations = evaluations.variations.map((v, i) => ({
         ...v,
         cssKey: sanitizeCssVarName(v.name),
@@ -78,14 +84,13 @@ export default function EvaluationsPreviewChart({
       }
 
       return {
-        developmentData: devData,
-        productionData: prodData,
+        chartDataByEnvironment: dataByEnv,
         chartConfig: config,
         variationsWithCssKey: variations,
       };
     }, [evaluations]);
 
-  if (isLoading) {
+  if (isLoading || selectedEnvIds.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2">
         <Skeleton className="h-10 w-36" />
@@ -100,92 +105,49 @@ export default function EvaluationsPreviewChart({
 
   return (
     <div className="flex items-center justify-center gap-2">
-      <ChartContainer className="h-10 w-36" config={chartConfig}>
-        <AreaChart
-          accessibilityLayer
-          className="relative"
-          data={developmentData}
-        >
-          <XAxis dataKey="time" hide />
-          <YAxis domain={[0, "auto"]} hide />
-          <ChartTooltip
-            animationDuration={0}
-            content={<ChartTooltipContent className="absolute top-10" />}
-            isAnimationActive={false}
-            position={{ y: 40 }}
-          />
-          {variationsWithCssKey.map((v) => (
-            <defs key={`dev-def-${v.id}`}>
-              <linearGradient
-                id={`fill-dev-${v.cssKey}`}
-                x1="0"
-                x2="0"
-                y1="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-          ))}
-
-          {variationsWithCssKey.map((v) => (
-            <Area
-              activeDot={false}
-              dataKey={v.name}
-              fill={`url(#fill-dev-${v.cssKey})`}
-              fillOpacity={0.4}
+      {chartDataByEnvironment.map(({ env, data }) => (
+        <ChartContainer className="h-10 w-36" config={chartConfig} key={env.id}>
+          <AreaChart accessibilityLayer data={data}>
+            <XAxis dataKey="time" hide />
+            <YAxis domain={[0, "auto"]} hide />
+            <ChartTooltip
+              animationDuration={0}
+              content={<ChartTooltipContent className="absolute top-10" />}
               isAnimationActive={false}
-              key={v.id}
-              stackId="a"
-              stroke={v.color}
-              strokeWidth={1.25}
-              type="linear"
+              position={{ y: 40 }}
             />
-          ))}
-        </AreaChart>
-      </ChartContainer>
-      <ChartContainer className="h-10 w-36" config={chartConfig}>
-        <AreaChart accessibilityLayer data={productionData}>
-          <XAxis dataKey="time" hide />
-          <YAxis domain={[0, "auto"]} hide />
-          <ChartTooltip
-            animationDuration={0}
-            content={<ChartTooltipContent className="absolute top-10" />}
-            isAnimationActive={false}
-            position={{ y: 40 }}
-          />
-          {variationsWithCssKey.map((v) => (
-            <defs key={`prod-def-${v.id}`}>
-              <linearGradient
-                id={`fill-prod-${v.cssKey}`}
-                x1="0"
-                x2="0"
-                y1="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-          ))}
+            {variationsWithCssKey.map((v) => (
+              <defs key={`def-${env.id}-${v.id}`}>
+                <linearGradient
+                  id={`fill-${env.id}-${v.cssKey}`}
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+            ))}
 
-          {variationsWithCssKey.map((v) => (
-            <Area
-              activeDot={false}
-              dataKey={v.name}
-              fill={`url(#fill-prod-${v.cssKey})`}
-              fillOpacity={0.4}
-              isAnimationActive={false}
-              key={v.id}
-              stackId="a"
-              stroke={v.color}
-              strokeWidth={1.25}
-              type="linear"
-            />
-          ))}
-        </AreaChart>
-      </ChartContainer>
+            {variationsWithCssKey.map((v) => (
+              <Area
+                activeDot={false}
+                dataKey={v.name}
+                fill={`url(#fill-${env.id}-${v.cssKey})`}
+                fillOpacity={0.4}
+                isAnimationActive={false}
+                key={v.id}
+                stackId="a"
+                stroke={v.color}
+                strokeWidth={1.25}
+                type="linear"
+              />
+            ))}
+          </AreaChart>
+        </ChartContainer>
+      ))}
     </div>
   );
 }

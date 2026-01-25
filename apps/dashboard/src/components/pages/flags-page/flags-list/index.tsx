@@ -1,13 +1,13 @@
 import { Skeleton } from "@gradual/ui/skeleton";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useInView } from "react-intersection-observer";
 import { useKeyPress } from "@/lib/hooks/use-key-press";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
 import EmptyFlagsList from "./empty-state";
 import FlagListItem from "./flag-list-item";
-import FlagsPagination from "./flags-list-pagination";
 import { flagsSearchParams } from "./flags-search-params";
 import NoResultsState from "./no-results-state";
 import SelectedFlagsActions from "./selected-flags-actions";
@@ -17,12 +17,7 @@ interface FlagsListProps {
   organizationSlug: string;
 }
 
-const PAGE_SIZE = 2;
-
-interface Cursor {
-  value: string | number;
-  id: string;
-}
+const PAGE_SIZE = 10;
 
 export default function FlagsList({
   projectSlug,
@@ -34,75 +29,38 @@ export default function FlagsList({
   const { setSelectedFlags, clearSelectedFlags, selectedFlags } =
     useSelectedFlagsStore();
 
-  const [page, setPage] = useState(1);
-  const [cursorHistory, setCursorHistory] = useState<Map<number, Cursor>>(
-    () => new Map()
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSuspenseInfiniteQuery(
+      trpc.featureFlags.getAll.infiniteQueryOptions(
+        {
+          projectSlug,
+          organizationSlug,
+          limit: PAGE_SIZE,
+          sortBy,
+          sortOrder,
+          search: search || undefined,
+        },
+        {
+          getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        }
+      )
+    );
 
-  const prevFiltersRef = useRef({ sortBy, sortOrder, search });
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px",
+  });
+
   useEffect(() => {
-    const prev = prevFiltersRef.current;
-    if (
-      prev.sortBy !== sortBy ||
-      prev.sortOrder !== sortOrder ||
-      prev.search !== search
-    ) {
-      setCursorHistory(new Map());
-      setPage(1);
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-    prevFiltersRef.current = { sortBy, sortOrder, search };
-  }, [sortBy, sortOrder, search]);
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const cursor = cursorHistory.get(page);
-
-  const { data } = useSuspenseQuery(
-    trpc.featureFlags.getAll.queryOptions({
-      projectSlug,
-      organizationSlug,
-      limit: PAGE_SIZE,
-      sortBy,
-      sortOrder,
-      cursor,
-      search: search || undefined,
-    })
+  const allFlags = useMemo(
+    () => data.pages.flatMap((page) => page.items),
+    [data.pages]
   );
-
-  const totalPages = useMemo(
-    () => Math.ceil(data.total / PAGE_SIZE),
-    [data.total]
-  );
-
-  const hasNextPage = !!data.nextCursor;
-
-  const goToNextPage = useCallback(() => {
-    if (data.nextCursor && page < totalPages) {
-      setCursorHistory((prev) =>
-        new Map(prev).set(page + 1, data.nextCursor as Cursor)
-      );
-      setPage(page + 1);
-    }
-  }, [data.nextCursor, page, totalPages]);
-
-  const goToPrevPage = useCallback(() => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  }, [page]);
-
-  const goToPage = useCallback(
-    (targetPage: number) => {
-      if (targetPage === 1) {
-        setPage(1);
-      } else if (targetPage <= page) {
-        setPage(targetPage);
-      } else if (targetPage === page + 1 && data.nextCursor) {
-        goToNextPage();
-      }
-    },
-    [page, data.nextCursor, goToNextPage]
-  );
-
-  const allFlags = useMemo(() => data.items, [data.items]);
 
   const handleSelectAll = useCallback(
     (event: KeyboardEvent) => {
@@ -162,7 +120,7 @@ export default function FlagsList({
   useKeyPress("a", handleSelectAll);
   useKeyPress("Escape", handleClearSelection);
 
-  if (data.items.length === 0 && page === 1) {
+  if (allFlags.length === 0) {
     if (search) {
       return <NoResultsState />;
     }
@@ -172,19 +130,14 @@ export default function FlagsList({
   return (
     <div className="flex flex-1 flex-col">
       <div className="divide-y">
-        {data.items.map((item) => (
+        {allFlags.map((item) => (
           <FlagListItem flag={item} key={item.featureFlag.id} />
         ))}
       </div>
-      {totalPages > 1 && (
-        <FlagsPagination
-          currentPage={page}
-          hasNextPage={hasNextPage}
-          onGoToPage={goToPage}
-          onNextPage={goToNextPage}
-          onPrevPage={goToPrevPage}
-          totalPages={totalPages}
-        />
+      {hasNextPage && (
+        <div className="flex justify-center py-4" ref={loadMoreRef}>
+          {isFetchingNextPage && <Skeleton className="h-8 w-32" />}
+        </div>
       )}
       {selectedFlags.length > 0 && (
         <SelectedFlagsActions

@@ -452,7 +452,12 @@ export const getPreviewEvaluations = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: GetPreviewEvaluationsInput;
 }) => {
-  const { flagId, organizationId: organizationIdToCheck, projectId } = input;
+  const {
+    flagId,
+    organizationId: organizationIdToCheck,
+    projectId,
+    environmentIds,
+  } = input;
 
   const foundFlag = await ctx.db.query.featureFlag.findFirst({
     where: ({ id, organizationId, projectId }, { eq, and }) =>
@@ -483,9 +488,15 @@ export const getPreviewEvaluations = async ({
   const twentyFourHoursAgo = new Date();
   twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24, 0, 0, 0);
 
+  // Fetch only the selected environments
   const environments = await ctx.db.query.environment.findMany({
-    where: ({ projectId, deletedAt }, { eq, isNull, and }) =>
-      and(eq(projectId, foundFlag.project.id), isNull(deletedAt)),
+    where: ({ id, projectId, deletedAt }, { eq, isNull, and, inArray }) =>
+      and(
+        inArray(id, environmentIds),
+        eq(projectId, foundFlag.project.id),
+        isNull(deletedAt)
+      ),
+    orderBy: (env, { asc }) => asc(env.createdAt),
   });
 
   const variations = await ctx.db.query.featureFlagVariation.findMany({
@@ -503,6 +514,7 @@ export const getPreviewEvaluations = async ({
     .where(
       and(
         eq(featureFlagEvaluation.featureFlagId, flagId),
+        inArray(featureFlagEvaluation.environmentId, environmentIds),
         gte(featureFlagEvaluation.createdAt, twentyFourHoursAgo)
       )
     )
@@ -525,6 +537,7 @@ export const getPreviewEvaluations = async ({
     data: hourlyData,
     variations: variations.map((v) => ({ id: v.id, name: v.name })),
     totals,
+    environments: environments.map((e) => ({ id: e.id, name: e.name })),
   };
 };
 
