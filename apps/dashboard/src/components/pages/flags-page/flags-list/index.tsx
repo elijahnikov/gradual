@@ -2,19 +2,22 @@ import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useKeyPress } from "@/lib/hooks/use-key-press";
+import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
 import EmptyFlagsList from "./empty-state";
 import FlagListItem from "./flag-list-item";
 import FlagsPagination from "./flags-list-pagination";
 import { flagsSearchParams } from "./flags-search-params";
 import NoResultsState from "./no-results-state";
+import SelectedFlagsActions from "./selected-flags-actions";
 
 interface FlagsListProps {
   projectSlug: string;
   organizationSlug: string;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 2;
 
 interface Cursor {
   value: string | number;
@@ -26,9 +29,12 @@ export default function FlagsList({
   organizationSlug,
 }: FlagsListProps) {
   const trpc = useTRPC();
-  const [{ sortBy, sortOrder, page, search }, setQueryStates] =
-    useQueryStates(flagsSearchParams);
+  const [{ sortBy, sortOrder, search }] = useQueryStates(flagsSearchParams);
 
+  const { setSelectedFlags, clearSelectedFlags, selectedFlags } =
+    useSelectedFlagsStore();
+
+  const [page, setPage] = useState(1);
   const [cursorHistory, setCursorHistory] = useState<Map<number, Cursor>>(
     () => new Map()
   );
@@ -42,6 +48,7 @@ export default function FlagsList({
       prev.search !== search
     ) {
       setCursorHistory(new Map());
+      setPage(1);
     }
     prevFiltersRef.current = { sortBy, sortOrder, search };
   }, [sortBy, sortOrder, search]);
@@ -72,28 +79,88 @@ export default function FlagsList({
       setCursorHistory((prev) =>
         new Map(prev).set(page + 1, data.nextCursor as Cursor)
       );
-      setQueryStates({ page: page + 1 });
+      setPage(page + 1);
     }
-  }, [data.nextCursor, page, totalPages, setQueryStates]);
+  }, [data.nextCursor, page, totalPages]);
 
   const goToPrevPage = useCallback(() => {
     if (page > 1) {
-      setQueryStates({ page: page - 1 });
+      setPage(page - 1);
     }
-  }, [page, setQueryStates]);
+  }, [page]);
 
   const goToPage = useCallback(
     (targetPage: number) => {
       if (targetPage === 1) {
-        setQueryStates({ page: 1 });
+        setPage(1);
       } else if (targetPage <= page) {
-        setQueryStates({ page: targetPage });
+        setPage(targetPage);
       } else if (targetPage === page + 1 && data.nextCursor) {
         goToNextPage();
       }
     },
-    [page, data.nextCursor, goToNextPage, setQueryStates]
+    [page, data.nextCursor, goToNextPage]
   );
+
+  const allFlags = useMemo(() => data.items, [data.items]);
+
+  const handleSelectAll = useCallback(
+    (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        const target = event.target as HTMLElement;
+        const isInputField =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
+        if (!isInputField) {
+          event.preventDefault();
+          const currentSelectedFlags = selectedFlags;
+          const allSelected =
+            allFlags.length > 0 &&
+            allFlags.every((flag) =>
+              currentSelectedFlags.some((f) => f.id === flag.featureFlag.id)
+            );
+
+          if (allSelected) {
+            clearSelectedFlags();
+          } else {
+            setSelectedFlags(
+              allFlags.map((flag) => ({
+                id: flag.featureFlag.id,
+                key: flag.featureFlag.key,
+                name: flag.featureFlag.name,
+              }))
+            );
+          }
+        }
+      }
+    },
+    [selectedFlags, setSelectedFlags, clearSelectedFlags, allFlags]
+  );
+
+  const handleClearSelection = useCallback(
+    (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      if (!isInputField && selectedFlags.length > 0) {
+        event.preventDefault();
+        clearSelectedFlags();
+      }
+    },
+    [selectedFlags.length, clearSelectedFlags]
+  );
+
+  useKeyPress("a", handleSelectAll);
+  useKeyPress("Escape", handleClearSelection);
 
   if (data.items.length === 0 && page === 1) {
     if (search) {
@@ -117,6 +184,12 @@ export default function FlagsList({
           onNextPage={goToNextPage}
           onPrevPage={goToPrevPage}
           totalPages={totalPages}
+        />
+      )}
+      {selectedFlags.length > 0 && (
+        <SelectedFlagsActions
+          organizationSlug={organizationSlug}
+          projectSlug={projectSlug}
         />
       )}
     </div>

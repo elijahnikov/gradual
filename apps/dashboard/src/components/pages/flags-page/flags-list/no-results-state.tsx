@@ -14,7 +14,6 @@ export default function NoResultsState() {
       search: null,
       sortBy: "createdAt",
       sortOrder: "desc",
-      page: 1,
     });
   };
 

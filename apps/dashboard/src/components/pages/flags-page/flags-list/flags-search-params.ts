@@ -1,4 +1,4 @@
-import { parseAsInteger, parseAsString, parseAsStringLiteral } from "nuqs";
+import { parseAsString, parseAsStringLiteral } from "nuqs";
 
 export const sortByOptions = [
   "createdAt",
@@ -13,6 +13,5 @@ export type SortOrder = (typeof sortOrderOptions)[number];
 export const flagsSearchParams = {
   sortBy: parseAsStringLiteral(sortByOptions).withDefault("createdAt"),
   sortOrder: parseAsStringLiteral(sortOrderOptions).withDefault("desc"),
-  page: parseAsInteger.withDefault(1),
   search: parseAsString.withDefault(""),
 };

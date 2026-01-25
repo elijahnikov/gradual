@@ -32,7 +32,7 @@ export default function FlagFilterBar() {
   useDebounce(
     () => {
       if (searchInput !== search) {
-        setQueryStates({ search: searchInput || null, page: 1 });
+        setQueryStates({ search: searchInput || null });
       }
     },
     300,
@@ -43,7 +43,7 @@ export default function FlagFilterBar() {
     if (newSortBy === sortBy) {
       setQueryStates({ sortOrder: sortOrder === "asc" ? "desc" : "asc" });
     } else {
-      setQueryStates({ sortBy: newSortBy, sortOrder: "desc", page: 1 });
+      setQueryStates({ sortBy: newSortBy, sortOrder: "desc" });
     }
   };
 

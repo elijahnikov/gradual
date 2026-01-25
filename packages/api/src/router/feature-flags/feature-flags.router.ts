@@ -27,6 +27,10 @@ export const featureFlagsRouter = {
     .input(schemas.getPreviewEvaluationsSchema)
     .query((opts) => services.getPreviewEvaluations({ ...opts })),
 
+  deleteFlags: protectedOrganizationProcedure({ flags: ["delete"] })
+    .input(schemas.deleteFlagsSchema)
+    .mutation((opts) => services.deleteFlags({ ...opts })),
+
   seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.seedEvaluationsSchema)
     .mutation((opts) => services.seedEvaluations({ ...opts })),

@@ -8,6 +8,7 @@ import {
   gt,
   gte,
   ilike,
+  inArray,
   lt,
   or,
   sql,
@@ -26,6 +27,7 @@ import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateCompleteFeatureFlagInput,
+  DeleteFlagsInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
@@ -155,15 +157,24 @@ export const getAllFeatureFlagsByProjectAndOrganization = async ({
 
   const last = items.at(-1);
 
+  let nextCursorValue: string | number | null = null;
+  if (hasNextPage && last) {
+    if (sortBy === "evaluationCount") {
+      nextCursorValue = last.evaluationCount;
+    } else {
+      // Convert Date to ISO string for date columns
+      const dateValue = last.featureFlag[sortBy];
+      nextCursorValue =
+        dateValue instanceof Date ? dateValue.toISOString() : dateValue;
+    }
+  }
+
   return {
     items,
     nextCursor:
       hasNextPage && last
         ? {
-            value:
-              sortBy === "evaluationCount"
-                ? last.evaluationCount
-                : last.featureFlag[sortBy],
+            value: nextCursorValue as string | number,
             id: last.featureFlag.id,
           }
         : null,
@@ -634,7 +645,6 @@ export const seedEvaluations = async ({
 }) => {
   const { flagId, organizationId, count: totalToInsert } = input;
 
-  // 1. Fetch the flag and its variations/environments
   const flag = await ctx.db.query.featureFlag.findFirst({
     where: (table, { and, eq }) =>
       and(eq(table.id, flagId), eq(table.organizationId, organizationId)),
@@ -665,7 +675,6 @@ export const seedEvaluations = async ({
     });
   }
 
-  // 2. Helper generators for random data
   const getRandomElement = <T>(arr: T[]): T => {
     const element = arr[Math.floor(Math.random() * arr.length)];
     if (element === undefined) {
@@ -686,13 +695,11 @@ export const seedEvaluations = async ({
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  // 3. Generate records
   const evaluationValues: (typeof featureFlagEvaluation.$inferInsert)[] = [];
   for (let i = 0; i < totalToInsert; i++) {
     const variation = getRandomElement(variations);
     const environmentId = getRandomElement(envs);
 
-    // Random time in the last 24 hours
     const createdAt = new Date(
       twentyFourHoursAgo.getTime() +
         Math.random() * (now.getTime() - twentyFourHoursAgo.getTime())
@@ -711,8 +718,45 @@ export const seedEvaluations = async ({
     });
   }
 
-  // 4. Batch insert
   await ctx.db.insert(featureFlagEvaluation).values(evaluationValues);
 
   return { success: true, inserted: totalToInsert };
+};
+
+export const deleteFlags = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: DeleteFlagsInput;
+}) => {
+  const { flagIds } = input;
+
+  const project = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, input.projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!project) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  await ctx.db
+    .delete(featureFlag)
+    .where(
+      and(
+        inArray(featureFlag.id, flagIds),
+        eq(featureFlag.organizationId, ctx.organization.id),
+        eq(featureFlag.projectId, project.id)
+      )
+    );
+
+  return { success: true, deleted: flagIds.length };
 };

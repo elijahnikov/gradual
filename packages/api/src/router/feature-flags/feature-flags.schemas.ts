@@ -98,7 +98,6 @@ export const getFeatureFlagsByProjectAndOrganizationSchema = z.object({
   limit: z.number().int().positive().max(100).default(20),
   cursor: z
     .object({
-      // Value is either a number (for evaluationCount) or ISO date string (for date columns)
       value: z.union([z.number(), z.string()]),
       id: z.string(),
     })
@@ -144,3 +143,10 @@ export const seedEvaluationsSchema = z.object({
   count: z.number().int().min(1).max(5000).default(1000),
 });
 export type SeedEvaluationsInput = z.infer<typeof seedEvaluationsSchema>;
+
+export const deleteFlagsSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  flagIds: z.array(z.uuid()),
+});
+export type DeleteFlagsInput = z.infer<typeof deleteFlagsSchema>;

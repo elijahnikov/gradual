@@ -155,7 +155,6 @@ export default function EvaluationsPreviewChart({
             isAnimationActive={false}
             position={{ y: 40 }}
           />
-
           {variationsWithCssKey.map((v) => (
             <defs key={`prod-def-${v.id}`}>
               <linearGradient
