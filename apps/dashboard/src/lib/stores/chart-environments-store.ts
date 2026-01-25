@@ -41,18 +41,14 @@ export const useChartEnvironmentsStore = create<ChartEnvironmentsStore>()(
 
           let newSelection: string[];
           if (isSelected) {
-            // Don't allow deselecting if only one is selected
             if (current.length <= 1) {
               return state;
             }
             newSelection = current.filter((id) => id !== environmentId);
+          } else if (current.length >= MAX_SELECTED_ENVIRONMENTS) {
+            newSelection = [...current.slice(1), environmentId];
           } else {
-            // If at max, replace the oldest selection
-            if (current.length >= MAX_SELECTED_ENVIRONMENTS) {
-              newSelection = [...current.slice(1), environmentId];
-            } else {
-              newSelection = [...current, environmentId];
-            }
+            newSelection = [...current, environmentId];
           }
 
           return {

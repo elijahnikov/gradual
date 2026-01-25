@@ -4,6 +4,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@gradual/ui/chart";
+import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -92,7 +93,7 @@ export default function EvaluationsPreviewChart({
 
   if (isLoading || selectedEnvIds.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-4">
         <Skeleton className="h-10 w-36" />
         <Skeleton className="h-10 w-36" />
       </div>
@@ -105,48 +106,57 @@ export default function EvaluationsPreviewChart({
 
   return (
     <div className="flex items-center justify-center gap-2">
-      {chartDataByEnvironment.map(({ env, data }) => (
-        <ChartContainer className="h-10 w-36" config={chartConfig} key={env.id}>
-          <AreaChart accessibilityLayer data={data}>
-            <XAxis dataKey="time" hide />
-            <YAxis domain={[0, "auto"]} hide />
-            <ChartTooltip
-              animationDuration={0}
-              content={<ChartTooltipContent className="absolute top-10" />}
-              isAnimationActive={false}
-              position={{ y: 40 }}
-            />
-            {variationsWithCssKey.map((v) => (
-              <defs key={`def-${env.id}-${v.id}`}>
-                <linearGradient
-                  id={`fill-${env.id}-${v.cssKey}`}
-                  x1="0"
-                  x2="0"
-                  y1="0"
-                  y2="1"
-                >
-                  <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-            ))}
-
-            {variationsWithCssKey.map((v) => (
-              <Area
-                activeDot={false}
-                dataKey={v.name}
-                fill={`url(#fill-${env.id}-${v.cssKey})`}
-                fillOpacity={0.4}
+      {chartDataByEnvironment.map(({ env, data }, index) => (
+        <>
+          <ChartContainer
+            className="h-10 w-36"
+            config={chartConfig}
+            key={env.id}
+          >
+            <AreaChart accessibilityLayer data={data}>
+              <XAxis dataKey="time" hide />
+              <YAxis domain={[0, "auto"]} hide />
+              <ChartTooltip
+                animationDuration={0}
+                content={<ChartTooltipContent className="absolute top-10" />}
                 isAnimationActive={false}
-                key={v.id}
-                stackId="a"
-                stroke={v.color}
-                strokeWidth={1.25}
-                type="linear"
+                position={{ y: 40 }}
               />
-            ))}
-          </AreaChart>
-        </ChartContainer>
+              {variationsWithCssKey.map((v) => (
+                <defs key={`def-${env.id}-${v.id}`}>
+                  <linearGradient
+                    id={`fill-${env.id}-${v.cssKey}`}
+                    x1="0"
+                    x2="0"
+                    y1="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={v.color} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={v.color} stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+              ))}
+
+              {variationsWithCssKey.map((v) => (
+                <Area
+                  activeDot={false}
+                  dataKey={v.name}
+                  fill={`url(#fill-${env.id}-${v.cssKey})`}
+                  fillOpacity={0.4}
+                  isAnimationActive={false}
+                  key={v.id}
+                  stackId="a"
+                  stroke={v.color}
+                  strokeWidth={1.25}
+                  type="linear"
+                />
+              ))}
+            </AreaChart>
+          </ChartContainer>
+          {index < chartDataByEnvironment.length - 1 && (
+            <Separator className="h-10" orientation="vertical" />
+          )}
+        </>
       ))}
     </div>
   );

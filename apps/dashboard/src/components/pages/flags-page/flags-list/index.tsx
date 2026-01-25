@@ -129,7 +129,7 @@ export default function FlagsList({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="divide-y">
+      <div className="divide-y border-b">
         {allFlags.map((item) => (
           <FlagListItem flag={item} key={item.featureFlag.id} />
         ))}

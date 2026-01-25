@@ -6,6 +6,7 @@ import { Checkbox } from "@gradual/ui/checkbox";
 import { Text } from "@gradual/ui/text";
 import { RiUserSmileLine } from "@remixicon/react";
 import { useCallback, useMemo } from "react";
+import FlagContextMenu from "@/components/common/context-menus/flag-context-menu";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import EvaluationsPreviewChart from "./evaluations-chart";
 import FlagListItemStats from "./stats";
@@ -46,61 +47,63 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
   );
 
   return (
-    <div
-      className="group/flag flex h-16 items-center px-4 data-[selected=true]:bg-ui-button-recall/10"
-      data-selected={isSelected}
-    >
-      {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
-      {/** biome-ignore lint/a11y/useKeyWithClickEvents: <> */}
-      {/** biome-ignore lint/a11y/noStaticElementInteractions: <> */}
+    <FlagContextMenu flag={flag.featureFlag}>
       <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
+        className="group/flag flex h-16 items-center px-4 data-[selected=true]:bg-ui-button-recall/10"
+        data-selected={isSelected}
       >
-        <Checkbox
-          checked={isSelected}
-          className={cn(
-            "mt-[3.5px] mr-3 opacity-0 transition-opacity duration-200 ease-in-out group-hover/flag:opacity-100",
-            isSelected && "opacity-100"
-          )}
-          data-checked={isSelected}
-          onCheckedChange={() => handleSelectFlag(flag.featureFlag.id)}
-        />
-      </div>
-      <div className="flex flex-col gap-y-0.5">
-        <Text className="text-[14px]" weight="plus">
-          {featureFlag.name}
-        </Text>
-        <FlagListItemStats
-          createdAt={featureFlag.createdAt}
-          evaluationCount={evaluationCount}
-          flagKey={featureFlag.key}
-        />
-      </div>
-      <div className="ml-auto flex items-center gap-2">
-        <div className="p-2">
-          <EvaluationsPreviewChart
-            flagId={featureFlag.id}
-            organizationId={featureFlag.organizationId}
-            projectId={featureFlag.projectId}
+        {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
+        {/** biome-ignore lint/a11y/useKeyWithClickEvents: <> */}
+        {/** biome-ignore lint/a11y/noStaticElementInteractions: <> */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <Checkbox
+            checked={isSelected}
+            className={cn(
+              "mt-[3.5px] mr-3 opacity-0 transition-opacity duration-200 ease-in-out group-hover/flag:opacity-100",
+              isSelected && "opacity-100"
+            )}
+            data-checked={isSelected}
+            onCheckedChange={() => handleSelectFlag(flag.featureFlag.id)}
           />
         </div>
+        <div className="flex flex-col gap-y-0.5">
+          <Text className="text-[14px]" weight="plus">
+            {featureFlag.name}
+          </Text>
+          <FlagListItemStats
+            createdAt={featureFlag.createdAt}
+            evaluationCount={evaluationCount}
+            flagKey={featureFlag.key}
+          />
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="p-2">
+            <EvaluationsPreviewChart
+              flagId={featureFlag.id}
+              organizationId={featureFlag.organizationId}
+              projectId={featureFlag.projectId}
+            />
+          </div>
 
-        {maintainer ? (
-          <Avatar className="shadow-buttons-neutral">
-            <AvatarImage src={maintainer?.image ?? undefined} />
-            <AvatarFallback>{maintainer?.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-        ) : (
-          <Card className="flex size-8 items-center justify-center rounded-full">
-            <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
-          </Card>
-        )}
+          {maintainer ? (
+            <Avatar className="shadow-buttons-neutral">
+              <AvatarImage src={maintainer?.image ?? undefined} />
+              <AvatarFallback>{maintainer?.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
+          ) : (
+            <Card className="flex size-8 items-center justify-center rounded-full">
+              <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
+            </Card>
+          )}
+        </div>
       </div>
-    </div>
+    </FlagContextMenu>
   );
 }
