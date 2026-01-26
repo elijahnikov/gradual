@@ -5,6 +5,7 @@ import { Card } from "@gradual/ui/card";
 import { Checkbox } from "@gradual/ui/checkbox";
 import { Text } from "@gradual/ui/text";
 import { RiUserSmileLine } from "@remixicon/react";
+import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import FlagContextMenu from "@/components/common/context-menus/flag-context-menu";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
@@ -16,6 +17,10 @@ type FlagListItemData =
 
 export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
   const { featureFlag, maintainer, evaluationCount } = flag;
+
+  const { organizationSlug, projectSlug } = useParams({
+    from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
+  });
 
   const selectedFlags = useSelectedFlagsStore((state) => state.selectedFlags);
   const setSelectedFlags = useSelectedFlagsStore(
@@ -74,9 +79,22 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
           />
         </div>
         <div className="flex flex-col gap-y-0.5">
-          <Text className="text-[14px]" weight="plus">
-            {featureFlag.name}
-          </Text>
+          <Link
+            params={{
+              organizationSlug,
+              projectSlug,
+              flagSlug: flag.featureFlag.key,
+            }}
+            preload="viewport"
+            to="/$organizationSlug/$projectSlug/flags/$flagSlug"
+          >
+            <Text
+              className="cursor-pointer text-[14px] hover:underline"
+              weight="plus"
+            >
+              {featureFlag.name}
+            </Text>
+          </Link>
           <FlagListItemStats
             createdAt={featureFlag.createdAt}
             evaluationCount={evaluationCount}

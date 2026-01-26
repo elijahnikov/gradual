@@ -14,6 +14,7 @@ import {
 } from "@remixicon/react";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
+import CreateNewMenu from "./create-new-menu";
 
 export default function ProjectSidebar() {
   const params = useParams({ strict: false });
@@ -93,7 +94,7 @@ export default function ProjectSidebar() {
 
   return (
     <TooltipProvider>
-      <div className="z-50 flex h-full w-56 flex-col items-center border-r p-2">
+      <div className="z-50 flex h-full w-56 min-w-56 flex-col items-center border-r p-2">
         <div className="flex w-full flex-col gap-y-1">
           {topNavigationItems.map((item) => (
             <Link key={item.title} to={item.url}>
@@ -115,6 +116,7 @@ export default function ProjectSidebar() {
               </Button>
             </Link>
           ))}
+          <CreateNewMenu />
         </div>
         <div className="mt-auto flex w-full flex-col gap-y-1">
           {bottomNavigationItems.map((item) => (

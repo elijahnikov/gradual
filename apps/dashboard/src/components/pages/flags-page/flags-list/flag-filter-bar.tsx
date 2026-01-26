@@ -2,7 +2,9 @@ import { Button } from "@gradual/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@gradual/ui/dropdown-menu";
 import { Input } from "@gradual/ui/input";
@@ -175,25 +177,28 @@ export default function FlagFilterBar({
             <RiFilterLine className="size-4 text-ui-fg-muted" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {sortOptions.map((option) => {
-              const isActive = sortBy === option.value;
-              return (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => handleSortByClick(option.value)}
-                >
-                  {option.label}
-                  <div className="ml-auto">
-                    {isActive &&
-                      (sortOrder === "desc" ? (
-                        <RiArrowDownLine className="size-3.5" />
-                      ) : (
-                        <RiArrowUpLine className="size-3.5" />
-                      ))}
-                  </div>
-                </DropdownMenuItem>
-              );
-            })}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              {sortOptions.map((option) => {
+                const isActive = sortBy === option.value;
+                return (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => handleSortByClick(option.value)}
+                  >
+                    {option.label}
+                    <div className="ml-auto">
+                      {isActive &&
+                        (sortOrder === "desc" ? (
+                          <RiArrowDownLine className="size-3.5" />
+                        ) : (
+                          <RiArrowUpLine className="size-3.5" />
+                        ))}
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

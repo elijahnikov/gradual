@@ -6,8 +6,9 @@ export default function FlagPageComponent() {
   const params = useParams({
     from: "/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/",
   });
+
   return (
-    <div>
+    <div className="h-full">
       <Suspense fallback={<div>Loading...</div>}>
         <MainFlagView
           flagSlug={params.flagSlug}

@@ -41,7 +41,7 @@ export default function CreateFlagForm({
 }) {
   const navigate = useNavigate();
   const params = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
+    strict: false,
   });
 
   const tagInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +216,9 @@ export default function CreateFlagForm({
         description: "Redirecting to the feature flag...",
       });
       setTimeout(() => {
+        if (!(data.key && params.projectSlug && params.organizationSlug)) {
+          return;
+        }
         navigate({
           to: "/$organizationSlug/$projectSlug/flags/$flagSlug",
           params: {
@@ -608,7 +611,7 @@ export default function CreateFlagForm({
             >
           }
           isDialogOpen={isDialogOpen}
-          organizationSlug={params.organizationSlug}
+          organizationSlug={params.organizationSlug ?? ""}
         />
         <LoadingButton
           className="ml-auto"

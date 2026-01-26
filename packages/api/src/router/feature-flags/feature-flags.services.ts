@@ -349,25 +349,36 @@ export const getFeatureFlagByKey = async ({
 }) => {
   const { key, projectSlug } = input;
 
-  const [foundFlag] = await ctx.db
+  const maintainer = alias(user, "maintainer");
+
+  const [result] = await ctx.db
     .select({
-      id: featureFlag.id,
-      key: featureFlag.key,
-      name: featureFlag.name,
-      description: featureFlag.description,
-      type: featureFlag.type,
-      status: featureFlag.status,
-      tags: featureFlag.tags,
-      maintainerId: featureFlag.maintainerId,
-      projectId: featureFlag.projectId,
-      organizationId: featureFlag.organizationId,
-      archivedAt: featureFlag.archivedAt,
-      createdAt: featureFlag.createdAt,
-      updatedAt: featureFlag.updatedAt,
+      flag: {
+        id: featureFlag.id,
+        key: featureFlag.key,
+        name: featureFlag.name,
+        description: featureFlag.description,
+        type: featureFlag.type,
+        status: featureFlag.status,
+        tags: featureFlag.tags,
+        maintainerId: featureFlag.maintainerId,
+        projectId: featureFlag.projectId,
+        organizationId: featureFlag.organizationId,
+        archivedAt: featureFlag.archivedAt,
+        createdAt: featureFlag.createdAt,
+        updatedAt: featureFlag.updatedAt,
+      },
+      maintainer: {
+        id: maintainer.id,
+        name: maintainer.name,
+        email: maintainer.email,
+        image: maintainer.image,
+      },
     })
     .from(featureFlag)
     .innerJoin(project, eq(featureFlag.projectId, project.id))
     .innerJoin(organization, eq(featureFlag.organizationId, organization.id))
+    .leftJoin(maintainer, eq(featureFlag.maintainerId, maintainer.id))
     .where(
       and(
         eq(featureFlag.key, key),
@@ -378,7 +389,7 @@ export const getFeatureFlagByKey = async ({
     )
     .limit(1);
 
-  if (!foundFlag) {
+  if (!result) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Feature flag not found",
@@ -395,17 +406,22 @@ export const getFeatureFlagByKey = async ({
       sortOrder: featureFlagVariation.sortOrder,
     })
     .from(featureFlagVariation)
-    .where(eq(featureFlagVariation.featureFlagId, foundFlag.id))
+    .where(eq(featureFlagVariation.featureFlagId, result.flag.id))
     .orderBy(featureFlagVariation.sortOrder);
 
   const environments = await ctx.db.query.featureFlagEnvironment.findMany({
-    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, result.flag.id),
     with: {
       environment: true,
     },
   });
 
-  return { flag: foundFlag, variations, environments };
+  return {
+    flag: result.flag,
+    maintainer: result.maintainer,
+    variations,
+    environments,
+  };
 };
 
 export const getFeatureFlagBreadcrumbInfo = async ({

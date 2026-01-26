@@ -1,7 +1,8 @@
+import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
-import { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import { useKeyPress } from "@/lib/hooks/use-key-press";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
@@ -129,9 +130,12 @@ export default function FlagsList({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="divide-y border-b">
-        {allFlags.map((item) => (
-          <FlagListItem flag={item} key={item.featureFlag.id} />
+      <div className="flex flex-col divide-y">
+        {allFlags.map((item, _index) => (
+          <React.Fragment key={item.featureFlag.id}>
+            <FlagListItem flag={item} key={item.featureFlag.id} />
+            <Separator />
+          </React.Fragment>
         ))}
       </div>
       {hasNextPage && (

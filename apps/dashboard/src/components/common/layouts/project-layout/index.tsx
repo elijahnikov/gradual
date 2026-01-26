@@ -12,11 +12,11 @@ export default function ProjectLayout({
   return (
     <div className="flex h-full bg-ui-bg-base">
       <ProjectSidebar />
-      <main className="h-full w-full overflow-y-auto md:max-h-[calc(100vh-20px)]">
+      <main className="flex h-full w-full flex-col md:max-h-[calc(100vh-20px)]">
         <Suspense fallback={<ProjectBreadcrumbsSkeleton />}>
           <ProjectBreadcrumbs />
         </Suspense>
-        {children}
+        <div className="min-h-0 flex-1">{children}</div>
       </main>
     </div>
   );

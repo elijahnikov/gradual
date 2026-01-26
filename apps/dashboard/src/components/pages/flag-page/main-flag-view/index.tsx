@@ -1,5 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc";
+import FlagHeader from "./flag-header";
+import FlagSubheader from "./flag-subheader";
 
 interface MainFlagViewProps {
   organizationSlug: string;
@@ -12,6 +14,7 @@ export default function MainFlagView({
   flagSlug,
 }: MainFlagViewProps) {
   const trpc = useTRPC();
+
   const { data: flag } = useSuspenseQuery(
     trpc.featureFlags.getByKey.queryOptions({
       projectSlug,
@@ -21,8 +24,13 @@ export default function MainFlagView({
   );
 
   return (
-    <div>
-      <pre>{JSON.stringify(flag, null, 2)}</pre>
+    <div className="h-full overflow-y-auto">
+      <FlagHeader flag={{ flag: flag.flag, maintainer: flag.maintainer }} />
+      <FlagSubheader />
+      {/* <div className="p-6">
+        <pre>{JSON.stringify(flag, null, 2)}</pre>
+        <pre>{JSON.stringify(flag, null, 2)}</pre>
+      </div> */}
     </div>
   );
 }
