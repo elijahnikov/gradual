@@ -32,6 +32,7 @@ export default function FlagContextMenu({
               <Link
                 params={{ organizationSlug, projectSlug, flagSlug: flag.key }}
                 preload="intent"
+                search={{}}
                 to="/$organizationSlug/$projectSlug/flags/$flagSlug"
               />
             }

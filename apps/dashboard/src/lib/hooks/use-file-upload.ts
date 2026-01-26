@@ -82,7 +82,6 @@ export const useFileUpload = (
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback(
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ""
     (file: File | FileMetadata): string | null => {
       if (file instanceof File) {
         if (file.size > maxSize) {
@@ -164,7 +163,6 @@ export const useFileUpload = (
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: ""
   const addFiles = useCallback(
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ""
     (newFiles: FileList | File[]) => {
       if (!newFiles || newFiles.length === 0) {
         return;

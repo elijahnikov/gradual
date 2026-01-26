@@ -5,7 +5,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@gradual/ui/dropdown-menu";
-import { RiAddLine, RiFlagLine } from "@remixicon/react";
+import {
+  RiAddLine,
+  RiDonutChartFill,
+  RiEarthFill,
+  RiFlagLine,
+} from "@remixicon/react";
 import { useState } from "react";
 import CreateFlagDialog from "../dialogs/create-flag-dialog";
 
@@ -19,7 +24,7 @@ export default function CreateNewMenu() {
         <DropdownMenuTrigger
           render={
             <Button
-              className="w-full justify-start text-left"
+              className="h-8 w-full justify-start text-left"
               size="small"
               variant="gradual"
             />
@@ -28,10 +33,18 @@ export default function CreateNewMenu() {
           <RiAddLine className="size-4" />
           Create new
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent side="right">
           <DropdownMenuItem onClick={() => setIsCreateFlagDialogOpen(true)}>
             <RiFlagLine className="size-4" />
             Feature flag
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <RiEarthFill className="size-4" />
+            Environment
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <RiDonutChartFill className="size-4" />
+            Segment
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

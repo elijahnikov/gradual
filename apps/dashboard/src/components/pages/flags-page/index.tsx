@@ -9,7 +9,7 @@ export default function FlagsPageComponent() {
   });
 
   return (
-    <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col">
+    <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col sm:h-[calc(100vh-3.75rem)] sm:min-h-[calc(100vh-3.75rem)]">
       <FlagFilterBar
         organizationSlug={params.organizationSlug}
         projectSlug={params.projectSlug}

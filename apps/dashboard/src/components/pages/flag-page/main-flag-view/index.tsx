@@ -1,6 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryStates } from "nuqs";
 import { useTRPC } from "@/lib/trpc";
 import FlagHeader from "./flag-header";
+import { flagSearchParams } from "./flag-search-params";
 import FlagSubheader from "./flag-subheader";
 
 interface MainFlagViewProps {
@@ -14,6 +16,7 @@ export default function MainFlagView({
   flagSlug,
 }: MainFlagViewProps) {
   const trpc = useTRPC();
+  const [{ tab }] = useQueryStates(flagSearchParams);
 
   const { data: flag } = useSuspenseQuery(
     trpc.featureFlags.getByKey.queryOptions({
@@ -23,14 +26,28 @@ export default function MainFlagView({
     })
   );
 
+  const renderTabContent = () => {
+    switch (tab) {
+      case "targeting":
+        return <div>Targeting content</div>;
+      case "variations":
+        return <div>Variations content</div>;
+      case "metrics":
+        return <div>Metrics content</div>;
+      case "events":
+        return <div>Events content</div>;
+      case "settings":
+        return <div>Settings content</div>;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       <FlagHeader flag={{ flag: flag.flag, maintainer: flag.maintainer }} />
-      <FlagSubheader />
-      {/* <div className="p-6">
-        <pre>{JSON.stringify(flag, null, 2)}</pre>
-        <pre>{JSON.stringify(flag, null, 2)}</pre>
-      </div> */}
+      <FlagSubheader environments={flag.environments} />
+      <div className="p-6">{renderTabContent()}</div>
     </div>
   );
 }

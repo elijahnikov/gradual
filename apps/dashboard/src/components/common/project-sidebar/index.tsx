@@ -97,7 +97,7 @@ export default function ProjectSidebar() {
       <div className="z-50 flex h-full w-56 min-w-56 flex-col items-center border-r p-2">
         <div className="flex w-full flex-col gap-y-1">
           {topNavigationItems.map((item) => (
-            <Link key={item.title} to={item.url}>
+            <Link key={item.title} search={{}} to={item.url}>
               <Button
                 className={cn(
                   "group/menu flex h-8 w-full items-center justify-start self-start text-left font-sans text-[13px]",
@@ -120,7 +120,7 @@ export default function ProjectSidebar() {
         </div>
         <div className="mt-auto flex w-full flex-col gap-y-1">
           {bottomNavigationItems.map((item) => (
-            <Link key={item.title} to={item.url}>
+            <Link key={item.title} search={{}} to={item.url}>
               <Button
                 className={cn(
                   "group/menu flex h-8 w-full items-center justify-start self-start text-left font-sans text-[13px]",

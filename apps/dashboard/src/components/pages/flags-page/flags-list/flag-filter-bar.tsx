@@ -48,7 +48,6 @@ export default function FlagFilterBar({
 
   const [searchInput, setSearchInput] = useState(search);
 
-  // Fetch project to get IDs
   const { data: project } = useQuery(
     trpc.project.getBySlug.queryOptions({
       slug: projectSlug,

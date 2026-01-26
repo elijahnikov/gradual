@@ -89,6 +89,7 @@ export default function OrganizationDropdown() {
                           organizationSlug: organization.organization.slug,
                         }}
                         preload="intent"
+                        search={{}}
                         to={"/$organizationSlug"}
                       >
                         <ProjectSubmenu

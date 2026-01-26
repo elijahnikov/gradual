@@ -86,6 +86,7 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
               flagSlug: flag.featureFlag.key,
             }}
             preload="viewport"
+            search={{}}
             to="/$organizationSlug/$projectSlug/flags/$flagSlug"
           >
             <Text

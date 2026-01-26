@@ -124,7 +124,7 @@ export const environment = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    color: varchar("color", { length: 7 }), // Hex color for UI
+    color: varchar("color", { length: 7 }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -319,7 +319,6 @@ export const featureFlagIndividualTarget = pgTable(
   ]
 );
 
-// Segment Targeting - Target users by segment membership (child of featureFlagTarget)
 export const featureFlagSegmentTarget = pgTable(
   "feature_flag_segment_target",
   {
