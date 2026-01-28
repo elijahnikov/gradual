@@ -39,8 +39,6 @@ export default function JsonVariation({
               isDefault: fields.length === 0,
               rolloutPercentage: 0,
               sortOrder: fields.length,
-              isDefaultWhenOff: false,
-              isDefaultWhenOn: false,
             });
           }}
           size="small"
@@ -52,7 +50,7 @@ export default function JsonVariation({
         </Button>
       </div>
 
-      <ScrollArea className="h-102" scrollFade>
+      <ScrollArea className="h-[50vh]" scrollFade>
         <div className="flex flex-col gap-2 p-4">
           {fields.map((field, index) => (
             <div className="flex items-start gap-2" key={field.id}>

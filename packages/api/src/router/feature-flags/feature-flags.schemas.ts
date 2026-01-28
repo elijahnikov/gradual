@@ -1,9 +1,5 @@
 import { createInsertSchema } from "@gradual/db";
-import {
-  featureFlag,
-  featureFlagEnvironment,
-  featureFlagVariation,
-} from "@gradual/db/schema";
+import { featureFlag, featureFlagVariation } from "@gradual/db/schema";
 import z from "zod/v4";
 
 export type CreateFeatureFlagInput = z.infer<typeof createFeatureFlagSchema>;
@@ -30,15 +26,6 @@ const createVariationSchema = createInsertSchema(featureFlagVariation)
       z.any(),
     ]),
   });
-
-const createEnvironmentConfigSchema = createInsertSchema(
-  featureFlagEnvironment
-).omit({
-  id: true,
-  featureFlagId: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 export type CreateCompleteFeatureFlagInput = z.infer<
   typeof createCompleteFeatureFlagSchema
@@ -77,7 +64,6 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
               path: [index, "name"],
             });
           }
-          // Check if value is empty string, null, or undefined
           if (
             variation.value === undefined ||
             variation.value === null ||
@@ -98,33 +84,9 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
             message: "Exactly one variation must be marked as default",
           });
         }
-        const defaultWhenOnCount = variations.filter(
-          (v) => v.isDefaultWhenOn
-        ).length;
-        if (defaultWhenOnCount !== 1) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Exactly one variation must be marked as default when ON",
-          });
-        }
-        const defaultWhenOffCount = variations.filter(
-          (v) => v.isDefaultWhenOff
-        ).length;
-        if (defaultWhenOffCount !== 1) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Exactly one variation must be marked as default when OFF",
-          });
-        }
       }),
-    environmentConfigs: z
-      .array(
-        createEnvironmentConfigSchema.extend({
-          defaultVariationId: z.uuid().optional(),
-        })
-      )
-      .optional()
-      .default([]),
+    defaultWhenOnVariationIndex: z.number().int().nonnegative().optional(),
+    defaultWhenOffVariationIndex: z.number().int().nonnegative().optional(),
   });
 
 export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<
@@ -133,8 +95,18 @@ export type GetFeatureFlagsByProjectAndOrganizationInput = z.infer<
 export const getFeatureFlagsByProjectAndOrganizationSchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
-  page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
+  cursor: z
+    .object({
+      value: z.union([z.number(), z.string()]),
+      id: z.string(),
+    })
+    .optional(),
+  sortBy: z
+    .enum(["createdAt", "updatedAt", "evaluationCount"])
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  search: z.string().optional(),
 });
 
 export type GetFeatureFlagByKeyInput = z.infer<
@@ -154,3 +126,36 @@ export const getFeatureFlagBreadcrumbInfoSchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
 });
+
+export type GetPreviewEvaluationsInput = z.infer<
+  typeof getPreviewEvaluationsSchema
+>;
+export const getPreviewEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationId: z.string(),
+  projectId: z.string(),
+  environmentIds: z.array(z.uuid()).min(1).max(2),
+});
+
+export const seedEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationId: z.string(),
+  projectId: z.string(),
+  count: z.number().int().min(1).max(5000).default(1000),
+});
+export type SeedEvaluationsInput = z.infer<typeof seedEvaluationsSchema>;
+
+export const deleteFlagsSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  flagIds: z.array(z.uuid()),
+});
+export type DeleteFlagsInput = z.infer<typeof deleteFlagsSchema>;
+
+export const getTargetingRulesSchema = z.object({
+  flagId: z.uuid(),
+  environmentSlug: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type GetTargetingRulesInput = z.infer<typeof getTargetingRulesSchema>;

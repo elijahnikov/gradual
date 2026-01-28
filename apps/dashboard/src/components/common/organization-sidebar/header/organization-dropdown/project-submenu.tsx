@@ -36,6 +36,7 @@ export default function ProjectSubmenu({
                     projectSlug: project.slug,
                   }}
                   preload="intent"
+                  search={{}}
                   to={"/$organizationSlug/$projectSlug"}
                 >
                   <MenuItem className="font-medium" key={project.id}>

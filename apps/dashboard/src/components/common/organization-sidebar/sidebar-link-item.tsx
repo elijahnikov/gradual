@@ -60,6 +60,7 @@ function SidebarLinkItem({
       }}
       preload="intent"
       preloadDelay={100}
+      search={{}}
       to={url}
     >
       {innerContent}

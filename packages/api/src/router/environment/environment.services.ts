@@ -48,8 +48,13 @@ export const listEnvironments = async ({
   input: ListEnvironmentsInput;
 }) => {
   const environments = await ctx.db.query.environment.findMany({
-    where: ({ organizationId, deletedAt }, { eq, isNull, and }) =>
-      and(eq(organizationId, input.organizationId), isNull(deletedAt)),
+    where: ({ organizationId, projectId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(organizationId, input.organizationId),
+        eq(projectId, input.projectId),
+        isNull(deletedAt)
+      ),
+    orderBy: (env, { asc }) => asc(env.createdAt),
   });
   return environments;
 };

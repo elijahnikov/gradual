@@ -97,6 +97,7 @@ export default function ProjectBreadcrumbs() {
             render={
               <Link
                 params={{ organizationSlug, projectSlug }}
+                search={{}}
                 to="/$organizationSlug/$projectSlug"
               />
             }
@@ -114,6 +115,7 @@ export default function ProjectBreadcrumbs() {
                     render={
                       <Link
                         params={{ organizationSlug, projectSlug }}
+                        search={{}}
                         to="/$organizationSlug/$projectSlug/flags"
                       />
                     }

@@ -3,6 +3,7 @@ import { featureFlag, organization, project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
+import { seedDefaultAttributes } from "../attributes/attributes.services";
 import { createEnvironment } from "../environment";
 import type {
   CreateProjectInput,
@@ -57,6 +58,11 @@ export const createProject = async ({
         projectId: createdProject.id,
       },
       ctx,
+    }),
+    seedDefaultAttributes({
+      ctx,
+      projectId: createdProject.id,
+      organizationId: ctx.organization.id,
     }),
   ]);
   return createdProject;

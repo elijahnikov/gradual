@@ -1,56 +1,164 @@
-import { Button } from "@gradual/ui/button";
+import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useQueryStates } from "nuqs";
+import React, { useCallback, useEffect, useMemo } from "react";
+import { useInView } from "react-intersection-observer";
+import { useKeyPress } from "@/lib/hooks/use-key-press";
+import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
 import EmptyFlagsList from "./empty-state";
+import FlagListItem from "./flag-list-item";
+import { flagsSearchParams } from "./flags-search-params";
+import NoResultsState from "./no-results-state";
+import SelectedFlagsActions from "./selected-flags-actions";
 
 interface FlagsListProps {
   projectSlug: string;
   organizationSlug: string;
 }
 
+const PAGE_SIZE = 10;
+
 export default function FlagsList({
   projectSlug,
   organizationSlug,
 }: FlagsListProps) {
   const trpc = useTRPC();
-  const { data: flags } = useSuspenseQuery(
-    trpc.featureFlags.getAll.queryOptions({ projectSlug, organizationSlug })
+  const [{ sortBy, sortOrder, search }] = useQueryStates(flagsSearchParams);
+
+  const { setSelectedFlags, clearSelectedFlags, selectedFlags } =
+    useSelectedFlagsStore();
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSuspenseInfiniteQuery(
+      trpc.featureFlags.getAll.infiniteQueryOptions(
+        {
+          projectSlug,
+          organizationSlug,
+          limit: PAGE_SIZE,
+          sortBy,
+          sortOrder,
+          search: search || undefined,
+        },
+        {
+          getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        }
+      )
+    );
+
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px",
+  });
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const allFlags = useMemo(
+    () => data.pages.flatMap((page) => page.items),
+    [data.pages]
   );
 
-  if (flags.data.length === 0) {
+  const handleSelectAll = useCallback(
+    (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        const target = event.target as HTMLElement;
+        const isInputField =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
+        if (!isInputField) {
+          event.preventDefault();
+          const currentSelectedFlags = selectedFlags;
+          const allSelected =
+            allFlags.length > 0 &&
+            allFlags.every((flag) =>
+              currentSelectedFlags.some((f) => f.id === flag.featureFlag.id)
+            );
+
+          if (allSelected) {
+            clearSelectedFlags();
+          } else {
+            setSelectedFlags(
+              allFlags.map((flag) => ({
+                id: flag.featureFlag.id,
+                key: flag.featureFlag.key,
+                name: flag.featureFlag.name,
+              }))
+            );
+          }
+        }
+      }
+    },
+    [selectedFlags, setSelectedFlags, clearSelectedFlags, allFlags]
+  );
+
+  const handleClearSelection = useCallback(
+    (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      if (!isInputField && selectedFlags.length > 0) {
+        event.preventDefault();
+        clearSelectedFlags();
+      }
+    },
+    [selectedFlags.length, clearSelectedFlags]
+  );
+
+  useKeyPress("a", handleSelectAll);
+  useKeyPress("Escape", handleClearSelection);
+
+  if (allFlags.length === 0) {
+    if (search) {
+      return <NoResultsState />;
+    }
     return <EmptyFlagsList />;
   }
 
   return (
-    <div>
-      <EmptyFlagsList />
-      {flags.data.map((flag) => (
-        <div key={flag.id}>
-          <Button
-            render={
-              <Link
-                params={{ organizationSlug, projectSlug, flagSlug: flag.key }}
-                preload="intent"
-                to={"/$organizationSlug/$projectSlug/flags/$flagSlug"}
-              />
-            }
-          >
-            {flag.name}
-          </Button>
+    <div className="flex flex-1 flex-col">
+      <div className="flex flex-col divide-y">
+        {allFlags.map((item, _index) => (
+          <React.Fragment key={item.featureFlag.id}>
+            <FlagListItem flag={item} key={item.featureFlag.id} />
+            <Separator />
+          </React.Fragment>
+        ))}
+      </div>
+      {hasNextPage && (
+        <div className="flex justify-center py-4" ref={loadMoreRef}>
+          {isFetchingNextPage && <Skeleton className="h-8 w-32" />}
         </div>
-      ))}
+      )}
+      {selectedFlags.length > 0 && (
+        <SelectedFlagsActions
+          organizationSlug={organizationSlug}
+          projectSlug={projectSlug}
+        />
+      )}
     </div>
   );
 }
 
 export function FlagsListSkeleton() {
   return (
-    <div>
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
+    <div className="my-2 flex flex-col gap-y-2 px-2">
+      {Array.from({ length: 12 }).map((_, index) => (
+        <Skeleton className="h-12 w-full" key={index} />
+      ))}
     </div>
   );
 }

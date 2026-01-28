@@ -41,7 +41,7 @@ export default function CreateFlagForm({
 }) {
   const navigate = useNavigate();
   const params = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
+    strict: false,
   });
 
   const tagInputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +75,6 @@ export default function CreateFlagForm({
           value: true,
           description: undefined,
           isDefault: true,
-          isDefaultWhenOn: true,
-          isDefaultWhenOff: false,
           rolloutPercentage: 0,
           sortOrder: 0,
         },
@@ -85,13 +83,12 @@ export default function CreateFlagForm({
           value: false,
           description: undefined,
           isDefault: false,
-          isDefaultWhenOn: false,
-          isDefaultWhenOff: true,
           rolloutPercentage: 0,
           sortOrder: 1,
         },
       ],
-      environmentConfigs: [],
+      defaultWhenOnVariationIndex: 0,
+      defaultWhenOffVariationIndex: 1,
     },
   });
 
@@ -107,8 +104,6 @@ export default function CreateFlagForm({
               value: true,
               description: undefined,
               isDefault: true,
-              isDefaultWhenOn: true,
-              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -117,8 +112,6 @@ export default function CreateFlagForm({
               value: false,
               description: undefined,
               isDefault: false,
-              isDefaultWhenOn: false,
-              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -130,8 +123,6 @@ export default function CreateFlagForm({
               value: "variation-value-1",
               description: undefined,
               isDefault: true,
-              isDefaultWhenOn: true,
-              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -140,8 +131,6 @@ export default function CreateFlagForm({
               value: "variation-value-2",
               description: undefined,
               isDefault: false,
-              isDefaultWhenOn: false,
-              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -153,8 +142,6 @@ export default function CreateFlagForm({
               value: 0,
               description: undefined,
               isDefault: true,
-              isDefaultWhenOn: true,
-              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -163,8 +150,6 @@ export default function CreateFlagForm({
               value: 1,
               description: undefined,
               isDefault: false,
-              isDefaultWhenOn: false,
-              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -176,8 +161,6 @@ export default function CreateFlagForm({
               value: {},
               description: undefined,
               isDefault: true,
-              isDefaultWhenOn: true,
-              isDefaultWhenOff: true,
               rolloutPercentage: 0,
               sortOrder: 0,
             },
@@ -186,8 +169,6 @@ export default function CreateFlagForm({
               value: {},
               description: undefined,
               isDefault: false,
-              isDefaultWhenOn: false,
-              isDefaultWhenOff: false,
               rolloutPercentage: 0,
               sortOrder: 1,
             },
@@ -199,6 +180,7 @@ export default function CreateFlagForm({
 
     if (currentType) {
       const defaultVariations = getDefaultVariations(currentType);
+      form.setValue("variations", defaultVariations);
 
       if (currentType === "boolean") {
         const trueVariationIndex = defaultVariations.findIndex(
@@ -208,24 +190,16 @@ export default function CreateFlagForm({
           (v) => v.value === false
         );
         if (trueVariationIndex !== -1 && falseVariationIndex !== -1) {
-          const updatedVariations = defaultVariations.map((v, idx) => ({
-            ...v,
-            isDefaultWhenOn: idx === trueVariationIndex,
-            isDefaultWhenOff: idx === falseVariationIndex,
-          }));
-          form.setValue("variations", updatedVariations);
+          form.setValue("defaultWhenOnVariationIndex", trueVariationIndex);
+          form.setValue("defaultWhenOffVariationIndex", falseVariationIndex);
         }
       } else {
         const defaultVariationIndex = defaultVariations.findIndex(
           (v) => v.isDefault
         );
         if (defaultVariationIndex !== -1) {
-          const updatedVariations = defaultVariations.map((v, idx) => ({
-            ...v,
-            isDefaultWhenOn: idx === defaultVariationIndex,
-            isDefaultWhenOff: idx === defaultVariationIndex,
-          }));
-          form.setValue("variations", updatedVariations);
+          form.setValue("defaultWhenOnVariationIndex", defaultVariationIndex);
+          form.setValue("defaultWhenOffVariationIndex", defaultVariationIndex);
         }
       }
     }
@@ -242,6 +216,9 @@ export default function CreateFlagForm({
         description: "Redirecting to the feature flag...",
       });
       setTimeout(() => {
+        if (!(data.key && params.projectSlug && params.organizationSlug)) {
+          return;
+        }
         navigate({
           to: "/$organizationSlug/$projectSlug/flags/$flagSlug",
           params: {
@@ -492,12 +469,10 @@ export default function CreateFlagForm({
             )
             .filter((idx: number) => idx !== -1);
 
-          const currentDefaultWhenOnIndex = variations.findIndex(
-            (v: (typeof variations)[number]) => v.isDefaultWhenOn
-          );
-          const currentDefaultWhenOffIndex = variations.findIndex(
-            (v: (typeof variations)[number]) => v.isDefaultWhenOff
-          );
+          const currentDefaultWhenOnIndex =
+            form.watch("defaultWhenOnVariationIndex") ?? 0;
+          const currentDefaultWhenOffIndex =
+            form.watch("defaultWhenOffVariationIndex") ?? 0;
 
           return (
             <div className="flex w-full items-center gap-2 border-t px-3 py-4">
@@ -518,7 +493,7 @@ export default function CreateFlagForm({
                       variation: (typeof validVariations)[number],
                       index: number
                     ) => ({
-                      value: String(validVariationIndices[index]),
+                      value: String(validVariationIndices[index] ?? index),
                       label: variation.name || `Variation ${index + 1}`,
                     })
                   )}
@@ -528,29 +503,23 @@ export default function CreateFlagForm({
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      const currentVariations = form.getValues("variations");
-                      currentVariations.forEach(
-                        (
-                          _: (typeof currentVariations)[number],
-                          index: number
-                        ) => {
-                          form.setValue(
-                            `variations.${index}.isDefaultWhenOn`,
-                            index === selectedIndex
-                          );
-                          form.setValue(
-                            `variations.${index}.isDefault`,
-                            index === selectedIndex
-                          );
-                        }
+                      form.setValue(
+                        "defaultWhenOnVariationIndex",
+                        selectedIndex
                       );
                     }
                   }}
-                  value={
-                    currentDefaultWhenOnIndex !== -1
-                      ? String(currentDefaultWhenOnIndex)
-                      : undefined
-                  }
+                  value={(() => {
+                    if (
+                      validVariationIndices.includes(currentDefaultWhenOnIndex)
+                    ) {
+                      return String(currentDefaultWhenOnIndex);
+                    }
+                    if (validVariationIndices.length > 0) {
+                      return String(validVariationIndices[0]);
+                    }
+                    return undefined;
+                  })()}
                 >
                   <SelectTrigger size="sm">
                     <SelectValue />
@@ -563,7 +532,7 @@ export default function CreateFlagForm({
                       ) => (
                         <SelectItem
                           key={index}
-                          value={String(validVariationIndices[index])}
+                          value={String(validVariationIndices[index] ?? index)}
                         >
                           {variation.name || `Variation ${index + 1}`}
                         </SelectItem>
@@ -582,7 +551,7 @@ export default function CreateFlagForm({
                       variation: (typeof validVariations)[number],
                       index: number
                     ) => ({
-                      value: String(validVariationIndices[index]),
+                      value: String(validVariationIndices[index] ?? index),
                       label: variation.name || `Variation ${index + 1}`,
                     })
                   )}
@@ -592,25 +561,23 @@ export default function CreateFlagForm({
                     }
                     const selectedIndex = Number.parseInt(value, 10);
                     if (!Number.isNaN(selectedIndex)) {
-                      const currentVariations = form.getValues("variations");
-                      currentVariations.forEach(
-                        (
-                          _: (typeof currentVariations)[number],
-                          index: number
-                        ) => {
-                          form.setValue(
-                            `variations.${index}.isDefaultWhenOff`,
-                            index === selectedIndex
-                          );
-                        }
+                      form.setValue(
+                        "defaultWhenOffVariationIndex",
+                        selectedIndex
                       );
                     }
                   }}
-                  value={
-                    currentDefaultWhenOffIndex !== -1
-                      ? String(currentDefaultWhenOffIndex)
-                      : undefined
-                  }
+                  value={(() => {
+                    if (
+                      validVariationIndices.includes(currentDefaultWhenOffIndex)
+                    ) {
+                      return String(currentDefaultWhenOffIndex);
+                    }
+                    if (validVariationIndices.length > 0) {
+                      return String(validVariationIndices[0]);
+                    }
+                    return undefined;
+                  })()}
                 >
                   <SelectTrigger size="sm">
                     <SelectValue />
@@ -623,7 +590,7 @@ export default function CreateFlagForm({
                       ) => (
                         <SelectItem
                           key={index}
-                          value={String(validVariationIndices[index])}
+                          value={String(validVariationIndices[index] ?? index)}
                         >
                           {variation.name || `Variation ${index + 1}`}
                         </SelectItem>
@@ -644,7 +611,7 @@ export default function CreateFlagForm({
             >
           }
           isDialogOpen={isDialogOpen}
-          organizationSlug={params.organizationSlug}
+          organizationSlug={params.organizationSlug ?? ""}
         />
         <LoadingButton
           className="ml-auto"

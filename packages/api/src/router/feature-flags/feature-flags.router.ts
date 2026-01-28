@@ -22,4 +22,20 @@ export const featureFlagsRouter = {
   create: protectedOrganizationProcedure({ flags: ["create"] })
     .input(schemas.createCompleteFeatureFlagSchema)
     .mutation((opts) => services.createCompleteFeatureFlag({ ...opts })),
+
+  getPreviewEvaluations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getPreviewEvaluationsSchema)
+    .query((opts) => services.getPreviewEvaluations({ ...opts })),
+
+  deleteFlags: protectedOrganizationProcedure({ flags: ["delete"] })
+    .input(schemas.deleteFlagsSchema)
+    .mutation((opts) => services.deleteFlags({ ...opts })),
+
+  seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.seedEvaluationsSchema)
+    .mutation((opts) => services.seedEvaluations({ ...opts })),
+
+  getTargetingRules: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getTargetingRulesSchema)
+    .query((opts) => services.getTargetingRules({ ...opts })),
 } satisfies TRPCRouterRecord;
