@@ -26,8 +26,8 @@ const OPERATORS: { label: string; value: TargetingOperator }[] = [
   { label: "is not in list", value: "not_in" },
   { label: "greater than", value: "greater_than" },
   { label: "less than", value: "less_than" },
-  { label: ">=", value: "greater_than_or_equal" },
-  { label: "<=", value: "less_than_or_equal" },
+  { label: "greater than or equal to", value: "greater_than_or_equal" },
+  { label: "less than or equal to", value: "less_than_or_equal" },
 ];
 
 interface RuleConditionBuilderProps {

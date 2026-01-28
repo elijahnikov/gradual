@@ -6,20 +6,17 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxPopup,
-  ComboboxSeparator,
   ComboboxTrigger,
   ComboboxValue,
 } from "@gradual/ui/combobox";
 import { Input } from "@gradual/ui/input";
+import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { useTargetingStore } from "./targeting-store";
-
-// Special value for the "create new" option
-const CREATE_NEW_VALUE = "__create_new__";
 
 interface AttributeItem {
   value: string;
@@ -44,6 +41,9 @@ export function AttributeSelect({
   const [isCreating, setIsCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const preventCloseRef = useRef(false);
 
   const attributes = useTargetingStore((s) => s.attributes);
   const attributesByKey = useTargetingStore((s) => s.attributesByKey);
@@ -59,14 +59,16 @@ export function AttributeSelect({
         setIsCreating(false);
         setNewKey("");
         setNewDisplayName("");
+        setOpen(false);
       },
     })
   );
 
   const selectedAttribute = attributesByKey.get(value);
 
+  // Only include actual attributes, not the "Create new" option
   const attributeItems = useMemo(() => {
-    const items: AttributeItem[] = attributes.map((attr) => ({
+    return attributes.map((attr) => ({
       value: attr.key,
       label: attr.displayName ?? attr.key,
       subLabel:
@@ -74,14 +76,6 @@ export function AttributeSelect({
           ? attr.key
           : undefined,
     }));
-
-    // Add "Create new" option at the end
-    items.push({
-      value: CREATE_NEW_VALUE,
-      label: "Create new attribute",
-    });
-
-    return items;
   }, [attributes]);
 
   const handleCreate = () => {
@@ -98,21 +92,46 @@ export function AttributeSelect({
     });
   };
 
-  const handleValueChange = (newValue: string | null) => {
-    if (newValue === CREATE_NEW_VALUE) {
-      setIsCreating(true);
+  const handleCancel = () => {
+    setIsCreating(false);
+    setNewKey("");
+    setNewDisplayName("");
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && preventCloseRef.current) {
+      preventCloseRef.current = false;
       return;
     }
+
+    setOpen(newOpen);
+    if (!newOpen) {
+      setIsCreating(false);
+      setNewKey("");
+      setNewDisplayName("");
+      setSearchTerm("");
+    }
+  };
+
+  const handleValueChange = (newValue: string | null) => {
     if (newValue) {
       onChange(newValue);
+      setOpen(false);
     }
+  };
+
+  const handleCreateClick = () => {
+    preventCloseRef.current = true;
+    setIsCreating(true);
   };
 
   return (
     <Combobox
       autoHighlight
       items={attributeItems}
+      onOpenChange={handleOpenChange}
       onValueChange={handleValueChange}
+      open={open}
       value={value}
     >
       <ComboboxTrigger
@@ -135,7 +154,7 @@ export function AttributeSelect({
       </ComboboxTrigger>
       <ComboboxPopup className="w-56">
         {isCreating ? (
-          <div className="flex flex-col gap-2 p-2">
+          <div className="flex w-56 flex-col gap-2 p-2">
             <Text size="small" weight="plus">
               Create new attribute
             </Text>
@@ -154,7 +173,7 @@ export function AttributeSelect({
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                onClick={() => setIsCreating(false)}
+                onClick={handleCancel}
                 size="small"
                 variant="secondary"
               >
@@ -175,8 +194,8 @@ export function AttributeSelect({
             </div>
           </div>
         ) : (
-          <>
-            <div className="border-b p-2">
+          <div className="flex w-56 flex-col">
+            <div className="w-full p-2">
               <ComboboxInput
                 aria-label="Search attributes"
                 className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
@@ -186,20 +205,10 @@ export function AttributeSelect({
                 value={searchTerm}
               />
             </div>
-            <ComboboxEmpty>No attributes found.</ComboboxEmpty>
-            <ComboboxList>
-              {(item: AttributeItem) =>
-                item.value === CREATE_NEW_VALUE ? (
-                  <>
-                    <ComboboxSeparator />
-                    <ComboboxItem key={item.value} value={item.value}>
-                      <div className="flex items-center gap-2">
-                        <RiAddLine className="size-4" />
-                        <span>{item.label}</span>
-                      </div>
-                    </ComboboxItem>
-                  </>
-                ) : (
+            <div className="max-h-48 overflow-y-auto">
+              <ComboboxEmpty>No attributes found.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: AttributeItem) => (
                   <ComboboxItem key={item.value} value={item.value}>
                     <div className="flex flex-col">
                       <span>{item.label}</span>
@@ -210,10 +219,19 @@ export function AttributeSelect({
                       )}
                     </div>
                   </ComboboxItem>
-                )
-              }
-            </ComboboxList>
-          </>
+                )}
+              </ComboboxList>
+            </div>
+            <Separator />
+            <button
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-ui-bg-component-hover"
+              onClick={handleCreateClick}
+              type="button"
+            >
+              <RiAddLine className="size-4" />
+              <span>Create new attribute</span>
+            </button>
+          </div>
         )}
       </ComboboxPopup>
     </Combobox>

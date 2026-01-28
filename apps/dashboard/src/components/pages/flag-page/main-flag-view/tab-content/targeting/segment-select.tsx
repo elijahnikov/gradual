@@ -14,7 +14,7 @@ import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { useTargetingStore } from "./targeting-store";
 
@@ -44,6 +44,9 @@ export function SegmentSelect({
   const [isCreating, setIsCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newName, setNewName] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const preventCloseRef = useRef(false);
 
   const segments = useTargetingStore((s) => s.segments);
   const segmentsById = useTargetingStore((s) => s.segmentsById);
@@ -61,6 +64,7 @@ export function SegmentSelect({
         setIsCreating(false);
         setNewKey("");
         setNewName("");
+        setOpen(false);
       },
     })
   );
@@ -74,7 +78,6 @@ export function SegmentSelect({
       description: seg.description ?? undefined,
     }));
 
-    // Add "Create new" option at the end
     items.push({
       value: CREATE_NEW_VALUE,
       label: "Create new segment",
@@ -97,13 +100,36 @@ export function SegmentSelect({
     });
   };
 
+  const handleCancel = () => {
+    setIsCreating(false);
+    setNewKey("");
+    setNewName("");
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && preventCloseRef.current) {
+      preventCloseRef.current = false;
+      return;
+    }
+
+    setOpen(newOpen);
+    if (!newOpen) {
+      setIsCreating(false);
+      setNewKey("");
+      setNewName("");
+      setSearchTerm("");
+    }
+  };
+
   const handleValueChange = (newValue: string | null) => {
     if (newValue === CREATE_NEW_VALUE) {
+      preventCloseRef.current = true;
       setIsCreating(true);
       return;
     }
     if (newValue) {
       onChange(newValue);
+      setOpen(false);
     }
   };
 
@@ -111,7 +137,9 @@ export function SegmentSelect({
     <Combobox
       autoHighlight
       items={segmentItems}
+      onOpenChange={handleOpenChange}
       onValueChange={handleValueChange}
+      open={open}
       value={value}
     >
       <ComboboxTrigger
@@ -119,7 +147,7 @@ export function SegmentSelect({
           <Button
             className="h-8 w-48 justify-between"
             size="small"
-            variant="secondary"
+            variant="outline"
           />
         }
       >
@@ -132,7 +160,7 @@ export function SegmentSelect({
       </ComboboxTrigger>
       <ComboboxPopup className="w-56">
         {isCreating ? (
-          <div className="flex flex-col gap-2 p-2">
+          <div className="flex w-56 flex-col gap-2 p-2">
             <Text size="small" weight="plus">
               Create new segment
             </Text>
@@ -151,7 +179,7 @@ export function SegmentSelect({
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                onClick={() => setIsCreating(false)}
+                onClick={handleCancel}
                 size="small"
                 variant="secondary"
               >
@@ -171,8 +199,8 @@ export function SegmentSelect({
             </div>
           </div>
         ) : (
-          <>
-            <div className="border-b p-2">
+          <div className="w-56">
+            <div className="p-2">
               <ComboboxInput
                 aria-label="Search segments"
                 className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
@@ -213,7 +241,7 @@ export function SegmentSelect({
                 )
               }
             </ComboboxList>
-          </>
+          </div>
         )}
       </ComboboxPopup>
     </Combobox>
