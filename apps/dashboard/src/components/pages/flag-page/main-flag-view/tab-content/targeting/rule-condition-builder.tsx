@@ -65,24 +65,26 @@ export function RuleConditionBuilder({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {conditions.map((condition, index) => (
-        <ConditionRow
-          attributes={attributes}
-          condition={condition}
-          index={index}
-          key={index}
-          onChange={(updates) => handleConditionChange(index, updates)}
-          onRemove={() => handleRemoveCondition(index)}
-          organizationSlug={organizationSlug}
-          projectSlug={projectSlug}
-        />
-      ))}
+    <div>
+      <div className="flex flex-col gap-2">
+        {conditions.map((condition, index) => (
+          <ConditionRow
+            attributes={attributes}
+            condition={condition}
+            index={index}
+            key={index}
+            onChange={(updates) => handleConditionChange(index, updates)}
+            onRemove={() => handleRemoveCondition(index)}
+            organizationSlug={organizationSlug}
+            projectSlug={projectSlug}
+          />
+        ))}
+      </div>
       <Button
-        className="w-fit gap-x-0.5"
+        className="mt-3 ml-6 w-fit gap-x-0.5"
         onClick={handleAddCondition}
         size="small"
-        variant="secondary"
+        variant="outline"
       >
         <RiAddLine className="mr-1 size-4" />
         Add condition

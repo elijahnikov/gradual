@@ -28,7 +28,7 @@ export default function TargetingCard({
   children,
 }: TargetingCardProps) {
   return (
-    <Card className="flex min-w-3xl max-w-3xl flex-col gap-3 p-0">
+    <Card className="flex min-w-3xl max-w-3xl flex-col p-0">
       <div className="flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-x-2">
           <div className="flex w-full items-center gap-2">
