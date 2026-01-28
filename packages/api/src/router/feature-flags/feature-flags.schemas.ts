@@ -151,3 +151,11 @@ export const deleteFlagsSchema = z.object({
   flagIds: z.array(z.uuid()),
 });
 export type DeleteFlagsInput = z.infer<typeof deleteFlagsSchema>;
+
+export const getTargetingRulesSchema = z.object({
+  flagId: z.uuid(),
+  environmentSlug: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type GetTargetingRulesInput = z.infer<typeof getTargetingRulesSchema>;

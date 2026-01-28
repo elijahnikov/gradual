@@ -80,14 +80,7 @@ function SelectPopup({
           >
             <RiArrowUpSFill className="relative size-4.5 sm:size-4" />
           </SelectPrimitive.ScrollUpArrow>
-          <div
-            className={cn(
-              "relative z-50 max-h-[200px] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg bg-ui-bg-component text-ui-fg-base shadow-elevation-flyout",
-              "data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:animate-in",
-              "data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:animate-out",
-              "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
-            )}
-          >
+          <div className="relative h-full rounded-lg bg-ui-bg-component not-dark:bg-clip-padding text-ui-fg-base shadow-elevation-flyout before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/6%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]">
             <SelectPrimitive.List
               className={cn(
                 "max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto p-1",

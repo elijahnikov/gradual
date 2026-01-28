@@ -8,6 +8,9 @@
   ],
   "linter": {
     "rules": {
+      "style": {
+        "noNestedTernary": "off"
+      },
       "performance": {
         "noNamespaceImport": "off",
         "noBarrelFile": "off"

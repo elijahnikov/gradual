@@ -34,4 +34,8 @@ export const featureFlagsRouter = {
   seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.seedEvaluationsSchema)
     .mutation((opts) => services.seedEvaluations({ ...opts })),
+
+  getTargetingRules: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getTargetingRulesSchema)
+    .query((opts) => services.getTargetingRules({ ...opts })),
 } satisfies TRPCRouterRecord;

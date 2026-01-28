@@ -255,6 +255,7 @@ export const featureFlagTarget = pgTable(
   "feature_flag_target",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
+    name: varchar("name", { length: 256 }).notNull(),
     featureFlagEnvironmentId: uuid("feature_flag_environment_id")
       .notNull()
       .references(() => featureFlagEnvironment.id, { onDelete: "cascade" }),

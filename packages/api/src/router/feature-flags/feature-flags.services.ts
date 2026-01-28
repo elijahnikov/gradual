@@ -32,6 +32,7 @@ import type {
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
   GetPreviewEvaluationsInput,
+  GetTargetingRulesInput,
   SeedEvaluationsInput,
 } from "./feature-flags.schemas";
 
@@ -788,4 +789,69 @@ export const deleteFlags = async ({
     );
 
   return { success: true, deleted: flagIds.length };
+};
+
+export const getTargetingRules = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetTargetingRulesInput;
+}) => {
+  const { flagId, environmentSlug, projectSlug } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundEnvironment = await ctx.db.query.environment.findFirst({
+    where: ({ slug, projectId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, environmentSlug),
+        eq(projectId, foundProject.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
+  const flagEnvironment = await ctx.db.query.featureFlagEnvironment.findFirst({
+    where: ({ featureFlagId, environmentId }, { eq, and }) =>
+      and(eq(featureFlagId, flagId), eq(environmentId, foundEnvironment.id)),
+    with: {
+      defaultVariation: true,
+      targets: {
+        orderBy: (target, { asc }) => asc(target.sortOrder),
+        with: {
+          variation: true,
+        },
+      },
+    },
+  });
+
+  if (!flagEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Flag environment configuration not found",
+    });
+  }
+
+  return flagEnvironment;
 };
