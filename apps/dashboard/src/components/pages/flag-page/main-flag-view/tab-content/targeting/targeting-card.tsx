@@ -4,14 +4,13 @@ import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import { RiDeleteBinLine, RiDraggable } from "@remixicon/react";
 import type { ReactNode } from "react";
-import type { TargetType, Variation } from "./types";
+import { useTargetingStore } from "./targeting-store";
 import { VariationSelector } from "./variation-selector";
 
 interface TargetingCardProps {
-  type: TargetType;
+  targetId: string;
   name: string;
   onNameChange: (name: string) => void;
-  variations: Variation[];
   selectedVariationId: string;
   onVariationChange: (variationId: string) => void;
   onDelete: () => void;
@@ -21,12 +20,13 @@ interface TargetingCardProps {
 export default function TargetingCard({
   name,
   onNameChange,
-  variations,
   selectedVariationId,
   onVariationChange,
   onDelete,
   children,
 }: TargetingCardProps) {
+  const variations = useTargetingStore((s) => s.variations);
+
   return (
     <Card className="flex min-w-3xl max-w-3xl flex-col p-0">
       <div className="flex flex-col gap-3 p-4">

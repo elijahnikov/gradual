@@ -3,14 +3,19 @@ import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useEffect } from "react";
 import { useTRPC } from "@/lib/trpc";
 import DefaultVariation from "./default-variation";
 import { IndividualTargetCard } from "./individual-target-card";
+import { ReviewChangesModal } from "./review-changes-modal";
 import { RuleTargetCard } from "./rule-target-card";
 import { SegmentTargetCard } from "./segment-target-card";
 import { TargetingList } from "./targeting-list";
-import type { RuleCondition, TargetType } from "./types";
+import {
+  type LocalTarget,
+  TargetingStoreProvider,
+  useTargetingStore,
+} from "./targeting-store";
 
 interface FlagTargetingProps {
   flag: RouterOutputs["featureFlags"]["getByKey"];
@@ -19,18 +24,23 @@ interface FlagTargetingProps {
   projectSlug: string;
 }
 
-interface LocalTarget {
-  id: string;
-  type: TargetType;
-  name: string;
-  variationId: string;
-  conditions?: RuleCondition[];
-  attributeKey?: string;
-  attributeValue?: string;
-  segmentId?: string;
+// Hoisted static style object (rendering-hoist-jsx)
+const DOTTED_BACKGROUND_STYLE = {
+  background: "#ffffff",
+  backgroundImage:
+    "radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.35) 1px, transparent 0)",
+  backgroundSize: "20px 20px",
+} as const;
+
+export default function FlagTargeting(props: FlagTargetingProps) {
+  return (
+    <TargetingStoreProvider>
+      <FlagTargetingContent {...props} />
+    </TargetingStoreProvider>
+  );
 }
 
-export default function FlagTargeting({
+function FlagTargetingContent({
   flag,
   environmentSlug,
   organizationSlug,
@@ -62,152 +72,51 @@ export default function FlagTargeting({
   );
 
   const defaultVariationId = flag.variations[0]?.id ?? "";
-  const [targets, setTargets] = useState<LocalTarget[]>([]);
-  const [defaultVariationIdState, setDefaultVariationIdState] = useState(
-    flagEnvironment.defaultVariation?.id ?? defaultVariationId
+
+  // Get store actions and state
+  const initialize = useTargetingStore((s) => s.initialize);
+  const targets = useTargetingStore((s) => s.targets);
+  const addTarget = useTargetingStore((s) => s.addTarget);
+  const defaultVariationIdState = useTargetingStore(
+    (s) => s.defaultVariationIdState
   );
+  const setDefaultVariation = useTargetingStore((s) => s.setDefaultVariation);
+  const hasChanges = useTargetingStore((s) => s.hasChanges);
+  const openReviewModal = useTargetingStore((s) => s.openReviewModal);
 
-  const handleAddTarget = useCallback(
-    (type: TargetType, index: number) => {
-      const newTarget: LocalTarget = {
-        id: crypto.randomUUID(),
-        type,
-        name: `${type}`,
-        variationId: defaultVariationId,
-      };
-      setTargets((prev) => {
-        const updated = [...prev];
-        updated.splice(index, 0, newTarget);
-        return updated;
-      });
-    },
-    [defaultVariationId]
-  );
-
-  const handleDeleteTarget = useCallback((id: string) => {
-    setTargets((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const handleVariationChange = useCallback(
-    (id: string, variationId: string) => {
-      setTargets((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, variationId } : t))
-      );
-    },
-    []
-  );
-
-  const handleConditionsChange = useCallback(
-    (id: string, conditions: RuleCondition[]) => {
-      setTargets((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, conditions } : t))
-      );
-    },
-    []
-  );
-
-  const handleIndividualChange = useCallback(
-    (id: string, attributeKey: string, attributeValue: string) => {
-      setTargets((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, attributeKey, attributeValue } : t
-        )
-      );
-    },
-    []
-  );
-
-  const handleSegmentChange = useCallback((id: string, segmentId: string) => {
-    setTargets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, segmentId } : t))
-    );
-  }, []);
-
-  const handleNameChange = useCallback((id: string, name: string) => {
-    setTargets((prev) => prev.map((t) => (t.id === id ? { ...t, name } : t)));
-  }, []);
-
-  const handleDefaultVariationChange = useCallback((variationId: string) => {
-    setDefaultVariationIdState(variationId);
-  }, []);
-
-  const renderTarget = (target: LocalTarget) => {
-    switch (target.type) {
-      case "rule":
-        return (
-          <RuleTargetCard
-            attributes={attributes}
-            initialConditions={target.conditions}
-            key={target.id}
-            name={target.name}
-            onConditionsChange={(conditions) =>
-              handleConditionsChange(target.id, conditions)
-            }
-            onDelete={() => handleDeleteTarget(target.id)}
-            onNameChange={(name) => handleNameChange(target.id, name)}
-            onVariationChange={(variationId) =>
-              handleVariationChange(target.id, variationId)
-            }
-            organizationSlug={organizationSlug}
-            projectSlug={projectSlug}
-            selectedVariationId={target.variationId}
-            variations={flag.variations}
-          />
-        );
-      case "individual":
-        return (
-          <IndividualTargetCard
-            attributes={attributes}
-            initialAttributeKey={target.attributeKey}
-            initialAttributeValue={target.attributeValue}
-            key={target.id}
-            name={target.name}
-            onDelete={() => handleDeleteTarget(target.id)}
-            onIndividualChange={(attributeKey, attributeValue) =>
-              handleIndividualChange(target.id, attributeKey, attributeValue)
-            }
-            onNameChange={(name) => handleNameChange(target.id, name)}
-            onVariationChange={(variationId) =>
-              handleVariationChange(target.id, variationId)
-            }
-            organizationSlug={organizationSlug}
-            projectSlug={projectSlug}
-            selectedVariationId={target.variationId}
-            variations={flag.variations}
-          />
-        );
-      case "segment":
-        return (
-          <SegmentTargetCard
-            initialSegmentId={target.segmentId}
-            key={target.id}
-            name={target.name}
-            onDelete={() => handleDeleteTarget(target.id)}
-            onNameChange={(name) => handleNameChange(target.id, name)}
-            onSegmentChange={(segmentId) =>
-              handleSegmentChange(target.id, segmentId)
-            }
-            onVariationChange={(variationId) =>
-              handleVariationChange(target.id, variationId)
-            }
-            organizationSlug={organizationSlug}
-            projectSlug={projectSlug}
-            segments={segments}
-            selectedVariationId={target.variationId}
-            variations={flag.variations}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  // Initialize store when data is available
+  useEffect(() => {
+    initialize({
+      attributes,
+      segments,
+      variations: flag.variations,
+      organizationSlug,
+      projectSlug,
+      defaultVariationId:
+        flagEnvironment.defaultVariation?.id ?? defaultVariationId,
+    });
+  }, [
+    initialize,
+    attributes,
+    segments,
+    flag.variations,
+    organizationSlug,
+    projectSlug,
+    flagEnvironment.defaultVariation?.id,
+    defaultVariationId,
+  ]);
 
   return (
     <div className="flex w-full flex-1 flex-col p-6">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         <div className="flex items-center justify-between p-3">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
-          <Button disabled size="small" variant="gradual">
+          <Button
+            disabled={!hasChanges}
+            onClick={openReviewModal}
+            size="small"
+            variant="gradual"
+          >
             Review and save
           </Button>
         </div>
@@ -219,33 +128,40 @@ export default function FlagTargeting({
                   footer={
                     flagEnvironment.defaultVariation && (
                       <DefaultVariation
-                        defaultVariation={{
-                          ...flagEnvironment.defaultVariation,
-                          id: defaultVariationIdState,
-                        }}
-                        onDefaultVariationChange={handleDefaultVariationChange}
-                        variations={flag.variations}
+                        defaultVariationId={defaultVariationIdState}
+                        onDefaultVariationChange={setDefaultVariation}
                       />
                     )
                   }
-                  onAddTarget={handleAddTarget}
+                  onAddTarget={addTarget}
                 >
-                  {targets.map(renderTarget)}
+                  {targets.map((target) => (
+                    <TargetCard key={target.id} target={target} />
+                  ))}
                 </TargetingList>
               </div>
               <div
                 className="absolute inset-0 z-0 translate-x-2 translate-y-2 opacity-50"
-                style={{
-                  background: "#ffffff",
-                  backgroundImage:
-                    "radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.35) 1px, transparent 0)",
-                  backgroundSize: "20px 20px",
-                }}
+                style={DOTTED_BACKGROUND_STYLE}
               />
             </div>
           </div>
         </div>
       </Card>
+      <ReviewChangesModal />
     </div>
   );
+}
+
+function TargetCard({ target }: { target: LocalTarget }) {
+  switch (target.type) {
+    case "rule":
+      return <RuleTargetCard targetId={target.id} />;
+    case "individual":
+      return <IndividualTargetCard targetId={target.id} />;
+    case "segment":
+      return <SegmentTargetCard targetId={target.id} />;
+    default:
+      return null;
+  }
 }

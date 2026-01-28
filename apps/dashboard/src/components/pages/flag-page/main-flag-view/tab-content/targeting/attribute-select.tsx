@@ -1,21 +1,33 @@
 import { Button } from "@gradual/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@gradual/ui/dropdown-menu";
+  Combobox,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxSeparator,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@gradual/ui/combobox";
 import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
-import type { Attribute } from "./types";
+import { useTargetingStore } from "./targeting-store";
+
+// Special value for the "create new" option
+const CREATE_NEW_VALUE = "__create_new__";
+
+interface AttributeItem {
+  value: string;
+  label: string;
+  subLabel?: string;
+}
 
 interface AttributeSelectProps {
-  attributes: Attribute[];
   value: string;
   onChange: (key: string) => void;
   projectSlug: string;
@@ -23,16 +35,18 @@ interface AttributeSelectProps {
 }
 
 export function AttributeSelect({
-  attributes,
   value,
   onChange,
   projectSlug,
   organizationSlug,
 }: AttributeSelectProps) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
-  const [open, setOpen] = useState(false);
+
+  const attributes = useTargetingStore((s) => s.attributes);
+  const attributesByKey = useTargetingStore((s) => s.attributesByKey);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -45,12 +59,30 @@ export function AttributeSelect({
         setIsCreating(false);
         setNewKey("");
         setNewDisplayName("");
-        setOpen(false);
       },
     })
   );
 
-  const selectedAttribute = attributes.find((a) => a.key === value);
+  const selectedAttribute = attributesByKey.get(value);
+
+  const attributeItems = useMemo(() => {
+    const items: AttributeItem[] = attributes.map((attr) => ({
+      value: attr.key,
+      label: attr.displayName ?? attr.key,
+      subLabel:
+        attr.displayName && attr.displayName !== attr.key
+          ? attr.key
+          : undefined,
+    }));
+
+    // Add "Create new" option at the end
+    items.push({
+      value: CREATE_NEW_VALUE,
+      label: "Create new attribute",
+    });
+
+    return items;
+  }, [attributes]);
 
   const handleCreate = () => {
     if (!(newKey.trim() && newDisplayName.trim())) {
@@ -66,23 +98,42 @@ export function AttributeSelect({
     });
   };
 
+  const handleValueChange = (newValue: string | null) => {
+    if (newValue === CREATE_NEW_VALUE) {
+      setIsCreating(true);
+      return;
+    }
+    if (newValue) {
+      onChange(newValue);
+    }
+  };
+
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
-      <DropdownMenuTrigger>
-        <Button
-          className="h-7.5 w-36 justify-between"
-          size="small"
-          variant="outline"
-        >
+    <Combobox
+      autoHighlight
+      items={attributeItems}
+      onValueChange={handleValueChange}
+      value={value}
+    >
+      <ComboboxTrigger
+        render={
+          <Button
+            className="h-7.5 w-36 justify-between"
+            size="small"
+            variant="outline"
+          />
+        }
+      >
+        <ComboboxValue>
           <span className="truncate">
             {selectedAttribute?.displayName ??
               selectedAttribute?.key ??
               "Select"}
           </span>
-          <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+        </ComboboxValue>
+        <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
+      </ComboboxTrigger>
+      <ComboboxPopup className="w-56">
         {isCreating ? (
           <div className="flex flex-col gap-2 p-2">
             <Text size="small" weight="plus">
@@ -125,30 +176,46 @@ export function AttributeSelect({
           </div>
         ) : (
           <>
-            {attributes.map((attr) => (
-              <DropdownMenuItem
-                key={attr.key}
-                onClick={() => {
-                  onChange(attr.key);
-                  setOpen(false);
-                }}
-              >
-                <div className="flex flex-col">
-                  <span>{attr.displayName ?? attr.key}</span>
-                  {attr.displayName && attr.displayName !== attr.key && (
-                    <span className="text-ui-fg-muted text-xs">{attr.key}</span>
-                  )}
-                </div>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsCreating(true)}>
-              <RiAddLine className="mr-2 size-4" />
-              Create new attribute
-            </DropdownMenuItem>
+            <div className="border-b p-2">
+              <ComboboxInput
+                aria-label="Search attributes"
+                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search attributes..."
+                showTrigger={false}
+                value={searchTerm}
+              />
+            </div>
+            <ComboboxEmpty>No attributes found.</ComboboxEmpty>
+            <ComboboxList>
+              {(item: AttributeItem) =>
+                item.value === CREATE_NEW_VALUE ? (
+                  <>
+                    <ComboboxSeparator />
+                    <ComboboxItem key={item.value} value={item.value}>
+                      <div className="flex items-center gap-2">
+                        <RiAddLine className="size-4" />
+                        <span>{item.label}</span>
+                      </div>
+                    </ComboboxItem>
+                  </>
+                ) : (
+                  <ComboboxItem key={item.value} value={item.value}>
+                    <div className="flex flex-col">
+                      <span>{item.label}</span>
+                      {item.subLabel && (
+                        <span className="text-ui-fg-muted text-xs">
+                          {item.subLabel}
+                        </span>
+                      )}
+                    </div>
+                  </ComboboxItem>
+                )
+              }
+            </ComboboxList>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </ComboboxPopup>
+    </Combobox>
   );
 }

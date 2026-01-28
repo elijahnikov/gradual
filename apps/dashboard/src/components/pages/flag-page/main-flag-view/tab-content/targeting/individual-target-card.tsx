@@ -1,70 +1,81 @@
 import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
-import { useState } from "react";
+import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
 import TargetingCard from "./targeting-card";
-import type { Attribute, Variation } from "./types";
+import { useTargetingStore } from "./targeting-store";
 
 interface IndividualTargetCardProps {
-  name: string;
-  onNameChange: (name: string) => void;
-  variations: Variation[];
-  attributes: Attribute[];
-  selectedVariationId: string;
-  initialAttributeKey?: string;
-  initialAttributeValue?: string;
-  projectSlug: string;
-  organizationSlug: string;
-  onVariationChange: (variationId: string) => void;
-  onIndividualChange: (attributeKey: string, attributeValue: string) => void;
-  onDelete: () => void;
+  targetId: string;
 }
 
-export function IndividualTargetCard({
-  name,
-  onNameChange,
-  variations,
-  attributes,
-  selectedVariationId,
-  initialAttributeKey,
-  initialAttributeValue = "",
-  projectSlug,
-  organizationSlug,
-  onVariationChange,
-  onIndividualChange,
-  onDelete,
-}: IndividualTargetCardProps) {
-  const [attributeKey, setAttributeKey] = useState(
-    initialAttributeKey ?? attributes[0]?.key ?? ""
+export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
+  // Get target data from store
+  const target = useTargetingStore((s) =>
+    s.targets.find((t) => t.id === targetId)
   );
-  const [attributeValue, setAttributeValue] = useState(initialAttributeValue);
+
+  // Get stable action references from store (rerender-functional-setstate)
+  const updateTargetName = useTargetingStore((s) => s.updateTargetName);
+  const updateTargetVariation = useTargetingStore(
+    (s) => s.updateTargetVariation
+  );
+  const updateTargetIndividual = useTargetingStore(
+    (s) => s.updateTargetIndividual
+  );
+  const deleteTarget = useTargetingStore((s) => s.deleteTarget);
+
+  // Get shared data from store
+  const attributes = useTargetingStore((s) => s.attributes);
+  const organizationSlug = useTargetingStore((s) => s.organizationSlug);
+  const projectSlug = useTargetingStore((s) => s.projectSlug);
+
+  // Stable callbacks using store actions
+  const handleNameChange = useCallback(
+    (name: string) => updateTargetName(targetId, name),
+    [updateTargetName, targetId]
+  );
+
+  const handleVariationChange = useCallback(
+    (variationId: string) => updateTargetVariation(targetId, variationId),
+    [updateTargetVariation, targetId]
+  );
+
+  const handleDelete = useCallback(
+    () => deleteTarget(targetId),
+    [deleteTarget, targetId]
+  );
+
+  if (!target) {
+    return null;
+  }
+
+  // Get current values with defaults (rerender-lazy-state-init)
+  const attributeKey = target.attributeKey ?? attributes[0]?.key ?? "";
+  const attributeValue = target.attributeValue ?? "";
 
   const handleAttributeKeyChange = (key: string) => {
-    setAttributeKey(key);
-    onIndividualChange(key, attributeValue);
+    updateTargetIndividual(targetId, key, attributeValue);
   };
 
   const handleAttributeValueChange = (value: string) => {
-    setAttributeValue(value);
-    onIndividualChange(attributeKey, value);
+    updateTargetIndividual(targetId, attributeKey, value);
   };
 
   return (
     <TargetingCard
-      name={name}
-      onDelete={onDelete}
-      onNameChange={onNameChange}
-      onVariationChange={onVariationChange}
-      selectedVariationId={selectedVariationId}
-      type="individual"
-      variations={variations}
+      name={target.name}
+      onDelete={handleDelete}
+      onNameChange={handleNameChange}
+      onVariationChange={handleVariationChange}
+      selectedVariationId={target.variationId}
+      targetId={targetId}
     >
       <div className="flex items-center gap-2">
         <Text className="shrink-0 text-ui-fg-muted" size="small">
           Where
         </Text>
         <AttributeSelect
-          attributes={attributes}
           onChange={handleAttributeKeyChange}
           organizationSlug={organizationSlug}
           projectSlug={projectSlug}

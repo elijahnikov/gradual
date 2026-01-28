@@ -1,21 +1,33 @@
 import { Button } from "@gradual/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@gradual/ui/dropdown-menu";
+  Combobox,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxSeparator,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@gradual/ui/combobox";
 import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
-import type { Segment } from "./types";
+import { useTargetingStore } from "./targeting-store";
+
+// Special value for the "create new" option
+const CREATE_NEW_VALUE = "__create_new__";
+
+interface SegmentItem {
+  value: string;
+  label: string;
+  description?: string;
+}
 
 interface SegmentSelectProps {
-  segments: Segment[];
   value: string;
   onChange: (id: string) => void;
   projectSlug: string;
@@ -23,16 +35,18 @@ interface SegmentSelectProps {
 }
 
 export function SegmentSelect({
-  segments,
   value,
   onChange,
   projectSlug,
   organizationSlug,
 }: SegmentSelectProps) {
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newName, setNewName] = useState("");
-  const [open, setOpen] = useState(false);
+
+  const segments = useTargetingStore((s) => s.segments);
+  const segmentsById = useTargetingStore((s) => s.segmentsById);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -47,12 +61,27 @@ export function SegmentSelect({
         setIsCreating(false);
         setNewKey("");
         setNewName("");
-        setOpen(false);
       },
     })
   );
 
-  const selectedSegment = segments.find((s) => s.id === value);
+  const selectedSegment = segmentsById.get(value);
+
+  const segmentItems = useMemo(() => {
+    const items: SegmentItem[] = segments.map((seg) => ({
+      value: seg.id,
+      label: seg.name,
+      description: seg.description ?? undefined,
+    }));
+
+    // Add "Create new" option at the end
+    items.push({
+      value: CREATE_NEW_VALUE,
+      label: "Create new segment",
+    });
+
+    return items;
+  }, [segments]);
 
   const handleCreate = () => {
     if (!(newKey.trim() && newName.trim())) {
@@ -68,21 +97,40 @@ export function SegmentSelect({
     });
   };
 
+  const handleValueChange = (newValue: string | null) => {
+    if (newValue === CREATE_NEW_VALUE) {
+      setIsCreating(true);
+      return;
+    }
+    if (newValue) {
+      onChange(newValue);
+    }
+  };
+
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
-      <DropdownMenuTrigger>
-        <Button
-          className="h-8 w-48 justify-between"
-          size="small"
-          variant="secondary"
-        >
+    <Combobox
+      autoHighlight
+      items={segmentItems}
+      onValueChange={handleValueChange}
+      value={value}
+    >
+      <ComboboxTrigger
+        render={
+          <Button
+            className="h-8 w-48 justify-between"
+            size="small"
+            variant="secondary"
+          />
+        }
+      >
+        <ComboboxValue>
           <span className="truncate">
             {selectedSegment?.name ?? "Select segment"}
           </span>
-          <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+        </ComboboxValue>
+        <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
+      </ComboboxTrigger>
+      <ComboboxPopup className="w-56">
         {isCreating ? (
           <div className="flex flex-col gap-2 p-2">
             <Text size="small" weight="plus">
@@ -124,40 +172,50 @@ export function SegmentSelect({
           </div>
         ) : (
           <>
-            {segments.length === 0 ? (
-              <div className="p-2">
-                <Text className="text-ui-fg-muted" size="small">
-                  No segments yet
-                </Text>
-              </div>
-            ) : (
-              segments.map((seg) => (
-                <DropdownMenuItem
-                  key={seg.id}
-                  onClick={() => {
-                    onChange(seg.id);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="flex flex-col">
-                    <span>{seg.name}</span>
-                    {seg.description && (
-                      <span className="text-ui-fg-muted text-xs">
-                        {seg.description}
-                      </span>
-                    )}
-                  </div>
-                </DropdownMenuItem>
-              ))
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsCreating(true)}>
-              <RiAddLine className="mr-2 size-4" />
-              Create new segment
-            </DropdownMenuItem>
+            <div className="border-b p-2">
+              <ComboboxInput
+                aria-label="Search segments"
+                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search segments..."
+                showTrigger={false}
+                value={searchTerm}
+              />
+            </div>
+            <ComboboxEmpty>
+              {segments.length === 0
+                ? "No segments yet."
+                : "No segments found."}
+            </ComboboxEmpty>
+            <ComboboxList>
+              {(item: SegmentItem) =>
+                item.value === CREATE_NEW_VALUE ? (
+                  <>
+                    <ComboboxSeparator />
+                    <ComboboxItem key={item.value} value={item.value}>
+                      <div className="flex items-center gap-2">
+                        <RiAddLine className="size-4" />
+                        <span>{item.label}</span>
+                      </div>
+                    </ComboboxItem>
+                  </>
+                ) : (
+                  <ComboboxItem key={item.value} value={item.value}>
+                    <div className="flex flex-col">
+                      <span>{item.label}</span>
+                      {item.description && (
+                        <span className="text-ui-fg-muted text-xs">
+                          {item.description}
+                        </span>
+                      )}
+                    </div>
+                  </ComboboxItem>
+                )
+              }
+            </ComboboxList>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </ComboboxPopup>
+    </Combobox>
   );
 }

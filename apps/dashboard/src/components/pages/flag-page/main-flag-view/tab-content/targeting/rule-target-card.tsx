@@ -1,64 +1,81 @@
-import { useState } from "react";
+import { useCallback } from "react";
 import { RuleConditionBuilder } from "./rule-condition-builder";
 import TargetingCard from "./targeting-card";
-import type { Attribute, RuleCondition, Variation } from "./types";
+import { useTargetingStore } from "./targeting-store";
+import type { RuleCondition } from "./types";
 
 interface RuleTargetCardProps {
-  name: string;
-  onNameChange: (name: string) => void;
-  variations: Variation[];
-  attributes: Attribute[];
-  selectedVariationId: string;
-  initialConditions?: RuleCondition[];
-  projectSlug: string;
-  organizationSlug: string;
-  onVariationChange: (variationId: string) => void;
-  onConditionsChange: (conditions: RuleCondition[]) => void;
-  onDelete: () => void;
+  targetId: string;
 }
 
-export function RuleTargetCard({
-  name,
-  onNameChange,
-  variations,
-  attributes,
-  selectedVariationId,
-  initialConditions = [],
-  projectSlug,
-  organizationSlug,
-  onVariationChange,
-  onConditionsChange,
-  onDelete,
-}: RuleTargetCardProps) {
-  const [conditions, setConditions] = useState<RuleCondition[]>(
-    initialConditions.length > 0
-      ? initialConditions
+export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
+  // Get target data from store
+  const target = useTargetingStore((s) =>
+    s.targets.find((t) => t.id === targetId)
+  );
+
+  // Get stable action references from store (rerender-functional-setstate)
+  const updateTargetName = useTargetingStore((s) => s.updateTargetName);
+  const updateTargetVariation = useTargetingStore(
+    (s) => s.updateTargetVariation
+  );
+  const updateTargetConditions = useTargetingStore(
+    (s) => s.updateTargetConditions
+  );
+  const deleteTarget = useTargetingStore((s) => s.deleteTarget);
+
+  // Get shared data from store
+  const attributes = useTargetingStore((s) => s.attributes);
+  const organizationSlug = useTargetingStore((s) => s.organizationSlug);
+  const projectSlug = useTargetingStore((s) => s.projectSlug);
+
+  // Stable callbacks using store actions
+  const handleNameChange = useCallback(
+    (name: string) => updateTargetName(targetId, name),
+    [updateTargetName, targetId]
+  );
+
+  const handleVariationChange = useCallback(
+    (variationId: string) => updateTargetVariation(targetId, variationId),
+    [updateTargetVariation, targetId]
+  );
+
+  const handleConditionsChange = useCallback(
+    (conditions: RuleCondition[]) =>
+      updateTargetConditions(targetId, conditions),
+    [updateTargetConditions, targetId]
+  );
+
+  const handleDelete = useCallback(
+    () => deleteTarget(targetId),
+    [deleteTarget, targetId]
+  );
+
+  if (!target) {
+    return null;
+  }
+
+  const conditions =
+    target.conditions && target.conditions.length > 0
+      ? target.conditions
       : [
           {
             attributeKey: attributes[0]?.key ?? "",
-            operator: "equals",
+            operator: "equals" as const,
             value: "",
           },
-        ]
-  );
-
-  const handleConditionsChange = (newConditions: RuleCondition[]) => {
-    setConditions(newConditions);
-    onConditionsChange(newConditions);
-  };
+        ];
 
   return (
     <TargetingCard
-      name={name}
-      onDelete={onDelete}
-      onNameChange={onNameChange}
-      onVariationChange={onVariationChange}
-      selectedVariationId={selectedVariationId}
-      type="rule"
-      variations={variations}
+      name={target.name}
+      onDelete={handleDelete}
+      onNameChange={handleNameChange}
+      onVariationChange={handleVariationChange}
+      selectedVariationId={target.variationId}
+      targetId={targetId}
     >
       <RuleConditionBuilder
-        attributes={attributes}
         conditions={conditions}
         onChange={handleConditionsChange}
         organizationSlug={organizationSlug}

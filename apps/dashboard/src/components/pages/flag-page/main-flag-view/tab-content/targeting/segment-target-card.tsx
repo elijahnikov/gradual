@@ -1,56 +1,66 @@
 import { Text } from "@gradual/ui/text";
-import { useState } from "react";
+import { useCallback } from "react";
 import { SegmentSelect } from "./segment-select";
 import TargetingCard from "./targeting-card";
-import type { Segment, Variation } from "./types";
+import { useTargetingStore } from "./targeting-store";
 
 interface SegmentTargetCardProps {
-  name: string;
-  onNameChange: (name: string) => void;
-  variations: Variation[];
-  segments: Segment[];
-  selectedVariationId: string;
-  initialSegmentId?: string;
-  projectSlug: string;
-  organizationSlug: string;
-  onVariationChange: (variationId: string) => void;
-  onSegmentChange: (segmentId: string) => void;
-  onDelete: () => void;
+  targetId: string;
 }
 
-export function SegmentTargetCard({
-  name,
-  onNameChange,
-  variations,
-  segments,
-  selectedVariationId,
-  initialSegmentId,
-  projectSlug,
-  organizationSlug,
-  onVariationChange,
-  onSegmentChange,
-  onDelete,
-}: SegmentTargetCardProps) {
-  const [segmentId, setSegmentId] = useState(
-    initialSegmentId ?? segments[0]?.id ?? ""
+export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
+  const target = useTargetingStore((s) =>
+    s.targets.find((t) => t.id === targetId)
   );
 
-  const handleSegmentChange = (id: string) => {
-    setSegmentId(id);
-    onSegmentChange(id);
-  };
+  const updateTargetName = useTargetingStore((s) => s.updateTargetName);
+  const updateTargetVariation = useTargetingStore(
+    (s) => s.updateTargetVariation
+  );
+  const updateTargetSegment = useTargetingStore((s) => s.updateTargetSegment);
+  const deleteTarget = useTargetingStore((s) => s.deleteTarget);
 
-  const selectedSegment = segments.find((s) => s.id === segmentId);
+  const segments = useTargetingStore((s) => s.segments);
+  const segmentsById = useTargetingStore((s) => s.segmentsById);
+  const organizationSlug = useTargetingStore((s) => s.organizationSlug);
+  const projectSlug = useTargetingStore((s) => s.projectSlug);
+
+  const handleNameChange = useCallback(
+    (name: string) => updateTargetName(targetId, name),
+    [updateTargetName, targetId]
+  );
+
+  const handleVariationChange = useCallback(
+    (variationId: string) => updateTargetVariation(targetId, variationId),
+    [updateTargetVariation, targetId]
+  );
+
+  const handleSegmentChange = useCallback(
+    (segmentId: string) => updateTargetSegment(targetId, segmentId),
+    [updateTargetSegment, targetId]
+  );
+
+  const handleDelete = useCallback(
+    () => deleteTarget(targetId),
+    [deleteTarget, targetId]
+  );
+
+  if (!target) {
+    return null;
+  }
+
+  const segmentId = target.segmentId ?? segments[0]?.id ?? "";
+
+  const selectedSegment = segmentsById.get(segmentId);
 
   return (
     <TargetingCard
-      name={name}
-      onDelete={onDelete}
-      onNameChange={onNameChange}
-      onVariationChange={onVariationChange}
-      selectedVariationId={selectedVariationId}
-      type="segment"
-      variations={variations}
+      name={target.name}
+      onDelete={handleDelete}
+      onNameChange={handleNameChange}
+      onVariationChange={handleVariationChange}
+      selectedVariationId={target.variationId}
+      targetId={targetId}
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -61,7 +71,6 @@ export function SegmentTargetCard({
             onChange={handleSegmentChange}
             organizationSlug={organizationSlug}
             projectSlug={projectSlug}
-            segments={segments}
             value={segmentId}
           />
         </div>

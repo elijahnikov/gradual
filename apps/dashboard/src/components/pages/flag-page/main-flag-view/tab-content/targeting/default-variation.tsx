@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@gradual/api";
 import { Badge } from "@gradual/ui/badge";
 import { Card } from "@gradual/ui/card";
 import {
@@ -10,21 +9,20 @@ import {
 } from "@gradual/ui/select";
 import { Text } from "@gradual/ui/text";
 import { useMemo } from "react";
+import { useTargetingStore } from "./targeting-store";
 
 interface DefaultVariationProps {
-  defaultVariation: NonNullable<
-    RouterOutputs["featureFlags"]["getTargetingRules"]["defaultVariation"]
-  >;
-  variations: NonNullable<
-    RouterOutputs["featureFlags"]["getByKey"]["variations"]
-  >;
+  defaultVariationId: string;
   onDefaultVariationChange: (variationId: string) => void;
 }
+
 export default function DefaultVariation({
-  defaultVariation,
-  variations,
+  defaultVariationId,
   onDefaultVariationChange,
 }: DefaultVariationProps) {
+  // Get variations from store (eliminates prop drilling)
+  const variations = useTargetingStore((s) => s.variations);
+
   const variationItems = useMemo(
     () =>
       variations.map((variation) => ({
@@ -50,7 +48,7 @@ export default function DefaultVariation({
               onDefaultVariationChange(value);
             }
           }}
-          value={defaultVariation.id}
+          value={defaultVariationId}
         >
           <SelectTrigger className="w-40">
             <SelectValue />

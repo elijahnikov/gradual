@@ -9,17 +9,12 @@ import {
 } from "@gradual/ui/select";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiSubtractFill } from "@remixicon/react";
+import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
-import type { Attribute, RuleCondition, TargetingOperator } from "./types";
+import { useTargetingStore } from "./targeting-store";
+import type { RuleCondition, TargetingOperator } from "./types";
 
-interface RuleConditionBuilderProps {
-  conditions: RuleCondition[];
-  attributes: Attribute[];
-  projectSlug: string;
-  organizationSlug: string;
-  onChange: (conditions: RuleCondition[]) => void;
-}
-
+// Hoisted static array (rendering-hoist-jsx)
 const OPERATORS: { label: string; value: TargetingOperator }[] = [
   { label: "equals", value: "equals" },
   { label: "does not equal", value: "not_equals" },
@@ -35,41 +30,52 @@ const OPERATORS: { label: string; value: TargetingOperator }[] = [
   { label: "<=", value: "less_than_or_equal" },
 ];
 
+interface RuleConditionBuilderProps {
+  conditions: RuleCondition[];
+  projectSlug: string;
+  organizationSlug: string;
+  onChange: (conditions: RuleCondition[]) => void;
+}
+
 export function RuleConditionBuilder({
   conditions,
-  attributes,
   projectSlug,
   organizationSlug,
   onChange,
 }: RuleConditionBuilderProps) {
-  const handleAddCondition = () => {
+  // Get attributes from store (eliminates prop drilling)
+  const attributes = useTargetingStore((s) => s.attributes);
+
+  const handleAddCondition = useCallback(() => {
     const newCondition: RuleCondition = {
       attributeKey: attributes[0]?.key ?? "",
       operator: "equals",
       value: "",
     };
     onChange([...conditions, newCondition]);
-  };
+  }, [attributes, conditions, onChange]);
 
-  const handleRemoveCondition = (index: number) => {
-    onChange(conditions.filter((_, i) => i !== index));
-  };
+  const handleRemoveCondition = useCallback(
+    (index: number) => {
+      onChange(conditions.filter((_, i) => i !== index));
+    },
+    [conditions, onChange]
+  );
 
-  const handleConditionChange = (
-    index: number,
-    updates: Partial<RuleCondition>
-  ) => {
-    onChange(
-      conditions.map((c, i) => (i === index ? { ...c, ...updates } : c))
-    );
-  };
+  const handleConditionChange = useCallback(
+    (index: number, updates: Partial<RuleCondition>) => {
+      onChange(
+        conditions.map((c, i) => (i === index ? { ...c, ...updates } : c))
+      );
+    },
+    [conditions, onChange]
+  );
 
   return (
     <div>
       <div className="flex flex-col gap-2">
         {conditions.map((condition, index) => (
           <ConditionRow
-            attributes={attributes}
             condition={condition}
             index={index}
             key={index}
@@ -96,7 +102,6 @@ export function RuleConditionBuilder({
 interface ConditionRowProps {
   condition: RuleCondition;
   index: number;
-  attributes: Attribute[];
   projectSlug: string;
   organizationSlug: string;
   onChange: (updates: Partial<RuleCondition>) => void;
@@ -106,7 +111,6 @@ interface ConditionRowProps {
 function ConditionRow({
   condition,
   index,
-  attributes,
   projectSlug,
   organizationSlug,
   onChange,
@@ -119,7 +123,6 @@ function ConditionRow({
       </Text>
 
       <AttributeSelect
-        attributes={attributes}
         onChange={(key) => onChange({ attributeKey: key })}
         organizationSlug={organizationSlug}
         projectSlug={projectSlug}
