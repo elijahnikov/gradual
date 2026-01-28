@@ -73,7 +73,7 @@ function MenuItem({
     <MenuPrimitive.Item
       className={cn(
         "txt-compact-small relative flex cursor-pointer select-none items-center rounded-md bg-ui-bg-component px-2 py-1.5 font-medium text-ui-fg-subtle outline-none transition-colors [&_svg]:mr-2 [&_svg]:size-4 [&_svg]:text-ui-fg-base",
-        "focus:bg-ui-bg-component-hover focus:text-ui-fg-base focus-visible:bg-ui-bg-component-hover focus:[&_svg]:text-ui-fg-base!",
+        "focus:bg-ui-bg-component-hover focus:text-ui-fg-base focus-visible:bg-ui-bg-component-hover focus:[&_svg]:text-ui-fg-base",
         "active:bg-ui-bg-component-hover",
         "data-disabled:pointer-events-none data-disabled:text-ui-fg-disabled",
         className

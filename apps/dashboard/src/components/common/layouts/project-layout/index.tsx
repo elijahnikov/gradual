@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import ProjectSidebar from "../../project-sidebar";
+import ProjectSidebar, { MobileProjectSidebar } from "../../project-sidebar";
 import ProjectBreadcrumbs, {
   ProjectBreadcrumbsSkeleton,
 } from "./project-breadcrumbs";
@@ -10,7 +10,8 @@ export default function ProjectLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full bg-ui-bg-base">
+    <div className="flex h-full flex-col bg-ui-bg-base sm:flex-row">
+      <MobileProjectSidebar />
       <ProjectSidebar />
       <main className="flex h-full w-full flex-col md:max-h-[calc(100vh-20px)]">
         <Suspense fallback={<ProjectBreadcrumbsSkeleton />}>

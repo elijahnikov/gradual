@@ -17,6 +17,10 @@ import {
   featureFlag,
   featureFlagEnvironment,
   featureFlagEvaluation,
+  featureFlagIndividualTarget,
+  featureFlagSegmentTarget,
+  featureFlagTarget,
+  featureFlagTargetingRule,
   featureFlagVariation,
   organization,
   project,
@@ -33,6 +37,7 @@ import type {
   GetFeatureFlagsByProjectAndOrganizationInput,
   GetPreviewEvaluationsInput,
   GetTargetingRulesInput,
+  SaveTargetingRulesInput,
   SeedEvaluationsInput,
 } from "./feature-flags.schemas";
 
@@ -422,6 +427,8 @@ export const getFeatureFlagByKey = async ({
     maintainer: result.maintainer,
     variations,
     environments,
+    organization: ctx.organization,
+    organizationMember: ctx.organizationMember,
   };
 };
 
@@ -841,6 +848,9 @@ export const getTargetingRules = async ({
         orderBy: (target, { asc }) => asc(target.sortOrder),
         with: {
           variation: true,
+          rule: true,
+          individual: true,
+          segment: true,
         },
       },
     },
@@ -854,4 +864,140 @@ export const getTargetingRules = async ({
   }
 
   return flagEnvironment;
+};
+
+export const saveTargetingRules = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: SaveTargetingRulesInput;
+}) => {
+  const { flagId, environmentSlug, projectSlug, targets, defaultVariationId } =
+    input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundEnvironment = await ctx.db.query.environment.findFirst({
+    where: ({ slug, projectId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, environmentSlug),
+        eq(projectId, foundProject.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
+  const flagEnvironment = await ctx.db.query.featureFlagEnvironment.findFirst({
+    where: ({ featureFlagId, environmentId }, { eq, and }) =>
+      and(eq(featureFlagId, flagId), eq(environmentId, foundEnvironment.id)),
+  });
+
+  if (!flagEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Flag environment configuration not found",
+    });
+  }
+
+  return await ctx.db.transaction(async (tx) => {
+    await tx
+      .delete(featureFlagTarget)
+      .where(
+        eq(featureFlagTarget.featureFlagEnvironmentId, flagEnvironment.id)
+      );
+
+    await tx
+      .update(featureFlagEnvironment)
+      .set({ defaultVariationId })
+      .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+
+    for (let i = 0; i < targets.length; i++) {
+      const target = targets[i];
+      if (!target) {
+        continue;
+      }
+
+      const [insertedTarget] = await tx
+        .insert(featureFlagTarget)
+        .values({
+          name: target.name,
+          featureFlagEnvironmentId: flagEnvironment.id,
+          variationId: target.variationId,
+          type: target.type,
+          sortOrder: i,
+        })
+        .returning();
+
+      if (!insertedTarget) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create target",
+        });
+      }
+
+      switch (target.type) {
+        case "rule":
+          if (target.conditions && target.conditions.length > 0) {
+            const condition = target.conditions[0];
+            if (condition) {
+              await tx.insert(featureFlagTargetingRule).values({
+                targetId: insertedTarget.id,
+                attributeKey: condition.attributeKey,
+                operator: condition.operator,
+                value: condition.value,
+              });
+            }
+          }
+          break;
+
+        case "individual":
+          if (target.attributeKey && target.attributeValue !== undefined) {
+            await tx.insert(featureFlagIndividualTarget).values({
+              targetId: insertedTarget.id,
+              attributeKey: target.attributeKey,
+              attributeValue: target.attributeValue,
+            });
+          }
+          break;
+
+        case "segment":
+          if (target.segmentId) {
+            await tx.insert(featureFlagSegmentTarget).values({
+              targetId: insertedTarget.id,
+              segmentId: target.segmentId,
+            });
+          }
+          break;
+
+        default:
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid target type",
+          });
+      }
+    }
+
+    return { success: true, targetCount: targets.length };
+  });
 };

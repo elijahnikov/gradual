@@ -15,12 +15,12 @@ export function TargetingList({
   footer,
 }: TargetingListProps) {
   return (
-    <div className="flex flex-col items-center py-8">
+    <div className="flex w-full flex-col items-center py-4 sm:py-8">
       <AddNewTargetButton onAddTarget={(type) => onAddTarget(type, 0)} />
       <TargetConnector />
 
       {children.map((child, index) => (
-        <div className="flex flex-col items-center" key={index}>
+        <div className="flex w-full flex-col items-center" key={index}>
           {child}
           <TargetConnector />
           <AddNewTargetButton

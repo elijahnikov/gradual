@@ -32,7 +32,7 @@ export function VariationSelector({
   );
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
       <Text className="text-ui-fg-subtle" size="small">
         {label}
       </Text>
@@ -45,7 +45,7 @@ export function VariationSelector({
         }}
         value={value}
       >
-        <SelectTrigger className="w-40">
+        <SelectTrigger className="w-full sm:w-40">
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>

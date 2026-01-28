@@ -38,4 +38,8 @@ export const featureFlagsRouter = {
   getTargetingRules: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.getTargetingRulesSchema)
     .query((opts) => services.getTargetingRules({ ...opts })),
+
+  saveTargetingRules: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.saveTargetingRulesSchema)
+    .mutation((opts) => services.saveTargetingRules({ ...opts })),
 } satisfies TRPCRouterRecord;

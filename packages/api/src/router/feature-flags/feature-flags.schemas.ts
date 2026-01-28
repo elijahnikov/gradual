@@ -159,3 +159,47 @@ export const getTargetingRulesSchema = z.object({
   organizationSlug: z.string(),
 });
 export type GetTargetingRulesInput = z.infer<typeof getTargetingRulesSchema>;
+
+const targetingOperatorSchema = z.enum([
+  "equals",
+  "not_equals",
+  "contains",
+  "not_contains",
+  "starts_with",
+  "ends_with",
+  "greater_than",
+  "less_than",
+  "greater_than_or_equal",
+  "less_than_or_equal",
+  "in",
+  "not_in",
+  "exists",
+  "not_exists",
+]);
+
+const ruleConditionSchema = z.object({
+  attributeKey: z.string(),
+  operator: targetingOperatorSchema,
+  value: z.unknown(),
+});
+
+const targetSchema = z.object({
+  id: z.string(),
+  type: z.enum(["rule", "individual", "segment"]),
+  name: z.string(),
+  variationId: z.uuid(),
+  conditions: z.array(ruleConditionSchema).optional(),
+  attributeKey: z.string().optional(),
+  attributeValue: z.string().optional(),
+  segmentId: z.uuid().optional(),
+});
+
+export const saveTargetingRulesSchema = z.object({
+  flagId: z.uuid(),
+  environmentSlug: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  targets: z.array(targetSchema),
+  defaultVariationId: z.uuid(),
+});
+export type SaveTargetingRulesInput = z.infer<typeof saveTargetingRulesSchema>;

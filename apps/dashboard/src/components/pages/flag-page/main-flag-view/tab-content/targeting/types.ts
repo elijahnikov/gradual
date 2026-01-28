@@ -15,10 +15,8 @@ export type TargetingOperator =
   | "less_than_or_equal"
   | "in"
   | "not_in"
-  | "semver_equals"
-  | "semver_not_equals"
-  | "semver_greater_than"
-  | "semver_less_than";
+  | "exists"
+  | "not_exists";
 
 export interface RuleCondition {
   attributeKey: string;

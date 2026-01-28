@@ -26,13 +26,17 @@ interface TargetingState {
   organizationSlug: string;
   projectSlug: string;
   defaultVariationId: string;
+  flagId: string;
+  environmentSlug: string;
 
   attributesByKey: Map<string, Attribute>;
   segmentsById: Map<string, Segment>;
   variationsById: Map<string, Variation>;
 
   targets: LocalTarget[];
+  originalTargets: LocalTarget[];
   defaultVariationIdState: string;
+  originalDefaultVariationId: string;
 
   // Change tracking
   hasChanges: boolean;
@@ -49,10 +53,17 @@ interface TargetingActions {
     organizationSlug: string;
     projectSlug: string;
     defaultVariationId: string;
+    flagId: string;
+    environmentSlug: string;
+    existingTargets?: LocalTarget[];
   }) => void;
+
+  markSaved: () => void;
+  reset: () => void;
 
   addTarget: (type: TargetType, index: number) => void;
   deleteTarget: (id: string) => void;
+  moveTarget: (id: string, direction: "up" | "down") => void;
   updateTargetVariation: (id: string, variationId: string) => void;
   updateTargetConditions: (id: string, conditions: RuleCondition[]) => void;
   updateTargetIndividual: (
@@ -79,15 +90,20 @@ export const createTargetingStore = () =>
     organizationSlug: "",
     projectSlug: "",
     defaultVariationId: "",
+    flagId: "",
+    environmentSlug: "",
     attributesByKey: new Map(),
     segmentsById: new Map(),
     variationsById: new Map(),
     targets: [],
+    originalTargets: [],
     defaultVariationIdState: "",
+    originalDefaultVariationId: "",
     hasChanges: false,
     isReviewModalOpen: false,
 
     initialize: (config) => {
+      const existingTargets = config.existingTargets ?? [];
       set({
         attributes: config.attributes,
         segments: config.segments,
@@ -96,10 +112,32 @@ export const createTargetingStore = () =>
         projectSlug: config.projectSlug,
         defaultVariationId: config.defaultVariationId,
         defaultVariationIdState: config.defaultVariationId,
+        originalDefaultVariationId: config.defaultVariationId,
+        flagId: config.flagId,
+        environmentSlug: config.environmentSlug,
         attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
         segmentsById: new Map(config.segments.map((s) => [s.id, s])),
         variationsById: new Map(config.variations.map((v) => [v.id, v])),
-        // Reset changes on initialize
+        targets: existingTargets,
+        originalTargets: JSON.parse(JSON.stringify(existingTargets)),
+        hasChanges: false,
+      });
+    },
+
+    markSaved: () => {
+      const { targets, defaultVariationIdState } = get();
+      set({
+        originalTargets: JSON.parse(JSON.stringify(targets)),
+        originalDefaultVariationId: defaultVariationIdState,
+        hasChanges: false,
+      });
+    },
+
+    reset: () => {
+      const { originalTargets, originalDefaultVariationId } = get();
+      set({
+        targets: JSON.parse(JSON.stringify(originalTargets)),
+        defaultVariationIdState: originalDefaultVariationId,
         hasChanges: false,
       });
     },
@@ -124,6 +162,23 @@ export const createTargetingStore = () =>
         targets: state.targets.filter((t) => t.id !== id),
         hasChanges: true,
       }));
+    },
+
+    moveTarget: (id, direction) => {
+      set((state) => {
+        const index = state.targets.findIndex((t) => t.id === id);
+        if (index === -1) return state;
+
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= state.targets.length) return state;
+
+        const updated = [...state.targets];
+        const removed = updated.splice(index, 1)[0];
+        if (!removed) return state;
+        updated.splice(newIndex, 0, removed);
+
+        return { targets: updated, hasChanges: true };
+      });
     },
 
     updateTargetVariation: (id, variationId) => {

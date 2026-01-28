@@ -6,20 +6,18 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxPopup,
-  ComboboxSeparator,
   ComboboxTrigger,
   ComboboxValue,
 } from "@gradual/ui/combobox";
 import { Input } from "@gradual/ui/input";
+import { LoadingButton } from "@gradual/ui/loading-button";
+import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { useTargetingStore } from "./targeting-store";
-
-// Special value for the "create new" option
-const CREATE_NEW_VALUE = "__create_new__";
 
 interface SegmentItem {
   value: string;
@@ -72,18 +70,11 @@ export function SegmentSelect({
   const selectedSegment = segmentsById.get(value);
 
   const segmentItems = useMemo(() => {
-    const items: SegmentItem[] = segments.map((seg) => ({
+    return segments.map((seg) => ({
       value: seg.id,
       label: seg.name,
       description: seg.description ?? undefined,
     }));
-
-    items.push({
-      value: CREATE_NEW_VALUE,
-      label: "Create new segment",
-    });
-
-    return items;
   }, [segments]);
 
   const handleCreate = () => {
@@ -101,6 +92,7 @@ export function SegmentSelect({
   };
 
   const handleCancel = () => {
+    preventCloseRef.current = false;
     setIsCreating(false);
     setNewKey("");
     setNewName("");
@@ -122,15 +114,15 @@ export function SegmentSelect({
   };
 
   const handleValueChange = (newValue: string | null) => {
-    if (newValue === CREATE_NEW_VALUE) {
-      preventCloseRef.current = true;
-      setIsCreating(true);
-      return;
-    }
     if (newValue) {
       onChange(newValue);
       setOpen(false);
     }
+  };
+
+  const handleCreateClick = () => {
+    preventCloseRef.current = true;
+    setIsCreating(true);
   };
 
   return (
@@ -145,7 +137,7 @@ export function SegmentSelect({
       <ComboboxTrigger
         render={
           <Button
-            className="h-8 w-48 justify-between"
+            className="h-8 w-full justify-between sm:w-48"
             size="small"
             variant="outline"
           />
@@ -158,7 +150,7 @@ export function SegmentSelect({
         </ComboboxValue>
         <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
       </ComboboxTrigger>
-      <ComboboxPopup className="w-56">
+      <ComboboxPopup className="w-56 overflow-x-hidden">
         {isCreating ? (
           <div className="flex w-56 flex-col gap-2 p-2">
             <Text size="small" weight="plus">
@@ -185,22 +177,23 @@ export function SegmentSelect({
               >
                 Cancel
               </Button>
-              <Button
+              <LoadingButton
                 className="flex-1"
                 disabled={
                   !(newKey.trim() && newName.trim()) || createMutation.isPending
                 }
+                loading={createMutation.isPending}
                 onClick={handleCreate}
                 size="small"
                 variant="default"
               >
-                {createMutation.isPending ? "Creating..." : "Create"}
-              </Button>
+                Create
+              </LoadingButton>
             </div>
           </div>
         ) : (
-          <div className="w-56">
-            <div className="p-2">
+          <div className="flex w-56 flex-col">
+            <div className="w-full p-2">
               <ComboboxInput
                 aria-label="Search segments"
                 className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
@@ -210,24 +203,14 @@ export function SegmentSelect({
                 value={searchTerm}
               />
             </div>
-            <ComboboxEmpty>
-              {segments.length === 0
-                ? "No segments yet."
-                : "No segments found."}
-            </ComboboxEmpty>
-            <ComboboxList>
-              {(item: SegmentItem) =>
-                item.value === CREATE_NEW_VALUE ? (
-                  <>
-                    <ComboboxSeparator />
-                    <ComboboxItem key={item.value} value={item.value}>
-                      <div className="flex items-center gap-2">
-                        <RiAddLine className="size-4" />
-                        <span>{item.label}</span>
-                      </div>
-                    </ComboboxItem>
-                  </>
-                ) : (
+            <div className="max-h-48 overflow-y-auto">
+              <ComboboxEmpty>
+                {segments.length === 0
+                  ? "No segments yet."
+                  : "No segments found."}
+              </ComboboxEmpty>
+              <ComboboxList>
+                {(item: SegmentItem) => (
                   <ComboboxItem key={item.value} value={item.value}>
                     <div className="flex flex-col">
                       <span>{item.label}</span>
@@ -238,9 +221,18 @@ export function SegmentSelect({
                       )}
                     </div>
                   </ComboboxItem>
-                )
-              }
-            </ComboboxList>
+                )}
+              </ComboboxList>
+            </div>
+            <Separator />
+            <button
+              className="flex items-center gap-2 rounded-b-md px-3 py-2 text-sm hover:bg-ui-bg-component-hover"
+              onClick={handleCreateClick}
+              type="button"
+            >
+              <RiAddLine className="size-4" />
+              <span>Create new segment</span>
+            </button>
           </div>
         )}
       </ComboboxPopup>

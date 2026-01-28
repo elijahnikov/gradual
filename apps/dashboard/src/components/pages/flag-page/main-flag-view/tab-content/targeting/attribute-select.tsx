@@ -10,6 +10,7 @@ import {
   ComboboxValue,
 } from "@gradual/ui/combobox";
 import { Input } from "@gradual/ui/input";
+import { LoadingButton } from "@gradual/ui/loading-button";
 import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiArrowDownSLine } from "@remixicon/react";
@@ -93,6 +94,7 @@ export function AttributeSelect({
   };
 
   const handleCancel = () => {
+    preventCloseRef.current = false;
     setIsCreating(false);
     setNewKey("");
     setNewDisplayName("");
@@ -137,7 +139,7 @@ export function AttributeSelect({
       <ComboboxTrigger
         render={
           <Button
-            className="h-7.5 w-36 justify-between"
+            className="h-7.5 w-full justify-between sm:w-36"
             size="small"
             variant="outline"
           />
@@ -152,7 +154,7 @@ export function AttributeSelect({
         </ComboboxValue>
         <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
       </ComboboxTrigger>
-      <ComboboxPopup className="w-56">
+      <ComboboxPopup className="w-56 overflow-x-hidden">
         {isCreating ? (
           <div className="flex w-56 flex-col gap-2 p-2">
             <Text size="small" weight="plus">
@@ -179,18 +181,19 @@ export function AttributeSelect({
               >
                 Cancel
               </Button>
-              <Button
+              <LoadingButton
                 className="flex-1"
                 disabled={
                   !(newKey.trim() && newDisplayName.trim()) ||
                   createMutation.isPending
                 }
+                loading={createMutation.isPending}
                 onClick={handleCreate}
                 size="small"
                 variant="default"
               >
-                {createMutation.isPending ? "Creating..." : "Create"}
-              </Button>
+                Create
+              </LoadingButton>
             </div>
           </div>
         ) : (
@@ -224,7 +227,7 @@ export function AttributeSelect({
             </div>
             <Separator />
             <button
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-ui-bg-component-hover"
+              className="flex items-center gap-2 rounded-b-md px-3 py-2 text-sm hover:bg-ui-bg-component-hover"
               onClick={handleCreateClick}
               type="button"
             >
