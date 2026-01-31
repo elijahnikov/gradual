@@ -91,7 +91,7 @@ export function RuleConditionBuilder({
         size="small"
         variant="outline"
       >
-        <RiAddLine className="mr-1 size-4" />
+        <RiAddLine className="size-4" />
         Add condition
       </Button>
     </div>

@@ -8,7 +8,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant light (&:where(.light, .light *));
 @custom-variant auto (&:where(.auto, .auto *));
-@font-face {
+/* @font-face {
   font-family: "CommitMono";
   src: url("/fonts/CommitMono-400-Regular.otf") format("opentype");
   font-weight: 400;
@@ -20,6 +20,14 @@
   font-family: "CommitMono";
   src: url("/fonts/CommitMono-700-Regular.otf") format("opentype");
   font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+} */
+
+@font-face {
+  font-family: "JetBrainsMono";
+  src: url("/fonts/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -38,6 +46,7 @@
 @layer base {
   :root {
     --font-commit-mono: "CommitMono";
+    --font-jetbrains-mono: "JetBrainsMono";
   }
   * {
     @apply border-border;

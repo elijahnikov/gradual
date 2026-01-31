@@ -35,27 +35,21 @@ function FlagPageSkeleton() {
           <div className="mt-4 flex w-full items-center justify-between gap-x-6">
             {/* Key */}
             <div className="flex items-center gap-1">
-              <Skeleton className="size-4 rounded" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="size-5 rounded" />
+              <Skeleton className="h-5 w-42" />
             </div>
             {/* Right side metadata */}
-            <div className="flex items-center gap-x-6">
+            <div className="flex items-center gap-x-4">
               {/* Created date */}
               <div className="flex items-center gap-x-1">
-                <Skeleton className="size-4 rounded" />
-                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-32" />
               </div>
               {/* Updated date */}
               <div className="flex items-center gap-x-1">
-                <Skeleton className="size-4 rounded" />
-                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-32" />
               </div>
               {/* Assignee */}
               <div className="flex min-w-44 items-center gap-1.5 px-1.5 py-1">
-                <Skeleton className="size-4 rounded" />
-                <Skeleton className="size-5 rounded-full" />
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-42" />
               </div>
             </div>
           </div>
@@ -63,22 +57,18 @@ function FlagPageSkeleton() {
       </div>
 
       {/* Flag Subheader Skeleton */}
-      <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-3 py-2">
+      <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-1 py-1">
         {/* Tabs */}
-        <div className="flex h-8 items-center gap-1 rounded-md border bg-ui-bg-base p-1">
-          <Skeleton className="h-6 w-16 rounded" />
-          <Skeleton className="h-6 w-16 rounded" />
-          <Skeleton className="h-6 w-14 rounded" />
-          <Skeleton className="h-6 w-14 rounded" />
-          <Skeleton className="h-6 w-16 rounded" />
+        <div className="flex h-9 items-center gap-1 rounded-md bg-ui-bg-base p-1">
+          <Skeleton className="h-8 w-96 rounded-lg" />
         </div>
         {/* Environment select */}
-        <Skeleton className="h-7 w-40 rounded-md" />
+        <Skeleton className="h-8 w-40 rounded-md" />
       </div>
 
       {/* Content Skeleton */}
       <div className="p-3 sm:p-4">
-        <Skeleton className="h-[calc(60vh-0.5rem)] w-full rounded-lg" />
+        <Skeleton className="h-[calc(68vh-0.5rem)] w-full rounded-lg" />
       </div>
     </div>
   );
