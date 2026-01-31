@@ -53,11 +53,15 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
   );
 
   return (
-    <div className="sticky top-0 z-50 flex min-h-12 items-center justify-between border-b bg-ui-bg-base px-5 py-3">
+    <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-3 py-2">
       <Tabs onValueChange={handleTabChange} value={tab}>
-        <TabsList className="shadow-elevation-card-rest">
+        <TabsList className="h-8 shadow-elevation-card-rest">
           {tabOptions.map((tabOption) => (
-            <TabsTab key={tabOption} value={tabOption}>
+            <TabsTab
+              className="h-7! px-2 text-[13px]!"
+              key={tabOption}
+              value={tabOption}
+            >
               {tabOption.charAt(0).toUpperCase() + tabOption.slice(1)}
             </TabsTab>
           ))}
@@ -72,7 +76,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
         }}
         value={currentEnvironment?.value ?? ""}
       >
-        <SelectTrigger className="h-9 w-40">
+        <SelectTrigger className="h-7 w-40">
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>

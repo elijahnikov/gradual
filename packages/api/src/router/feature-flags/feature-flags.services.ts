@@ -39,6 +39,7 @@ import type {
   GetTargetingRulesInput,
   SaveTargetingRulesInput,
   SeedEvaluationsInput,
+  UpdateFeatureFlagInput,
 } from "./feature-flags.schemas";
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
@@ -1000,4 +1001,64 @@ export const saveTargetingRules = async ({
 
     return { success: true, targetCount: targets.length };
   });
+};
+
+export const updateFeatureFlag = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: UpdateFeatureFlagInput;
+}) => {
+  const { flagId, projectSlug, name, description, maintainerId } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const existingFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!existingFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const updateData: Partial<typeof featureFlag.$inferInsert> = {
+    updatedAt: new Date(),
+  };
+
+  if (name !== undefined) {
+    updateData.name = name;
+  }
+  if (description !== undefined) {
+    updateData.description = description;
+  }
+  if (maintainerId !== undefined) {
+    updateData.maintainerId = maintainerId;
+  }
+
+  const [updatedFlag] = await ctx.db
+    .update(featureFlag)
+    .set(updateData)
+    .where(eq(featureFlag.id, flagId))
+    .returning();
+
+  return updatedFlag;
 };

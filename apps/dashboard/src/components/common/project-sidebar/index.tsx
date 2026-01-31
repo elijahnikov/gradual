@@ -129,7 +129,7 @@ export default function ProjectSidebar() {
 
   return (
     <TooltipProvider>
-      <div className="z-50 hidden h-full w-56 min-w-56 flex-col items-center border-r p-2 sm:flex">
+      <div className="z-50 hidden h-full w-52 min-w-52 flex-col items-center border-r p-2 sm:flex">
         <div className="flex w-full flex-col gap-y-1">
           {topItems.map((item) => (
             <NavigationItem item={item} key={item.title} />

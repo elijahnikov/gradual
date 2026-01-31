@@ -167,14 +167,20 @@ export const createTargetingStore = () =>
     moveTarget: (id, direction) => {
       set((state) => {
         const index = state.targets.findIndex((t) => t.id === id);
-        if (index === -1) return state;
+        if (index === -1) {
+          return state;
+        }
 
         const newIndex = direction === "up" ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= state.targets.length) return state;
+        if (newIndex < 0 || newIndex >= state.targets.length) {
+          return state;
+        }
 
         const updated = [...state.targets];
         const removed = updated.splice(index, 1)[0];
-        if (!removed) return state;
+        if (!removed) {
+          return state;
+        }
         updated.splice(newIndex, 0, removed);
 
         return { targets: updated, hasChanges: true };

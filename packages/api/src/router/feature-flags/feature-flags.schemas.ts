@@ -203,3 +203,13 @@ export const saveTargetingRulesSchema = z.object({
   defaultVariationId: z.uuid(),
 });
 export type SaveTargetingRulesInput = z.infer<typeof saveTargetingRulesSchema>;
+
+export const updateFeatureFlagSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  maintainerId: z.string().nullable().optional(),
+});
+export type UpdateFeatureFlagInput = z.infer<typeof updateFeatureFlagSchema>;

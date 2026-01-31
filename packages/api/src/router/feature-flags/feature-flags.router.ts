@@ -42,4 +42,8 @@ export const featureFlagsRouter = {
   saveTargetingRules: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.saveTargetingRulesSchema)
     .mutation((opts) => services.saveTargetingRules({ ...opts })),
+
+  update: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.updateFeatureFlagSchema)
+    .mutation((opts) => services.updateFeatureFlag({ ...opts })),
 } satisfies TRPCRouterRecord;

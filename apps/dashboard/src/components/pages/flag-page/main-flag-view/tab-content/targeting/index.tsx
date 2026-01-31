@@ -152,7 +152,7 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-6">
+    <div className="flex w-full flex-1 flex-col p-3 sm:p-4">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
