@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { useTargetingStore } from "./targeting-store";
+import type { ContextKind } from "./types";
 
 interface AttributeItem {
   value: string;
@@ -30,6 +31,7 @@ interface AttributeSelectProps {
   onChange: (key: string) => void;
   projectSlug: string;
   organizationSlug: string;
+  contextKind?: ContextKind;
 }
 
 export function AttributeSelect({
@@ -37,6 +39,7 @@ export function AttributeSelect({
   onChange,
   projectSlug,
   organizationSlug,
+  contextKind,
 }: AttributeSelectProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -46,8 +49,10 @@ export function AttributeSelect({
 
   const preventCloseRef = useRef(false);
 
-  const attributes = useTargetingStore((s) => s.attributes);
   const attributesByKey = useTargetingStore((s) => s.attributesByKey);
+  const attributesByContextKind = useTargetingStore(
+    (s) => s.attributesByContextKind
+  );
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -67,9 +72,12 @@ export function AttributeSelect({
 
   const selectedAttribute = attributesByKey.get(value);
 
-  // Only include actual attributes, not the "Create new" option
-  const attributeItems = useMemo(() => {
-    return attributes.map((attr) => ({
+  const attributeItems = useMemo((): AttributeItem[] => {
+    const attrs = contextKind
+      ? (attributesByContextKind.get(contextKind) ?? [])
+      : Array.from(attributesByContextKind.values()).flat();
+
+    return attrs.map((attr) => ({
       value: attr.key,
       label: attr.displayName ?? attr.key,
       subLabel:
@@ -77,7 +85,7 @@ export function AttributeSelect({
           ? attr.key
           : undefined,
     }));
-  }, [attributes]);
+  }, [attributesByContextKind, contextKind]);
 
   const handleCreate = () => {
     if (!(newKey.trim() && newDisplayName.trim())) {
@@ -100,7 +108,13 @@ export function AttributeSelect({
     setNewDisplayName("");
   };
 
+  const isDisabled = !contextKind;
+
   const handleOpenChange = (newOpen: boolean) => {
+    if (isDisabled) {
+      return;
+    }
+
     if (!newOpen && preventCloseRef.current) {
       preventCloseRef.current = false;
       return;
@@ -137,19 +151,23 @@ export function AttributeSelect({
       value={value}
     >
       <ComboboxTrigger
+        disabled={isDisabled}
         render={
           <Button
-            className="h-7.5 w-full justify-between sm:w-36"
+            className="h-8 w-full justify-between rounded-md sm:w-36"
+            disabled={isDisabled}
             size="small"
             variant="outline"
           />
         }
       >
         <ComboboxValue>
-          <span className="truncate">
-            {selectedAttribute?.displayName ??
-              selectedAttribute?.key ??
-              "Select"}
+          <span className="truncate font-normal text-ui-fg-base">
+            {isDisabled
+              ? "Select context first"
+              : (selectedAttribute?.displayName ??
+                selectedAttribute?.key ??
+                "Select attribute")}
           </span>
         </ComboboxValue>
         <RiArrowDownSLine className="ml-1 size-4 shrink-0" />
@@ -209,7 +227,11 @@ export function AttributeSelect({
               />
             </div>
             <div className="max-h-48 overflow-y-auto">
-              <ComboboxEmpty>No attributes found.</ComboboxEmpty>
+              <ComboboxEmpty>
+                {contextKind
+                  ? "No attributes in this context."
+                  : "No attributes found."}
+              </ComboboxEmpty>
               <ComboboxList>
                 {(item: AttributeItem) => (
                   <ComboboxItem key={item.value} value={item.value}>

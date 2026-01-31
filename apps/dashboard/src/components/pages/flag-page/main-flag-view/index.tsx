@@ -46,7 +46,13 @@ export default function MainFlagView({
           />
         ) : null;
       case "variations":
-        return <FlagVariations />;
+        return (
+          <FlagVariations
+            flag={flag}
+            organizationSlug={organizationSlug}
+            projectSlug={projectSlug}
+          />
+        );
       case "metrics":
         return <FlagMetrics />;
       case "events":

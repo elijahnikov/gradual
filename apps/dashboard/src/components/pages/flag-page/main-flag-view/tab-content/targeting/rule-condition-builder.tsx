@@ -11,8 +11,8 @@ import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiSubtractFill } from "@remixicon/react";
 import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
-import { useTargetingStore } from "./targeting-store";
-import type { RuleCondition, TargetingOperator } from "./types";
+import { ContextSelect } from "./context-select";
+import type { ContextKind, RuleCondition, TargetingOperator } from "./types";
 
 const OPERATORS: { label: string; value: TargetingOperator }[] = [
   { label: "equals", value: "equals" },
@@ -42,17 +42,15 @@ export function RuleConditionBuilder({
   organizationSlug,
   onChange,
 }: RuleConditionBuilderProps) {
-  // Get attributes from store (eliminates prop drilling)
-  const attributes = useTargetingStore((s) => s.attributes);
-
   const handleAddCondition = useCallback(() => {
     const newCondition: RuleCondition = {
-      attributeKey: attributes[0]?.key ?? "",
+      contextKind: undefined,
+      attributeKey: "",
       operator: "equals",
       value: "",
     };
     onChange([...conditions, newCondition]);
-  }, [attributes, conditions, onChange]);
+  }, [conditions, onChange]);
 
   const handleRemoveCondition = useCallback(
     (index: number) => {
@@ -115,6 +113,10 @@ function ConditionRow({
   onChange,
   onRemove,
 }: ConditionRowProps) {
+  const handleContextChange = (kind: ContextKind) => {
+    onChange({ contextKind: kind, attributeKey: "" });
+  };
+
   return (
     <div className="flex flex-col gap-2 rounded-md border border-ui-border-base bg-ui-bg-subtle p-2 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:pl-8">
       <div className="flex items-center justify-between sm:contents">
@@ -132,7 +134,13 @@ function ConditionRow({
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-center">
+        <ContextSelect
+          onChange={handleContextChange}
+          value={condition.contextKind}
+        />
+
         <AttributeSelect
+          contextKind={condition.contextKind}
           onChange={(key) => onChange({ attributeKey: key })}
           organizationSlug={organizationSlug}
           projectSlug={projectSlug}

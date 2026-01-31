@@ -213,3 +213,10 @@ export const updateFeatureFlagSchema = z.object({
   maintainerId: z.string().nullable().optional(),
 });
 export type UpdateFeatureFlagInput = z.infer<typeof updateFeatureFlagSchema>;
+
+export const getVariationsSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type GetVariationsInput = z.infer<typeof getVariationsSchema>;

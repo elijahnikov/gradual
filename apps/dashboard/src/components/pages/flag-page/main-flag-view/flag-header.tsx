@@ -219,7 +219,7 @@ export default function FlagHeader({
                 </div>
               </div>
               {/* Created on */}
-              <div className="flex items-center gap-x-6">
+              <div className="relative left-1 flex items-center gap-x-6">
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="flex items-center gap-x-1">

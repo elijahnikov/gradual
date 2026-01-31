@@ -2,8 +2,10 @@ import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
+import { ContextSelect } from "./context-select";
 import TargetingCard from "./targeting-card";
 import { useTargetingStore } from "./targeting-store";
+import type { ContextKind } from "./types";
 
 interface IndividualTargetCardProps {
   targetId: string;
@@ -33,7 +35,6 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
   const moveTarget = useTargetingStore((s) => s.moveTarget);
 
   // Get shared data from store
-  const attributes = useTargetingStore((s) => s.attributes);
   const organizationSlug = useTargetingStore((s) => s.organizationSlug);
   const projectSlug = useTargetingStore((s) => s.projectSlug);
 
@@ -67,16 +68,20 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
     return null;
   }
 
-  // Get current values with defaults (rerender-lazy-state-init)
-  const attributeKey = target.attributeKey ?? attributes[0]?.key ?? "";
+  const contextKind = target.contextKind;
+  const attributeKey = target.attributeKey ?? "";
   const attributeValue = target.attributeValue ?? "";
 
+  const handleContextKindChange = (kind: ContextKind) => {
+    updateTargetIndividual(targetId, kind, "", attributeValue);
+  };
+
   const handleAttributeKeyChange = (key: string) => {
-    updateTargetIndividual(targetId, key, attributeValue);
+    updateTargetIndividual(targetId, contextKind, key, attributeValue);
   };
 
   const handleAttributeValueChange = (value: string) => {
-    updateTargetIndividual(targetId, attributeKey, value);
+    updateTargetIndividual(targetId, contextKind, attributeKey, value);
   };
 
   return (
@@ -97,7 +102,12 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
           <Text className="shrink-0 text-ui-fg-muted" size="small">
             Where
           </Text>
+          <ContextSelect
+            onChange={handleContextKindChange}
+            value={contextKind}
+          />
           <AttributeSelect
+            contextKind={contextKind}
             onChange={handleAttributeKeyChange}
             organizationSlug={organizationSlug}
             projectSlug={projectSlug}

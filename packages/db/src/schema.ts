@@ -84,6 +84,13 @@ export const targetTypeEnum = pgEnum("target_type", [
   "segment",
 ]);
 
+export const contextKindEnum = pgEnum("context_kind", [
+  "user",
+  "device",
+  "organization",
+  "location",
+]);
+
 export const project = pgTable(
   "project",
   {
@@ -338,6 +345,33 @@ export const featureFlagSegmentTarget = pgTable(
   ]
 );
 
+export const context = pgTable(
+  "context",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    kind: contextKindEnum("kind").notNull(),
+    name: varchar("name", { length: 256 }).notNull(),
+    description: text("description"),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("context_project_kind_idx").on(table.projectId, table.kind),
+    unique("context_project_kind_unique").on(table.projectId, table.kind),
+  ]
+);
+
 export const attribute = pgTable(
   "attribute",
   {
@@ -348,6 +382,9 @@ export const attribute = pgTable(
     type: varchar("type", { length: 32 }),
     isManual: boolean("is_manual").notNull().default(false),
     createdById: uuid("created_by_id").references(() => user.id),
+    contextId: uuid("context_id").references(() => context.id, {
+      onDelete: "set null",
+    }),
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
@@ -371,6 +408,7 @@ export const attribute = pgTable(
     index("attribute_org_idx").on(table.organizationId),
     index("attribute_usage_count_idx").on(table.usageCount),
     index("attribute_is_manual_idx").on(table.isManual),
+    index("attribute_context_idx").on(table.contextId),
   ]
 );
 
@@ -732,6 +770,7 @@ export const projectRelations = relations(project, ({ one, many }) => ({
   environments: many(environment),
   featureFlags: many(featureFlag),
   segments: many(segment),
+  contexts: many(context),
   attributes: many(attribute),
   apiKeys: many(apiKey),
   auditLogs: many(auditLog),
@@ -855,6 +894,18 @@ export const featureFlagSegmentTargetRelations = relations(
   })
 );
 
+export const contextRelations = relations(context, ({ one, many }) => ({
+  project: one(project, {
+    fields: [context.projectId],
+    references: [project.id],
+  }),
+  organization: one(organization, {
+    fields: [context.organizationId],
+    references: [organization.id],
+  }),
+  attributes: many(attribute),
+}));
+
 export const attributeRelations = relations(attribute, ({ one, many }) => ({
   project: one(project, {
     fields: [attribute.projectId],
@@ -867,6 +918,10 @@ export const attributeRelations = relations(attribute, ({ one, many }) => ({
   createdBy: one(user, {
     fields: [attribute.createdById],
     references: [user.id],
+  }),
+  context: one(context, {
+    fields: [attribute.contextId],
+    references: [context.id],
   }),
   values: many(attributeValue),
 }));

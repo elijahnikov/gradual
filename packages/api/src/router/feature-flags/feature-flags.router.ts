@@ -31,6 +31,7 @@ export const featureFlagsRouter = {
     .input(schemas.deleteFlagsSchema)
     .mutation((opts) => services.deleteFlags({ ...opts })),
 
+  // INTERNAL ONLY
   seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.seedEvaluationsSchema)
     .mutation((opts) => services.seedEvaluations({ ...opts })),
@@ -46,4 +47,8 @@ export const featureFlagsRouter = {
   update: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.updateFeatureFlagSchema)
     .mutation((opts) => services.updateFeatureFlag({ ...opts })),
+
+  getVariations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getVariationsSchema)
+    .query((opts) => services.getVariations({ ...opts })),
 } satisfies TRPCRouterRecord;

@@ -2,6 +2,8 @@ import { createContext, type ReactNode, useContext, useRef } from "react";
 import { create, useStore } from "zustand";
 import type {
   Attribute,
+  Context,
+  ContextKind,
   RuleCondition,
   Segment,
   TargetType,
@@ -14,6 +16,8 @@ export interface LocalTarget {
   name: string;
   variationId: string;
   conditions?: RuleCondition[];
+  // For individual targets
+  contextKind?: ContextKind;
   attributeKey?: string;
   attributeValue?: string;
   segmentId?: string;
@@ -21,6 +25,7 @@ export interface LocalTarget {
 
 interface TargetingState {
   attributes: Attribute[];
+  contexts: Context[];
   segments: Segment[];
   variations: Variation[];
   organizationSlug: string;
@@ -30,6 +35,9 @@ interface TargetingState {
   environmentSlug: string;
 
   attributesByKey: Map<string, Attribute>;
+  attributesByContextKind: Map<ContextKind | "uncategorized", Attribute[]>;
+  contextsById: Map<string, Context>;
+  contextsByKind: Map<ContextKind, Context>;
   segmentsById: Map<string, Segment>;
   variationsById: Map<string, Variation>;
 
@@ -38,16 +46,14 @@ interface TargetingState {
   defaultVariationIdState: string;
   originalDefaultVariationId: string;
 
-  // Change tracking
   hasChanges: boolean;
-
-  // Modal state
   isReviewModalOpen: boolean;
 }
 
 interface TargetingActions {
   initialize: (config: {
     attributes: Attribute[];
+    contexts: Context[];
     segments: Segment[];
     variations: Variation[];
     organizationSlug: string;
@@ -68,6 +74,7 @@ interface TargetingActions {
   updateTargetConditions: (id: string, conditions: RuleCondition[]) => void;
   updateTargetIndividual: (
     id: string,
+    contextKind: ContextKind | undefined,
     attributeKey: string,
     attributeValue: string
   ) => void;
@@ -75,7 +82,6 @@ interface TargetingActions {
   updateTargetName: (id: string, name: string) => void;
   setDefaultVariation: (variationId: string) => void;
 
-  // Modal actions
   openReviewModal: () => void;
   closeReviewModal: () => void;
 }
@@ -85,6 +91,7 @@ type TargetingStore = TargetingState & TargetingActions;
 export const createTargetingStore = () =>
   create<TargetingStore>((set, get) => ({
     attributes: [],
+    contexts: [],
     segments: [],
     variations: [],
     organizationSlug: "",
@@ -93,6 +100,9 @@ export const createTargetingStore = () =>
     flagId: "",
     environmentSlug: "",
     attributesByKey: new Map(),
+    attributesByContextKind: new Map(),
+    contextsById: new Map(),
+    contextsByKind: new Map(),
     segmentsById: new Map(),
     variationsById: new Map(),
     targets: [],
@@ -104,8 +114,32 @@ export const createTargetingStore = () =>
 
     initialize: (config) => {
       const existingTargets = config.existingTargets ?? [];
+
+      // Build attributesByContextKind map
+      const attributesByContextKind = new Map<
+        ContextKind | "uncategorized",
+        Attribute[]
+      >();
+      const contextIdToKind = new Map<string, ContextKind>();
+
+      for (const ctx of config.contexts) {
+        contextIdToKind.set(ctx.id, ctx.kind as ContextKind);
+        attributesByContextKind.set(ctx.kind as ContextKind, []);
+      }
+      attributesByContextKind.set("uncategorized", []);
+
+      for (const attr of config.attributes) {
+        const contextKind = attr.contextId
+          ? (contextIdToKind.get(attr.contextId) ?? "uncategorized")
+          : "uncategorized";
+        const existing = attributesByContextKind.get(contextKind) ?? [];
+        existing.push(attr);
+        attributesByContextKind.set(contextKind, existing);
+      }
+
       set({
         attributes: config.attributes,
+        contexts: config.contexts,
         segments: config.segments,
         variations: config.variations,
         organizationSlug: config.organizationSlug,
@@ -116,6 +150,11 @@ export const createTargetingStore = () =>
         flagId: config.flagId,
         environmentSlug: config.environmentSlug,
         attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
+        attributesByContextKind,
+        contextsById: new Map(config.contexts.map((c) => [c.id, c])),
+        contextsByKind: new Map(
+          config.contexts.map((c) => [c.kind as ContextKind, c])
+        ),
         segmentsById: new Map(config.segments.map((s) => [s.id, s])),
         variationsById: new Map(config.variations.map((v) => [v.id, v])),
         targets: existingTargets,
@@ -205,10 +244,10 @@ export const createTargetingStore = () =>
       }));
     },
 
-    updateTargetIndividual: (id, attributeKey, attributeValue) => {
+    updateTargetIndividual: (id, contextKind, attributeKey, attributeValue) => {
       set((state) => ({
         targets: state.targets.map((t) =>
-          t.id === id ? { ...t, attributeKey, attributeValue } : t
+          t.id === id ? { ...t, contextKind, attributeKey, attributeValue } : t
         ),
         hasChanges: true,
       }));

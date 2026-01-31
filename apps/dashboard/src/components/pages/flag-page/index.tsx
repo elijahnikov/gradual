@@ -35,21 +35,21 @@ function FlagPageSkeleton() {
           <div className="mt-4 flex w-full items-center justify-between gap-x-6">
             {/* Key */}
             <div className="flex items-center gap-1">
-              <Skeleton className="h-5 w-42" />
+              <Skeleton className="h-6 w-42" />
             </div>
             {/* Right side metadata */}
-            <div className="flex items-center gap-x-4">
+            <div className="relative left-2 flex items-center gap-x-4">
               {/* Created date */}
               <div className="flex items-center gap-x-1">
-                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-6 w-32" />
               </div>
               {/* Updated date */}
               <div className="flex items-center gap-x-1">
-                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-6 w-32" />
               </div>
               {/* Assignee */}
               <div className="flex min-w-44 items-center gap-1.5 px-1.5 py-1">
-                <Skeleton className="h-5 w-42" />
+                <Skeleton className="h-6 w-42" />
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@ function FlagPageSkeleton() {
       </div>
 
       {/* Flag Subheader Skeleton */}
-      <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-1 py-1">
+      <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-3 py-1">
         {/* Tabs */}
         <div className="flex h-9 items-center gap-1 rounded-md bg-ui-bg-base p-1">
           <Skeleton className="h-8 w-96 rounded-lg" />

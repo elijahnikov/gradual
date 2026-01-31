@@ -37,6 +37,7 @@ import type {
   GetFeatureFlagsByProjectAndOrganizationInput,
   GetPreviewEvaluationsInput,
   GetTargetingRulesInput,
+  GetVariationsInput,
   SaveTargetingRulesInput,
   SeedEvaluationsInput,
   UpdateFeatureFlagInput,
@@ -1061,4 +1062,77 @@ export const updateFeatureFlag = async ({
     .returning();
 
   return updatedFlag;
+};
+
+export const getVariations = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetVariationsInput;
+}) => {
+  const { flagId, projectSlug } = input;
+  const { organization } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const evaluationCountSubquery = ctx.db
+    .select({
+      variationId: featureFlagEvaluation.variationId,
+      count: count().as("count"),
+    })
+    .from(featureFlagEvaluation)
+    .where(eq(featureFlagEvaluation.featureFlagId, foundFlag.id))
+    .groupBy(featureFlagEvaluation.variationId)
+    .as("evaluation_counts");
+
+  const variations = await ctx.db
+    .select({
+      id: featureFlagVariation.id,
+      featureFlagId: featureFlagVariation.featureFlagId,
+      name: featureFlagVariation.name,
+      value: featureFlagVariation.value,
+      description: featureFlagVariation.description,
+      isDefault: featureFlagVariation.isDefault,
+      rolloutPercentage: featureFlagVariation.rolloutPercentage,
+      sortOrder: featureFlagVariation.sortOrder,
+      createdAt: featureFlagVariation.createdAt,
+      updatedAt: featureFlagVariation.updatedAt,
+      evaluationCount: sql<number>`COALESCE(${evaluationCountSubquery.count}, 0)`,
+    })
+    .from(featureFlagVariation)
+    .leftJoin(
+      evaluationCountSubquery,
+      eq(featureFlagVariation.id, evaluationCountSubquery.variationId)
+    )
+    .where(eq(featureFlagVariation.featureFlagId, foundFlag.id))
+    .orderBy(featureFlagVariation.sortOrder);
+
+  return variations;
 };
