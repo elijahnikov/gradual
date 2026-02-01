@@ -86,6 +86,7 @@ export default function JsonVariation({
                                 ? field.value
                                 : JSON.stringify(field.value ?? {}, null, 2)
                             }
+                            maxHeight="250px"
                             onChange={(value, isValid) => {
                               if (isValid && value.trim() !== "") {
                                 try {

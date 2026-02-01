@@ -1,5 +1,6 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@gradual/ui/avatar";
+import { Badge } from "@gradual/ui/badge";
 import { Button } from "@gradual/ui/button";
 import {
   Combobox,
@@ -28,6 +29,7 @@ import {
   RiCalendarFill,
   RiDeleteBinLine,
   RiFileCopyLine,
+  RiHashtag,
   RiKey2Fill,
   RiLink,
   RiMoreFill,
@@ -262,14 +264,17 @@ export default function FlagSidebar({
 
       <Separator />
 
-      <div className="flex flex-col gap-1 p-4">
+      <div className="group flex flex-col gap-1 p-4">
         <Text className="text-ui-fg-muted" size="xsmall" weight="plus">
           Key
         </Text>
         <div className="flex items-center gap-1">
           <RiKey2Fill className="size-4 text-ui-fg-muted" />
           <Text className="font-mono text-xs">{flag.key}</Text>
-          <CopyButton className="size-5 [&_svg]:size-3" text={flag.key} />
+          <CopyButton
+            className="size-5 opacity-0 transition-opacity group-hover:opacity-100 [&_svg]:size-3"
+            text={flag.key}
+          />
         </div>
       </div>
 
@@ -280,7 +285,6 @@ export default function FlagSidebar({
           Maintainer
         </Text>
         <Combobox
-          autoHighlight
           items={memberItems}
           onValueChange={(value) => {
             handleMaintainerUpdate(value);
@@ -298,7 +302,7 @@ export default function FlagSidebar({
           >
             <ComboboxValue>
               <div className="flex items-center gap-2">
-                <Avatar className="size-5">
+                <Avatar className="size-5 border">
                   {selectedMaintainer ? (
                     <>
                       <AvatarImage src={selectedMaintainer.avatar} />
@@ -307,9 +311,7 @@ export default function FlagSidebar({
                       </AvatarFallback>
                     </>
                   ) : (
-                    <AvatarFallback>
-                      <RiUserSmileLine className="size-3" />
-                    </AvatarFallback>
+                    <RiUserSmileLine className="size-3" />
                   )}
                 </Avatar>
                 <Text size="small">
@@ -369,6 +371,22 @@ export default function FlagSidebar({
             )}
           </ComboboxPopup>
         </Combobox>
+      </div>
+
+      <Separator />
+
+      <div className="flex flex-col gap-1 p-4">
+        <Text className="text-ui-fg-muted" size="xsmall" weight="plus">
+          Tags
+        </Text>
+        <div className="flex flex-wrap items-center gap-1">
+          {flag.tags?.map((tag) => (
+            <Badge key={tag} variant="outline">
+              <RiHashtag className="size-3 text-ui-fg-muted" />
+              {tag}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       <Separator />

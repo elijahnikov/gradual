@@ -28,6 +28,7 @@ interface JsonEditorProps {
   onChange?: (value: string, isValid: boolean) => void;
   showToolbar?: boolean;
   showFooter?: boolean;
+  maxHeight?: string;
 }
 
 export function JsonEditor({
@@ -35,6 +36,7 @@ export function JsonEditor({
   onChange,
   showToolbar = false,
   showFooter = false,
+  maxHeight = "600px",
 }: JsonEditorProps) {
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
@@ -264,34 +266,32 @@ export function JsonEditor({
           </TooltipProvider>
         )}
         <div
-          className="flex h-max max-h-[600px] overflow-y-auto"
+          className="overflow-y-auto"
           ref={scrollContainerRef}
+          style={{ maxHeight }}
         >
-          <div className="h-full min-w-12 select-none border-border border-r bg-muted/30 px-2 py-4 text-right font-mono text-muted-foreground text-sm">
-            {Array.from({ length: lineCount }, (_, i) => (
-              <div className="px-1 leading-6" key={i + 1}>
-                {i + 1}
-              </div>
-            ))}
+          <div className="flex">
+            <div className="min-w-12 select-none border-border border-r bg-muted/30 px-2 py-4 text-right font-mono text-muted-foreground text-sm">
+              {Array.from({ length: lineCount }, (_, i) => (
+                <div className="px-1 leading-6" key={i + 1}>
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            <textarea
+              className={cn(
+                "min-h-[120px] flex-1 resize-none bg-transparent p-4 font-mono text-foreground text-sm leading-6 outline-none placeholder:text-muted-foreground",
+                !isValid && value.trim() && "text-destructive"
+              )}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder='{"key": "value"}'
+              ref={textareaRef}
+              rows={Math.max(5, lineCount)}
+              spellCheck={false}
+              value={value}
+              wrap="off"
+            />
           </div>
-          <textarea
-            className={cn(
-              "flex-1 resize-none overflow-y-hidden bg-transparent p-4 font-mono text-foreground text-sm leading-6 outline-none placeholder:text-muted-foreground",
-              !isValid && value.trim() && "text-destructive"
-            )}
-            onChange={(e) => handleChange(e.target.value)}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-            placeholder='{"key": "value"}'
-            ref={textareaRef}
-            spellCheck={false}
-            style={{ height: "auto" }}
-            value={value}
-            wrap="off"
-          />
         </div>
       </Card>
 

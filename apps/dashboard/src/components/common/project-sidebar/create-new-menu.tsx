@@ -24,7 +24,7 @@ export default function CreateNewMenu() {
         <DropdownMenuTrigger
           render={
             <Button
-              className="h-8 w-full justify-start text-left"
+              className="h-7 w-full justify-start text-left"
               size="small"
               variant="gradual"
             />

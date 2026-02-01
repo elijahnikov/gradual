@@ -13,7 +13,6 @@ import { type FlagTab, flagSearchParams, tabList } from "./flag-search-params";
 
 interface FlagSubheaderProps {
   environments: RouterOutputs["featureFlags"]["getByKey"]["environments"];
-  flag: RouterOutputs["featureFlags"]["getByKey"]["flag"];
 }
 
 export default function FlagSubheader({ environments }: FlagSubheaderProps) {

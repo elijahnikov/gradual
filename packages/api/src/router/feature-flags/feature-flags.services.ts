@@ -30,8 +30,10 @@ import { TRPCError } from "@trpc/server";
 
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
+  AddVariationInput,
   CreateCompleteFeatureFlagInput,
   DeleteFlagsInput,
+  DeleteVariationInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
@@ -41,6 +43,7 @@ import type {
   SaveTargetingRulesInput,
   SeedEvaluationsInput,
   UpdateFeatureFlagInput,
+  UpdateVariationInput,
 } from "./feature-flags.schemas";
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
@@ -1135,4 +1138,230 @@ export const getVariations = async ({
     .orderBy(featureFlagVariation.sortOrder);
 
   return variations;
+};
+
+export const updateVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: UpdateVariationInput;
+}) => {
+  const { variationId, flagId, projectSlug, name, value, description } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const foundVariation = await ctx.db.query.featureFlagVariation.findFirst({
+    where: ({ id, featureFlagId }, { eq, and }) =>
+      and(eq(id, variationId), eq(featureFlagId, foundFlag.id)),
+  });
+
+  if (!foundVariation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Variation not found",
+    });
+  }
+
+  const updateData: Partial<{
+    name: string;
+    value: unknown;
+    description: string | null;
+  }> = {};
+
+  if (name !== undefined) {
+    updateData.name = name;
+  }
+  if (value !== undefined) {
+    updateData.value = value;
+  }
+  if (description !== undefined) {
+    updateData.description = description;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return foundVariation;
+  }
+
+  const [updatedVariation] = await ctx.db
+    .update(featureFlagVariation)
+    .set(updateData)
+    .where(eq(featureFlagVariation.id, variationId))
+    .returning();
+
+  return updatedVariation;
+};
+
+export const addVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: AddVariationInput;
+}) => {
+  const { flagId, projectSlug, name, value, description } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  // Don't allow adding variations to boolean flags
+  if (foundFlag.type === "boolean") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot add variations to boolean flags",
+    });
+  }
+
+  // Get the current max sort order
+  const existingVariations = await ctx.db.query.featureFlagVariation.findMany({
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+    orderBy: ({ sortOrder }, { desc }) => desc(sortOrder),
+    limit: 1,
+  });
+
+  const nextSortOrder =
+    existingVariations.length > 0
+      ? (existingVariations[0]?.sortOrder ?? 0) + 1
+      : 0;
+
+  const [newVariation] = await ctx.db
+    .insert(featureFlagVariation)
+    .values({
+      featureFlagId: foundFlag.id,
+      name,
+      value,
+      description: description ?? null,
+      isDefault: false,
+      rolloutPercentage: 0,
+      sortOrder: nextSortOrder,
+    })
+    .returning();
+
+  return newVariation;
+};
+
+export const deleteVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: DeleteVariationInput;
+}) => {
+  const { variationId, flagId, projectSlug } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  // Don't allow deleting variations from boolean flags
+  if (foundFlag.type === "boolean") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot delete variations from boolean flags",
+    });
+  }
+
+  const foundVariation = await ctx.db.query.featureFlagVariation.findFirst({
+    where: ({ id, featureFlagId }, { eq, and }) =>
+      and(eq(id, variationId), eq(featureFlagId, foundFlag.id)),
+  });
+
+  if (!foundVariation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Variation not found",
+    });
+  }
+
+  // Check if this is the only non-default variation or if it's the default
+  const allVariations = await ctx.db.query.featureFlagVariation.findMany({
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+  });
+
+  if (allVariations.length <= 2) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "Cannot delete variation. Flags must have at least 2 variations.",
+    });
+  }
+
+  if (foundVariation.isDefault) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot delete the default variation",
+    });
+  }
+
+  await ctx.db
+    .delete(featureFlagVariation)
+    .where(eq(featureFlagVariation.id, variationId));
+
+  return { success: true };
 };

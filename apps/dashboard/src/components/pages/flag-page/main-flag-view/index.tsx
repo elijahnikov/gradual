@@ -4,7 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { Suspense, useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
-import { flagSearchParams } from "./flag-search-params";
+import { type FlagTab, flagSearchParams } from "./flag-search-params";
 import FlagSidebar from "./flag-sidebar";
 import FlagSubheader from "./flag-subheader";
 import FlagEvents from "./tab-content/events";
@@ -68,7 +68,7 @@ export default function MainFlagView({
     <div className="flex h-full">
       <div className="flex flex-1 flex-col overflow-y-auto">
         <FlagSubheader environments={flag.environments} />
-        <Suspense fallback={<TabContentSkeleton />}>
+        <Suspense fallback={<TabContentSkeleton tab={tab} />}>
           <div className="flex min-h-[calc(100vh-6.75rem)] w-full flex-1 flex-col">
             {renderTabContent}
           </div>
@@ -84,9 +84,20 @@ export default function MainFlagView({
   );
 }
 
-function TabContentSkeleton() {
+function TabContentSkeleton({ tab }: { tab: FlagTab }) {
+  switch (tab) {
+    case "targeting":
+      return <TargetingTabSkeleton />;
+    case "variations":
+      return <VariationsTabSkeleton />;
+    default:
+      return <GenericTabSkeleton />;
+  }
+}
+
+function TargetingTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-4">
+    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         {/* Header */}
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -113,6 +124,59 @@ function TabContentSkeleton() {
               </div>
             </div>
           </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function VariationsTabSkeleton() {
+  return (
+    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
+      <div className="flex flex-col gap-3">
+        <VariationCardSkeleton />
+        <VariationCardSkeleton />
+      </div>
+    </div>
+  );
+}
+
+function VariationCardSkeleton() {
+  return (
+    <Card className="flex flex-col p-0">
+      {/* Header & Value */}
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-14 rounded-md" />
+          </div>
+        </div>
+        {/* Value */}
+        <div className="mt-2">
+          <Skeleton className="h-6 w-16 rounded-md" />
+        </div>
+      </div>
+      {/* Footer with evaluations */}
+      <div className="flex items-center border-t px-3 pt-2.5 pb-3">
+        <div className="flex items-center gap-1">
+          <Skeleton className="size-4 rounded" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function GenericTabSkeleton() {
+  return (
+    <div className="flex w-full flex-1 flex-col p-3">
+      <Card className="flex h-full w-full flex-1 flex-col p-4">
+        <Skeleton className="h-6 w-48" />
+        <div className="mt-4 flex flex-col gap-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
       </Card>
     </div>

@@ -220,3 +220,32 @@ export const getVariationsSchema = z.object({
   organizationSlug: z.string(),
 });
 export type GetVariationsInput = z.infer<typeof getVariationsSchema>;
+
+export const updateVariationSchema = z.object({
+  variationId: z.uuid(),
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1).optional(),
+  value: z.union([z.string(), z.number(), z.boolean(), z.any()]).optional(),
+  description: z.string().nullable().optional(),
+});
+export type UpdateVariationInput = z.infer<typeof updateVariationSchema>;
+
+export const addVariationSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1, "Variation name is required"),
+  value: z.union([z.string(), z.number(), z.boolean(), z.any()]),
+  description: z.string().nullable().optional(),
+});
+export type AddVariationInput = z.infer<typeof addVariationSchema>;
+
+export const deleteVariationSchema = z.object({
+  variationId: z.uuid(),
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type DeleteVariationInput = z.infer<typeof deleteVariationSchema>;
