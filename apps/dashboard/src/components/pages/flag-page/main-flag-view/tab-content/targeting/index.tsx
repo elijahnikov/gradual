@@ -196,7 +196,7 @@ function FlagTargetingContent({
         </div>
         <div className="flex h-full w-full flex-1 flex-col rounded-md border-t bg-ui-bg-base p-1 sm:p-2">
           <div className="flex h-full w-full flex-1 flex-col rounded-md border bg-ui-bg-base p-1 sm:p-2">
-            <div className="relative flex h-full min-h-[calc(56vh-0.5rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
+            <div className="relative flex h-full min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
               <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
                 <TargetingList
                   footer={

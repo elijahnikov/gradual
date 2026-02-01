@@ -85,7 +85,7 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
               projectSlug,
               flagSlug: flag.featureFlag.key,
             }}
-            preload="viewport"
+            preload="intent"
             search={{}}
             to="/$organizationSlug/$projectSlug/flags/$flagSlug"
           >

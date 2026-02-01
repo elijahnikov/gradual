@@ -45,6 +45,7 @@ export default function EditableDescription({
 
   return (
     <textarea
+      autoCorrect="off"
       className={cn(
         "field-sizing-content w-full resize-none bg-transparent font-medium text-sm text-ui-fg-muted leading-5.5 placeholder:text-ui-fg-muted/50 focus:outline-none",
         loading && "animate-pulse"

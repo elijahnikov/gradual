@@ -8,14 +8,53 @@ export const Route = createFileRoute(
   errorComponent: ({ error }) => {
     return <div>Error {JSON.stringify(error)}</div>;
   },
-  beforeLoad: ({ context, params }) => {
-    void context.queryClient.prefetchQuery(
-      context.trpc.featureFlags.getByKey.queryOptions({
-        projectSlug: params.projectSlug,
-        organizationSlug: params.organizationSlug,
-        key: params.flagSlug,
-      })
-    );
+  loader: async ({ context, params }) => {
+    const { queryClient, trpc } = context;
+    const { projectSlug, organizationSlug, flagSlug } = params;
+
+    // Prefetch flag data and supporting data in parallel
+    const [flag] = await Promise.all([
+      // This one we await to get the flag ID for targeting rules
+      queryClient.fetchQuery(
+        trpc.featureFlags.getByKey.queryOptions({
+          projectSlug,
+          organizationSlug,
+          key: flagSlug,
+        })
+      ),
+      // These don't depend on flag data, prefetch in parallel
+      queryClient.prefetchQuery(
+        trpc.attributes.list.queryOptions({
+          projectSlug,
+          organizationSlug,
+        })
+      ),
+      queryClient.prefetchQuery(
+        trpc.attributes.listContexts.queryOptions({
+          projectSlug,
+          organizationSlug,
+        })
+      ),
+      queryClient.prefetchQuery(
+        trpc.segments.list.queryOptions({
+          projectSlug,
+          organizationSlug,
+        })
+      ),
+    ]);
+
+    // Now prefetch targeting rules for the first environment (default tab is targeting)
+    const firstEnv = flag.environments[0];
+    if (firstEnv) {
+      void queryClient.prefetchQuery(
+        trpc.featureFlags.getTargetingRules.queryOptions({
+          flagId: flag.flag.id,
+          environmentSlug: firstEnv.environment.slug,
+          organizationSlug,
+          projectSlug,
+        })
+      );
+    }
   },
 });
 

@@ -21,8 +21,8 @@ interface TextShimmerProps {
 function TextShimmer({
   children,
   className,
-  duration = 4,
-  spread = 2,
+  duration = 3,
+  spread = 4,
 }: TextShimmerProps) {
   const dynamicSpread = useMemo(
     () => (children?.length ?? 0) * spread,

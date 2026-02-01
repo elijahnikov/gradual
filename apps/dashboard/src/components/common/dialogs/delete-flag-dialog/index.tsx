@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@gradual/api";
 import { Button } from "@gradual/ui/button";
 import {
   Dialog,
@@ -19,7 +18,10 @@ import { useTRPC } from "@/lib/trpc";
 
 interface DeleteFlagDialogProps {
   children?: React.ReactNode;
-  flag: RouterOutputs["featureFlags"]["getAll"]["items"][number]["featureFlag"];
+  flag: {
+    id: string;
+    name: string;
+  };
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }

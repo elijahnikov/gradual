@@ -15,7 +15,12 @@ import {
   RiSettings5Fill,
   RiTimer2Fill,
 } from "@remixicon/react";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import {
+  Link,
+  type LinkProps,
+  useLocation,
+  useParams,
+} from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import CreateNewMenu from "./create-new-menu";
 
@@ -30,7 +35,7 @@ function useNavigationItems() {
 
     const projectPath = `/${params.organizationSlug}/${params.projectSlug}`;
 
-    const items = [
+    const items: NavigationItemProps[] = [
       {
         icon: RiHome2Fill,
         title: "Home",
@@ -93,31 +98,38 @@ function useNavigationItems() {
 }
 
 interface NavigationItemProps {
-  item: {
-    icon: React.ComponentType<{ className?: string }>;
-    title: string;
-    url: string;
-    isActive: boolean;
-  };
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  url: string;
+  isActive: boolean;
+  preload?: LinkProps["preload"];
   onClick?: () => void;
 }
 
-function NavigationItem({ item, onClick }: NavigationItemProps) {
+function NavigationItem({
+  icon,
+  title,
+  url,
+  isActive,
+  preload = "viewport",
+  onClick,
+}: NavigationItemProps) {
+  const Icon = icon;
   return (
-    <Link onClick={onClick} search={{}} to={item.url}>
+    <Link onClick={onClick} preload={preload} search={{}} to={url}>
       <Button
         className={cn(
           "group/menu flex h-8 w-full items-center justify-start self-start text-left font-sans text-[13px]",
-          item.isActive
+          isActive
             ? "text-ui-fg-base"
             : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
         )}
         size="small"
-        variant={item.isActive ? "secondary" : "ghost"}
+        variant={isActive ? "secondary" : "ghost"}
       >
-        <item.icon className={cn("h-4 w-4")} />
+        <Icon className={cn("h-4 w-4")} />
         <Text size="small" weight="plus">
-          {item.title}
+          {title}
         </Text>
       </Button>
     </Link>
@@ -132,13 +144,13 @@ export default function ProjectSidebar() {
       <div className="z-50 hidden h-full w-52 min-w-52 flex-col items-center border-r p-2 sm:flex">
         <div className="flex w-full flex-col gap-y-1">
           {topItems.map((item) => (
-            <NavigationItem item={item} key={item.title} />
+            <NavigationItem {...item} key={item.title} />
           ))}
           <CreateNewMenu />
         </div>
         <div className="mt-auto flex w-full flex-col gap-y-1">
           {bottomItems.map((item) => (
-            <NavigationItem item={item} key={item.title} />
+            <NavigationItem {...item} key={item.title} />
           ))}
         </div>
       </div>
@@ -178,7 +190,7 @@ export function MobileProjectSidebar() {
             <div className="flex w-full flex-col gap-y-1">
               {topItems.map((item) => (
                 <NavigationItem
-                  item={item}
+                  {...item}
                   key={item.title}
                   onClick={handleNavClick}
                 />
@@ -188,7 +200,7 @@ export function MobileProjectSidebar() {
             <div className="mt-auto flex w-full flex-col gap-y-1">
               {bottomItems.map((item) => (
                 <NavigationItem
-                  item={item}
+                  {...item}
                   key={item.title}
                   onClick={handleNavClick}
                 />

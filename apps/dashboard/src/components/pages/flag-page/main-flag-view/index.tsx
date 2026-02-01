@@ -4,8 +4,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { Suspense, useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
-import FlagHeader from "./flag-header";
 import { flagSearchParams } from "./flag-search-params";
+import FlagSidebar from "./flag-sidebar";
 import FlagSubheader from "./flag-subheader";
 import FlagEvents from "./tab-content/events";
 import FlagMetrics from "./tab-content/metrics";
@@ -65,18 +65,21 @@ export default function MainFlagView({
   }, [tab, flag, environment, organizationSlug, projectSlug]);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <FlagHeader
-        flag={{ flag: flag.flag, maintainer: flag.maintainer }}
+    <div className="flex h-full">
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <FlagSubheader environments={flag.environments} />
+        <Suspense fallback={<TabContentSkeleton />}>
+          <div className="flex min-h-[calc(100vh-6.75rem)] w-full flex-1 flex-col">
+            {renderTabContent}
+          </div>
+        </Suspense>
+      </div>
+      <FlagSidebar
+        flag={flag.flag}
+        maintainer={flag.maintainer}
         organizationSlug={organizationSlug}
         projectSlug={projectSlug}
       />
-      <FlagSubheader environments={flag.environments} />
-      <Suspense fallback={<TabContentSkeleton />}>
-        <div className="flex min-h-[calc(70vh-0.5rem)] w-full flex-1 flex-col">
-          {renderTabContent}
-        </div>
-      </Suspense>
     </div>
   );
 }
@@ -96,7 +99,7 @@ function TabContentSkeleton() {
         {/* Content area */}
         <div className="flex h-full w-full flex-1 flex-col rounded-md border-t bg-ui-bg-base p-1 sm:p-2">
           <div className="flex h-full w-full flex-1 flex-col rounded-md border bg-ui-bg-base p-1 sm:p-2">
-            <div className="flex min-h-[calc(56vh-0.5rem)] w-full flex-col items-center justify-start gap-3 px-2 py-4 sm:px-0">
+            <div className="flex min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start gap-3 px-2 py-4 sm:px-0">
               {/* Target card skeleton */}
               <TargetCardSkeleton />
               <TargetCardSkeleton />

@@ -9,14 +9,11 @@ import {
 import { Tabs, TabsList, TabsTab } from "@gradual/ui/tabs";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo } from "react";
-import {
-  type FlagTab,
-  flagSearchParams,
-  tabOptions,
-} from "./flag-search-params";
+import { type FlagTab, flagSearchParams, tabList } from "./flag-search-params";
 
 interface FlagSubheaderProps {
   environments: RouterOutputs["featureFlags"]["getByKey"]["environments"];
+  flag: RouterOutputs["featureFlags"]["getByKey"]["flag"];
 }
 
 export default function FlagSubheader({ environments }: FlagSubheaderProps) {
@@ -54,19 +51,25 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
 
   return (
     <div className="sticky top-0 z-50 flex min-h-10 items-center justify-between border-b bg-ui-bg-base px-3 py-2">
-      <Tabs onValueChange={handleTabChange} value={tab}>
-        <TabsList className="h-8 shadow-elevation-card-rest">
-          {tabOptions.map((tabOption) => (
-            <TabsTab
-              className="h-7! px-2 text-[13px]!"
-              key={tabOption}
-              value={tabOption}
-            >
-              {tabOption.charAt(0).toUpperCase() + tabOption.slice(1)}
-            </TabsTab>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center gap-x-2">
+        <Tabs onValueChange={handleTabChange} value={tab}>
+          <TabsList className="h-8 shadow-elevation-card-rest">
+            {tabList.map(({ tab, icon }) => {
+              const Icon = icon;
+              return (
+                <TabsTab
+                  className="h-7! px-2 text-[13px]!"
+                  key={tab}
+                  value={tab}
+                >
+                  <Icon className="size-4" />
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </TabsTab>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      </div>
       <Select
         items={environmentItems}
         onValueChange={(value) => {
@@ -76,7 +79,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
         }}
         value={currentEnvironment?.value ?? ""}
       >
-        <SelectTrigger className="h-7 w-40">
+        <SelectTrigger className="h-7! min-h-7! w-40 sm:max-h-7!">
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
