@@ -152,14 +152,15 @@ export default function FlagFilterBar({
   const hasAvailableEnvs = availableEnvironments.length > 0;
 
   return (
-    <div className="sticky top-10 z-10 flex items-center justify-between border-b bg-ui-bg-base p-2">
+    <div className="sticky top-9 z-10 flex items-center justify-between border-b bg-ui-bg-base px-2 py-1.5">
       <div className="flex items-center gap-2">
         <div className="relative">
-          <RiSearchLine className="absolute top-2 left-2 z-10 size-4 shrink-0 text-ui-fg-muted" />
+          <RiSearchLine className="absolute top-1.5 left-2 z-10 size-4 shrink-0 text-ui-fg-muted" />
           <Input
             className="w-64 ps-7"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search flags"
+            size="small"
             value={searchInput}
           />
         </div>
@@ -167,13 +168,13 @@ export default function FlagFilterBar({
           <DropdownMenuTrigger
             render={
               <Button
-                className="h-8 w-8 gap-x-0.5"
+                className="h-7 w-7 gap-x-0.5"
                 size="small"
                 variant="outline"
               />
             }
           >
-            <RiFilterLine className="size-4 text-ui-fg-muted" />
+            <RiFilterLine className="size-4 shrink-0 text-ui-fg-muted" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>

@@ -14,6 +14,12 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
     s.targets.find((t) => t.id === targetId)
   );
 
+  // Get target position info for move actions
+  const targetIndex = useTargetingStore((s) =>
+    s.targets.findIndex((t) => t.id === targetId)
+  );
+  const targetsCount = useTargetingStore((s) => s.targets.length);
+
   // Get stable action references from store (rerender-functional-setstate)
   const updateTargetName = useTargetingStore((s) => s.updateTargetName);
   const updateTargetVariation = useTargetingStore(
@@ -23,6 +29,7 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
     (s) => s.updateTargetConditions
   );
   const deleteTarget = useTargetingStore((s) => s.deleteTarget);
+  const moveTarget = useTargetingStore((s) => s.moveTarget);
 
   // Get shared data from store
   const attributes = useTargetingStore((s) => s.attributes);
@@ -51,6 +58,16 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
     [deleteTarget, targetId]
   );
 
+  const handleMoveUp = useCallback(
+    () => moveTarget(targetId, "up"),
+    [moveTarget, targetId]
+  );
+
+  const handleMoveDown = useCallback(
+    () => moveTarget(targetId, "down"),
+    [moveTarget, targetId]
+  );
+
   if (!target) {
     return null;
   }
@@ -68,8 +85,12 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
 
   return (
     <TargetingCard
+      isFirst={targetIndex === 0}
+      isLast={targetIndex === targetsCount - 1}
       name={target.name}
       onDelete={handleDelete}
+      onMoveDown={handleMoveDown}
+      onMoveUp={handleMoveUp}
       onNameChange={handleNameChange}
       onVariationChange={handleVariationChange}
       selectedVariationId={target.variationId}

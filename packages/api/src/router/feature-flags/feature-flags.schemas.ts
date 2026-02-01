@@ -159,3 +159,106 @@ export const getTargetingRulesSchema = z.object({
   organizationSlug: z.string(),
 });
 export type GetTargetingRulesInput = z.infer<typeof getTargetingRulesSchema>;
+
+const targetingOperatorSchema = z.enum([
+  "equals",
+  "not_equals",
+  "contains",
+  "not_contains",
+  "starts_with",
+  "ends_with",
+  "greater_than",
+  "less_than",
+  "greater_than_or_equal",
+  "less_than_or_equal",
+  "in",
+  "not_in",
+  "exists",
+  "not_exists",
+]);
+
+const ruleConditionSchema = z.object({
+  attributeKey: z.string(),
+  operator: targetingOperatorSchema,
+  value: z.unknown(),
+});
+
+const targetSchema = z.object({
+  id: z.string(),
+  type: z.enum(["rule", "individual", "segment"]),
+  name: z.string(),
+  variationId: z.uuid(),
+  conditions: z.array(ruleConditionSchema).optional(),
+  attributeKey: z.string().optional(),
+  attributeValue: z.string().optional(),
+  segmentId: z.uuid().optional(),
+});
+
+export const saveTargetingRulesSchema = z.object({
+  flagId: z.uuid(),
+  environmentSlug: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  targets: z.array(targetSchema),
+  defaultVariationId: z.uuid(),
+});
+export type SaveTargetingRulesInput = z.infer<typeof saveTargetingRulesSchema>;
+
+export const updateFeatureFlagSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  maintainerId: z.string().nullable().optional(),
+});
+export type UpdateFeatureFlagInput = z.infer<typeof updateFeatureFlagSchema>;
+
+export const getVariationsSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type GetVariationsInput = z.infer<typeof getVariationsSchema>;
+
+export const updateVariationSchema = z.object({
+  variationId: z.uuid(),
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1).optional(),
+  value: z.union([z.string(), z.number(), z.boolean(), z.any()]).optional(),
+  description: z.string().nullable().optional(),
+});
+export type UpdateVariationInput = z.infer<typeof updateVariationSchema>;
+
+export const addVariationSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  name: z.string().min(1, "Variation name is required"),
+  value: z.union([z.string(), z.number(), z.boolean(), z.any()]),
+  description: z.string().nullable().optional(),
+});
+export type AddVariationInput = z.infer<typeof addVariationSchema>;
+
+export const deleteVariationSchema = z.object({
+  variationId: z.uuid(),
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+export type DeleteVariationInput = z.infer<typeof deleteVariationSchema>;
+
+export const getMetricsEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  environmentIds: z.array(z.uuid()).min(1),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  granularity: z.enum(["hour", "6hour", "day"]).optional(),
+});
+export type GetMetricsEvaluationsInput = z.infer<
+  typeof getMetricsEvaluationsSchema
+>;

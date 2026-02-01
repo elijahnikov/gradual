@@ -13,12 +13,19 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
     s.targets.find((t) => t.id === targetId)
   );
 
+  // Get target position info for move actions
+  const targetIndex = useTargetingStore((s) =>
+    s.targets.findIndex((t) => t.id === targetId)
+  );
+  const targetsCount = useTargetingStore((s) => s.targets.length);
+
   const updateTargetName = useTargetingStore((s) => s.updateTargetName);
   const updateTargetVariation = useTargetingStore(
     (s) => s.updateTargetVariation
   );
   const updateTargetSegment = useTargetingStore((s) => s.updateTargetSegment);
   const deleteTarget = useTargetingStore((s) => s.deleteTarget);
+  const moveTarget = useTargetingStore((s) => s.moveTarget);
 
   const segments = useTargetingStore((s) => s.segments);
   const segmentsById = useTargetingStore((s) => s.segmentsById);
@@ -45,6 +52,16 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
     [deleteTarget, targetId]
   );
 
+  const handleMoveUp = useCallback(
+    () => moveTarget(targetId, "up"),
+    [moveTarget, targetId]
+  );
+
+  const handleMoveDown = useCallback(
+    () => moveTarget(targetId, "down"),
+    [moveTarget, targetId]
+  );
+
   if (!target) {
     return null;
   }
@@ -55,15 +72,19 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
 
   return (
     <TargetingCard
+      isFirst={targetIndex === 0}
+      isLast={targetIndex === targetsCount - 1}
       name={target.name}
       onDelete={handleDelete}
+      onMoveDown={handleMoveDown}
+      onMoveUp={handleMoveUp}
       onNameChange={handleNameChange}
       onVariationChange={handleVariationChange}
       selectedVariationId={target.variationId}
       targetId={targetId}
     >
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Text className="shrink-0 text-ui-fg-muted" size="small">
             Users in segment
           </Text>

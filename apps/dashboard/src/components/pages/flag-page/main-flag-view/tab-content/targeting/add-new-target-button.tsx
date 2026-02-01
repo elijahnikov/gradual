@@ -33,7 +33,7 @@ export default function AddNewTargetButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button className="size-6" variant="outline">
+        <Button className="size-6 bg-ui-bg-base" variant="outline">
           <RiAddFill className="size-4 shrink-0" />
         </Button>
       </DropdownMenuTrigger>

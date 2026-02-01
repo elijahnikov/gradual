@@ -17,6 +17,10 @@ import {
   featureFlag,
   featureFlagEnvironment,
   featureFlagEvaluation,
+  featureFlagIndividualTarget,
+  featureFlagSegmentTarget,
+  featureFlagTarget,
+  featureFlagTargetingRule,
   featureFlagVariation,
   organization,
   project,
@@ -26,14 +30,21 @@ import { TRPCError } from "@trpc/server";
 
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
+  AddVariationInput,
   CreateCompleteFeatureFlagInput,
   DeleteFlagsInput,
+  DeleteVariationInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
+  GetMetricsEvaluationsInput,
   GetPreviewEvaluationsInput,
   GetTargetingRulesInput,
+  GetVariationsInput,
+  SaveTargetingRulesInput,
   SeedEvaluationsInput,
+  UpdateFeatureFlagInput,
+  UpdateVariationInput,
 } from "./feature-flags.schemas";
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
@@ -422,6 +433,8 @@ export const getFeatureFlagByKey = async ({
     maintainer: result.maintainer,
     variations,
     environments,
+    organization: ctx.organization,
+    organizationMember: ctx.organizationMember,
   };
 };
 
@@ -841,6 +854,9 @@ export const getTargetingRules = async ({
         orderBy: (target, { asc }) => asc(target.sortOrder),
         with: {
           variation: true,
+          rule: true,
+          individual: true,
+          segment: true,
         },
       },
     },
@@ -854,4 +870,753 @@ export const getTargetingRules = async ({
   }
 
   return flagEnvironment;
+};
+
+export const saveTargetingRules = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: SaveTargetingRulesInput;
+}) => {
+  const { flagId, environmentSlug, projectSlug, targets, defaultVariationId } =
+    input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundEnvironment = await ctx.db.query.environment.findFirst({
+    where: ({ slug, projectId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, environmentSlug),
+        eq(projectId, foundProject.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Environment not found",
+    });
+  }
+
+  const flagEnvironment = await ctx.db.query.featureFlagEnvironment.findFirst({
+    where: ({ featureFlagId, environmentId }, { eq, and }) =>
+      and(eq(featureFlagId, flagId), eq(environmentId, foundEnvironment.id)),
+  });
+
+  if (!flagEnvironment) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Flag environment configuration not found",
+    });
+  }
+
+  return await ctx.db.transaction(async (tx) => {
+    await tx
+      .delete(featureFlagTarget)
+      .where(
+        eq(featureFlagTarget.featureFlagEnvironmentId, flagEnvironment.id)
+      );
+
+    await tx
+      .update(featureFlagEnvironment)
+      .set({ defaultVariationId })
+      .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+
+    for (let i = 0; i < targets.length; i++) {
+      const target = targets[i];
+      if (!target) {
+        continue;
+      }
+
+      const [insertedTarget] = await tx
+        .insert(featureFlagTarget)
+        .values({
+          name: target.name,
+          featureFlagEnvironmentId: flagEnvironment.id,
+          variationId: target.variationId,
+          type: target.type,
+          sortOrder: i,
+        })
+        .returning();
+
+      if (!insertedTarget) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create target",
+        });
+      }
+
+      switch (target.type) {
+        case "rule":
+          if (target.conditions && target.conditions.length > 0) {
+            const condition = target.conditions[0];
+            if (condition) {
+              await tx.insert(featureFlagTargetingRule).values({
+                targetId: insertedTarget.id,
+                attributeKey: condition.attributeKey,
+                operator: condition.operator,
+                value: condition.value,
+              });
+            }
+          }
+          break;
+
+        case "individual":
+          if (target.attributeKey && target.attributeValue !== undefined) {
+            await tx.insert(featureFlagIndividualTarget).values({
+              targetId: insertedTarget.id,
+              attributeKey: target.attributeKey,
+              attributeValue: target.attributeValue,
+            });
+          }
+          break;
+
+        case "segment":
+          if (target.segmentId) {
+            await tx.insert(featureFlagSegmentTarget).values({
+              targetId: insertedTarget.id,
+              segmentId: target.segmentId,
+            });
+          }
+          break;
+
+        default:
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid target type",
+          });
+      }
+    }
+
+    return { success: true, targetCount: targets.length };
+  });
+};
+
+export const updateFeatureFlag = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: UpdateFeatureFlagInput;
+}) => {
+  const { flagId, projectSlug, name, description, maintainerId } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const existingFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!existingFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const updateData: Partial<typeof featureFlag.$inferInsert> = {
+    updatedAt: new Date(),
+  };
+
+  if (name !== undefined) {
+    updateData.name = name;
+  }
+  if (description !== undefined) {
+    updateData.description = description;
+  }
+  if (maintainerId !== undefined) {
+    updateData.maintainerId = maintainerId;
+  }
+
+  const [updatedFlag] = await ctx.db
+    .update(featureFlag)
+    .set(updateData)
+    .where(eq(featureFlag.id, flagId))
+    .returning();
+
+  return updatedFlag;
+};
+
+export const getVariations = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetVariationsInput;
+}) => {
+  const { flagId, projectSlug } = input;
+  const { organization } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const evaluationCountSubquery = ctx.db
+    .select({
+      variationId: featureFlagEvaluation.variationId,
+      count: count().as("count"),
+    })
+    .from(featureFlagEvaluation)
+    .where(eq(featureFlagEvaluation.featureFlagId, foundFlag.id))
+    .groupBy(featureFlagEvaluation.variationId)
+    .as("evaluation_counts");
+
+  const variations = await ctx.db
+    .select({
+      id: featureFlagVariation.id,
+      featureFlagId: featureFlagVariation.featureFlagId,
+      name: featureFlagVariation.name,
+      value: featureFlagVariation.value,
+      description: featureFlagVariation.description,
+      isDefault: featureFlagVariation.isDefault,
+      rolloutPercentage: featureFlagVariation.rolloutPercentage,
+      sortOrder: featureFlagVariation.sortOrder,
+      createdAt: featureFlagVariation.createdAt,
+      updatedAt: featureFlagVariation.updatedAt,
+      evaluationCount: sql<number>`COALESCE(${evaluationCountSubquery.count}, 0)`,
+    })
+    .from(featureFlagVariation)
+    .leftJoin(
+      evaluationCountSubquery,
+      eq(featureFlagVariation.id, evaluationCountSubquery.variationId)
+    )
+    .where(eq(featureFlagVariation.featureFlagId, foundFlag.id))
+    .orderBy(featureFlagVariation.sortOrder);
+
+  return variations;
+};
+
+export const updateVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: UpdateVariationInput;
+}) => {
+  const { variationId, flagId, projectSlug, name, value, description } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const foundVariation = await ctx.db.query.featureFlagVariation.findFirst({
+    where: ({ id, featureFlagId }, { eq, and }) =>
+      and(eq(id, variationId), eq(featureFlagId, foundFlag.id)),
+  });
+
+  if (!foundVariation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Variation not found",
+    });
+  }
+
+  const updateData: Partial<{
+    name: string;
+    value: unknown;
+    description: string | null;
+  }> = {};
+
+  if (name !== undefined) {
+    updateData.name = name;
+  }
+  if (value !== undefined) {
+    updateData.value = value;
+  }
+  if (description !== undefined) {
+    updateData.description = description;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return foundVariation;
+  }
+
+  const [updatedVariation] = await ctx.db
+    .update(featureFlagVariation)
+    .set(updateData)
+    .where(eq(featureFlagVariation.id, variationId))
+    .returning();
+
+  return updatedVariation;
+};
+
+export const addVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: AddVariationInput;
+}) => {
+  const { flagId, projectSlug, name, value, description } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  // Don't allow adding variations to boolean flags
+  if (foundFlag.type === "boolean") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot add variations to boolean flags",
+    });
+  }
+
+  // Get the current max sort order
+  const existingVariations = await ctx.db.query.featureFlagVariation.findMany({
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+    orderBy: ({ sortOrder }, { desc }) => desc(sortOrder),
+    limit: 1,
+  });
+
+  const nextSortOrder =
+    existingVariations.length > 0
+      ? (existingVariations[0]?.sortOrder ?? 0) + 1
+      : 0;
+
+  const [newVariation] = await ctx.db
+    .insert(featureFlagVariation)
+    .values({
+      featureFlagId: foundFlag.id,
+      name,
+      value,
+      description: description ?? null,
+      isDefault: false,
+      rolloutPercentage: 0,
+      sortOrder: nextSortOrder,
+    })
+    .returning();
+
+  return newVariation;
+};
+
+export const deleteVariation = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: DeleteVariationInput;
+}) => {
+  const { variationId, flagId, projectSlug } = input;
+  const { organization: org } = ctx;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(eq(slug, projectSlug), eq(organizationId, org.id), isNull(deletedAt)),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  if (foundFlag.type === "boolean") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot delete variations from boolean flags",
+    });
+  }
+
+  const foundVariation = await ctx.db.query.featureFlagVariation.findFirst({
+    where: ({ id, featureFlagId }, { eq, and }) =>
+      and(eq(id, variationId), eq(featureFlagId, foundFlag.id)),
+  });
+
+  if (!foundVariation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Variation not found",
+    });
+  }
+
+  const allVariations = await ctx.db.query.featureFlagVariation.findMany({
+    where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
+  });
+
+  if (allVariations.length <= 2) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "Cannot delete variation. Flags must have at least 2 variations.",
+    });
+  }
+
+  if (foundVariation.isDefault) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot delete the default variation",
+    });
+  }
+
+  await ctx.db
+    .delete(featureFlagVariation)
+    .where(eq(featureFlagVariation.id, variationId));
+
+  return { success: true };
+};
+
+export const getMetricsEvaluations = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetMetricsEvaluationsInput;
+}) => {
+  const {
+    flagId,
+    projectSlug,
+    environmentIds,
+    startDate,
+    endDate,
+    granularity,
+  } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId, organizationId }, { eq, and }) =>
+      and(
+        eq(id, flagId),
+        eq(projectId, foundProject.id),
+        eq(organizationId, ctx.organization.id)
+      ),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const rangeDays =
+    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  const effectiveGranularity =
+    granularity ?? (rangeDays <= 1 ? "hour" : rangeDays <= 7 ? "6hour" : "day");
+
+  const truncInterval = effectiveGranularity === "day" ? "day" : "hour";
+
+  const environments = await ctx.db.query.environment.findMany({
+    where: ({ id, projectId, deletedAt }, { eq, isNull, and, inArray }) =>
+      and(
+        inArray(id, environmentIds),
+        eq(projectId, foundProject.id),
+        isNull(deletedAt)
+      ),
+    orderBy: (env, { asc }) => asc(env.createdAt),
+  });
+
+  const variations = await ctx.db.query.featureFlagVariation.findMany({
+    where: (table, { eq }) => eq(table.featureFlagId, flagId),
+    orderBy: (v, { asc }) => asc(v.sortOrder),
+  });
+
+  const evaluations = await ctx.db
+    .select({
+      time: sql<string>`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`,
+      environmentId: featureFlagEvaluation.environmentId,
+      variationId: featureFlagEvaluation.variationId,
+      count: count(),
+    })
+    .from(featureFlagEvaluation)
+    .where(
+      and(
+        eq(featureFlagEvaluation.featureFlagId, flagId),
+        inArray(featureFlagEvaluation.environmentId, environmentIds),
+        gte(featureFlagEvaluation.createdAt, startDate),
+        lt(featureFlagEvaluation.createdAt, endDate)
+      )
+    )
+    .groupBy(
+      sql`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`,
+      featureFlagEvaluation.environmentId,
+      featureFlagEvaluation.variationId
+    )
+    .orderBy(
+      sql`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`
+    );
+
+  const data = transformToMetricsData(
+    evaluations,
+    environments,
+    variations,
+    startDate,
+    endDate,
+    effectiveGranularity
+  );
+
+  const totals: Record<string, number> = {};
+  for (const variation of variations) {
+    totals[variation.id] = 0;
+  }
+  for (const evalEntry of evaluations) {
+    if (evalEntry.variationId) {
+      totals[evalEntry.variationId] =
+        (totals[evalEntry.variationId] ?? 0) + Number(evalEntry.count);
+    }
+  }
+
+  // Calculate previous period (same duration, shifted back)
+  const periodDuration = endDate.getTime() - startDate.getTime();
+  const previousStartDate = new Date(startDate.getTime() - periodDuration);
+  const previousEndDate = new Date(startDate);
+
+  const previousEvaluations = await ctx.db
+    .select({
+      variationId: featureFlagEvaluation.variationId,
+      count: count(),
+    })
+    .from(featureFlagEvaluation)
+    .where(
+      and(
+        eq(featureFlagEvaluation.featureFlagId, flagId),
+        inArray(featureFlagEvaluation.environmentId, environmentIds),
+        gte(featureFlagEvaluation.createdAt, previousStartDate),
+        lt(featureFlagEvaluation.createdAt, previousEndDate)
+      )
+    )
+    .groupBy(featureFlagEvaluation.variationId);
+
+  const previousTotals: Record<string, number> = {};
+  for (const variation of variations) {
+    previousTotals[variation.id] = 0;
+  }
+  for (const evalEntry of previousEvaluations) {
+    if (evalEntry.variationId) {
+      previousTotals[evalEntry.variationId] =
+        (previousTotals[evalEntry.variationId] ?? 0) + Number(evalEntry.count);
+    }
+  }
+
+  return {
+    data,
+    variations: variations.map((v) => ({ id: v.id, name: v.name })),
+    environments: environments.map((e) => ({ id: e.id, name: e.name })),
+    totals,
+    previousTotals,
+    granularity: effectiveGranularity,
+    startDate,
+    endDate,
+  };
+};
+
+const transformToMetricsData = (
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  startDate: Date,
+  endDate: Date,
+  granularity: "hour" | "6hour" | "day"
+) => {
+  const environmentMap = new Map(environments.map((e) => [e.id, e.name]));
+  const variationMap = new Map(variations.map((v) => [v.id, v.name]));
+
+  const buckets: Array<{
+    time: Date;
+    label: string;
+    byEnvironment: Record<string, Record<string, number>>;
+    total: number;
+  }> = [];
+
+  const bucketMs =
+    granularity === "hour"
+      ? 60 * 60 * 1000
+      : granularity === "6hour"
+        ? 6 * 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
+
+  let currentTime = new Date(startDate);
+  while (currentTime < endDate) {
+    const byEnvironment: Record<string, Record<string, number>> = {};
+    for (const env of environments) {
+      const envData: Record<string, number> = {};
+      for (const variation of variations) {
+        envData[variation.name] = 0;
+      }
+      byEnvironment[env.name] = envData;
+    }
+
+    buckets.push({
+      time: new Date(currentTime),
+      label: formatTimeLabel(currentTime, granularity),
+      byEnvironment,
+      total: 0,
+    });
+
+    currentTime = new Date(currentTime.getTime() + bucketMs);
+  }
+
+  for (const evalEntry of evaluations) {
+    const evalTime = new Date(evalEntry.time);
+    const envName = environmentMap.get(evalEntry.environmentId);
+    const varName = evalEntry.variationId
+      ? variationMap.get(evalEntry.variationId)
+      : null;
+
+    if (!(envName && varName)) {
+      continue;
+    }
+
+    const bucketIndex = buckets.findIndex((b) => {
+      const bucketEnd = new Date(b.time.getTime() + bucketMs);
+      return evalTime >= b.time && evalTime < bucketEnd;
+    });
+
+    if (bucketIndex !== -1) {
+      const bucket = buckets[bucketIndex];
+      if (bucket) {
+        const envData = bucket.byEnvironment[envName];
+        if (envData) {
+          envData[varName] = (envData[varName] ?? 0) + Number(evalEntry.count);
+        }
+        bucket.total += Number(evalEntry.count);
+      }
+    }
+  }
+
+  return buckets;
+};
+
+const formatTimeLabel = (
+  date: Date,
+  granularity: "hour" | "6hour" | "day"
+): string => {
+  if (granularity === "day") {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return date.toLocaleTimeString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    hour12: true,
+  });
 };

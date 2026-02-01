@@ -33,11 +33,11 @@ export default function DefaultVariation({
   );
 
   return (
-    <Card className="flex min-w-xl max-w-xl items-center justify-between gap-2">
+    <Card className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
       <Badge size="lg" variant="outline">
         Default
       </Badge>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Text className="text-ui-fg-subtle" size="small">
           If no rules match, serve
         </Text>
@@ -50,7 +50,7 @@ export default function DefaultVariation({
           }}
           value={defaultVariationId}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>

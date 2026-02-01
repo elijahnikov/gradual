@@ -15,12 +15,11 @@ export type TargetingOperator =
   | "less_than_or_equal"
   | "in"
   | "not_in"
-  | "semver_equals"
-  | "semver_not_equals"
-  | "semver_greater_than"
-  | "semver_less_than";
+  | "exists"
+  | "not_exists";
 
 export interface RuleCondition {
+  contextKind?: ContextKind;
   attributeKey: string;
   operator: TargetingOperator;
   value: unknown;
@@ -33,5 +32,9 @@ export type Target =
   RouterOutputs["featureFlags"]["getTargetingRules"]["targets"][number];
 
 export type Attribute = RouterOutputs["attributes"]["list"][number];
+
+export type Context = RouterOutputs["attributes"]["listContexts"][number];
+
+export type ContextKind = "user" | "device" | "organization" | "location";
 
 export type Segment = RouterOutputs["segments"]["list"][number];

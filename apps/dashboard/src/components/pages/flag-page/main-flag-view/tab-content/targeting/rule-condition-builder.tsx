@@ -11,10 +11,9 @@ import { Text } from "@gradual/ui/text";
 import { RiAddLine, RiSubtractFill } from "@remixicon/react";
 import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
-import { useTargetingStore } from "./targeting-store";
-import type { RuleCondition, TargetingOperator } from "./types";
+import { ContextSelect } from "./context-select";
+import type { ContextKind, RuleCondition, TargetingOperator } from "./types";
 
-// Hoisted static array (rendering-hoist-jsx)
 const OPERATORS: { label: string; value: TargetingOperator }[] = [
   { label: "equals", value: "equals" },
   { label: "does not equal", value: "not_equals" },
@@ -43,17 +42,15 @@ export function RuleConditionBuilder({
   organizationSlug,
   onChange,
 }: RuleConditionBuilderProps) {
-  // Get attributes from store (eliminates prop drilling)
-  const attributes = useTargetingStore((s) => s.attributes);
-
   const handleAddCondition = useCallback(() => {
     const newCondition: RuleCondition = {
-      attributeKey: attributes[0]?.key ?? "",
+      contextKind: undefined,
+      attributeKey: "",
       operator: "equals",
       value: "",
     };
     onChange([...conditions, newCondition]);
-  }, [attributes, conditions, onChange]);
+  }, [conditions, onChange]);
 
   const handleRemoveCondition = useCallback(
     (index: number) => {
@@ -73,7 +70,7 @@ export function RuleConditionBuilder({
 
   return (
     <div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 sm:gap-2">
         {conditions.map((condition, index) => (
           <ConditionRow
             condition={condition}
@@ -87,12 +84,12 @@ export function RuleConditionBuilder({
         ))}
       </div>
       <Button
-        className="mt-3 ml-6 w-fit gap-x-0.5"
+        className="mt-3 w-fit gap-x-0.5 sm:ml-6"
         onClick={handleAddCondition}
         size="small"
         variant="outline"
       >
-        <RiAddLine className="mr-1 size-4" />
+        <RiAddLine className="size-4" />
         Add condition
       </Button>
     </div>
@@ -116,55 +113,68 @@ function ConditionRow({
   onChange,
   onRemove,
 }: ConditionRowProps) {
+  const handleContextChange = (kind: ContextKind) => {
+    onChange({ contextKind: kind, attributeKey: "" });
+  };
+
   return (
-    <div className="ml-8 flex items-center gap-2">
-      <Text className="w-10 shrink-0 text-ui-fg-muted" size="small">
-        {index === 0 ? "IF" : "AND"}
-      </Text>
+    <div className="flex flex-col gap-2 rounded-md border border-ui-border-base bg-ui-bg-subtle p-2 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:pl-8">
+      <div className="flex items-center justify-between sm:contents">
+        <Text className="w-10 shrink-0 text-ui-fg-muted" size="small">
+          {index === 0 ? "IF" : "AND"}
+        </Text>
+        <Button
+          className="size-6 sm:order-last"
+          onClick={onRemove}
+          size="small"
+          variant="destructive"
+        >
+          <RiSubtractFill className="size-4 shrink-0" />
+        </Button>
+      </div>
 
-      <AttributeSelect
-        onChange={(key) => onChange({ attributeKey: key })}
-        organizationSlug={organizationSlug}
-        projectSlug={projectSlug}
-        value={condition.attributeKey}
-      />
+      <div className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-center">
+        <ContextSelect
+          onChange={handleContextChange}
+          value={condition.contextKind}
+        />
 
-      <Select
-        items={OPERATORS}
-        onValueChange={(value) => {
-          if (value) {
-            onChange({ operator: value as TargetingOperator });
-          }
-        }}
-        value={condition.operator}
-      >
-        <SelectTrigger className="h-8 w-40">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false} className="pb-2">
-          {OPERATORS.map((op) => (
-            <SelectItem key={op.value} value={op.value}>
-              {op.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <AttributeSelect
+          contextKind={condition.contextKind}
+          onChange={(key) => onChange({ attributeKey: key })}
+          organizationSlug={organizationSlug}
+          projectSlug={projectSlug}
+          value={condition.attributeKey}
+        />
 
-      <Input
-        className="h-8 flex-1"
-        onChange={(e) => onChange({ value: e.target.value })}
-        placeholder="Value"
-        value={String(condition.value ?? "")}
-      />
+        <Select
+          items={OPERATORS}
+          onValueChange={(value) => {
+            if (value) {
+              onChange({ operator: value as TargetingOperator });
+            }
+          }}
+          value={condition.operator}
+        >
+          <SelectTrigger className="h-8 w-full sm:w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false} className="pb-2">
+            {OPERATORS.map((op) => (
+              <SelectItem key={op.value} value={op.value}>
+                {op.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Button
-        className="size-6"
-        onClick={onRemove}
-        size="small"
-        variant="destructive"
-      >
-        <RiSubtractFill className="size-4 shrink-0" />
-      </Button>
+        <Input
+          className="h-8 w-full sm:flex-1"
+          onChange={(e) => onChange({ value: e.target.value })}
+          placeholder="Value"
+          value={String(condition.value ?? "")}
+        />
+      </div>
     </div>
   );
 }

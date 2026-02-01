@@ -31,6 +31,7 @@ export const featureFlagsRouter = {
     .input(schemas.deleteFlagsSchema)
     .mutation((opts) => services.deleteFlags({ ...opts })),
 
+  // INTERNAL ONLY
   seedEvaluations: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.seedEvaluationsSchema)
     .mutation((opts) => services.seedEvaluations({ ...opts })),
@@ -38,4 +39,32 @@ export const featureFlagsRouter = {
   getTargetingRules: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.getTargetingRulesSchema)
     .query((opts) => services.getTargetingRules({ ...opts })),
+
+  saveTargetingRules: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.saveTargetingRulesSchema)
+    .mutation((opts) => services.saveTargetingRules({ ...opts })),
+
+  update: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.updateFeatureFlagSchema)
+    .mutation((opts) => services.updateFeatureFlag({ ...opts })),
+
+  getVariations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getVariationsSchema)
+    .query((opts) => services.getVariations({ ...opts })),
+
+  updateVariation: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.updateVariationSchema)
+    .mutation((opts) => services.updateVariation({ ...opts })),
+
+  addVariation: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.addVariationSchema)
+    .mutation((opts) => services.addVariation({ ...opts })),
+
+  deleteVariation: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.deleteVariationSchema)
+    .mutation((opts) => services.deleteVariation({ ...opts })),
+
+  getMetricsEvaluations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getMetricsEvaluationsSchema)
+    .query((opts) => services.getMetricsEvaluations({ ...opts })),
 } satisfies TRPCRouterRecord;

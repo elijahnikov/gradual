@@ -120,8 +120,7 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
               swipeDirection={
                 position.includes("center")
                   ? [isTop ? "up" : "down"]
-                  : // biome-ignore lint/style/noNestedTernary: We need to nest the ternary expressions to get the correct swipe direction
-                    position.includes("left")
+                  : position.includes("left")
                     ? ["left", isTop ? "up" : "down"]
                     : ["right", isTop ? "up" : "down"]
               }

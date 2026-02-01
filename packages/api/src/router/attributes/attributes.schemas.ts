@@ -8,6 +8,12 @@ export const listAttributesSchema = z.object({
   organizationSlug: z.string(),
 });
 
+export type ListContextsInput = z.infer<typeof listContextsSchema>;
+export const listContextsSchema = z.object({
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+
 export type CreateAttributeInput = z.infer<typeof createAttributeSchema>;
 export const createAttributeSchema = createInsertSchema(attribute)
   .omit({
@@ -20,6 +26,7 @@ export const createAttributeSchema = createInsertSchema(attribute)
     usageCount: true,
     firstSeenAt: true,
     lastSeenAt: true,
+    contextId: true,
   })
   .extend({
     projectSlug: z.string(),
@@ -36,4 +43,5 @@ export const createAttributeSchema = createInsertSchema(attribute)
       .enum(["string", "number", "boolean", "date", "json"])
       .default("string"),
     isManual: z.boolean().default(true),
+    contextId: z.string().uuid().optional(),
   });
