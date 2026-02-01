@@ -98,16 +98,21 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
           width={40}
         />
         <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-        {visibleVariations.map((variation, index) => (
-          <Line
-            dataKey={variation.name}
-            dot={false}
-            key={variation.id}
-            stroke={VARIATION_COLORS[index % VARIATION_COLORS.length]}
-            strokeWidth={2}
-            type="monotone"
-          />
-        ))}
+        {visibleVariations.map((variation) => {
+          const originalIndex = variations.findIndex(
+            (v) => v.id === variation.id
+          );
+          return (
+            <Line
+              dataKey={variation.name}
+              dot={false}
+              key={variation.id}
+              stroke={VARIATION_COLORS[originalIndex % VARIATION_COLORS.length]}
+              strokeWidth={2}
+              type="monotone"
+            />
+          );
+        })}
       </LineChart>
     </ChartContainer>
   );

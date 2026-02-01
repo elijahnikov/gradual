@@ -46,7 +46,6 @@ import { useTRPC } from "@/lib/trpc";
 
 interface FlagSidebarProps {
   flag: RouterOutputs["featureFlags"]["getByKey"]["flag"];
-  maintainer: RouterOutputs["featureFlags"]["getByKey"]["maintainer"];
   organizationSlug: string;
   projectSlug: string;
 }

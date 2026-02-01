@@ -87,7 +87,6 @@ export default function MainFlagView({
       </div>
       <FlagSidebar
         flag={flag.flag}
-        maintainer={flag.maintainer}
         organizationSlug={organizationSlug}
         projectSlug={projectSlug}
       />

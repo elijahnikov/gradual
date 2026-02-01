@@ -23,7 +23,7 @@ import {
   TargetingStoreProvider,
   useTargetingStore,
 } from "./targeting-store";
-import type { TargetingOperator } from "./types";
+import type { ContextKind, TargetingOperator } from "./types";
 
 interface FlagTargetingProps {
   flag: RouterOutputs["featureFlags"]["getByKey"];
@@ -92,6 +92,16 @@ function FlagTargetingContent({
   const defaultVariationId = flag.variations[0]?.id ?? "";
 
   const existingTargets = useMemo((): LocalTarget[] => {
+    const contextIdToKind = new Map<string, ContextKind>();
+    for (const ctx of contexts) {
+      contextIdToKind.set(ctx.id, ctx.kind as ContextKind);
+    }
+
+    const attributeByKey = new Map<string, (typeof attributes)[number]>();
+    for (const attr of attributes) {
+      attributeByKey.set(attr.key, attr);
+    }
+
     return flagEnvironment.targets.map((target) => {
       const base: LocalTarget = {
         id: target.id,
@@ -111,13 +121,20 @@ function FlagTargetingContent({
       } else if (target.type === "individual" && target.individual) {
         base.attributeKey = target.individual.attributeKey;
         base.attributeValue = target.individual.attributeValue;
+        const attribute = attributeByKey.get(target.individual.attributeKey);
+        if (attribute?.contextId) {
+          const contextKind = contextIdToKind.get(attribute.contextId);
+          if (contextKind) {
+            base.contextKind = contextKind;
+          }
+        }
       } else if (target.type === "segment" && target.segment) {
         base.segmentId = target.segment.segmentId;
       }
 
       return base;
     });
-  }, [flagEnvironment.targets]);
+  }, [flagEnvironment.targets, attributes, contexts]);
 
   const initialize = useTargetingStore((s) => s.initialize);
   const targets = useTargetingStore((s) => s.targets);
