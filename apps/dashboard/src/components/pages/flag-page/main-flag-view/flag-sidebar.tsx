@@ -381,7 +381,7 @@ export default function FlagSidebar({
         </Text>
         <div className="flex flex-wrap items-center gap-1">
           {flag.tags?.map((tag) => (
-            <Badge key={tag} variant="outline">
+            <Badge className="gap-x-0" key={tag} variant="outline">
               <RiHashtag className="size-3 text-ui-fg-muted" />
               {tag}
             </Badge>

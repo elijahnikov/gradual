@@ -20,7 +20,8 @@
         "noExcessiveCognitiveComplexity": "off"
       },
       "correctness": {
-        "noChildrenProp": "off"
+        "noChildrenProp": "off",
+        "noNestedComponentDefinitions": "off"
       },
       "suspicious": {
         "noTsIgnore": "off",

@@ -294,7 +294,7 @@ export default function VariationsItem({
     if (flagType === "json") {
       return (
         <div className="w-full overflow-hidden rounded-md border bg-ui-bg-base p-2">
-          <pre className="overflow-x-auto font-mono text-xs">
+          <pre className="overflow-x-auto font-mono text-sm">
             {JSON.stringify(variation.value, null, 2)}
           </pre>
         </div>

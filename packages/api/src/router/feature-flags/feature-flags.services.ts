@@ -37,6 +37,7 @@ import type {
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
+  GetMetricsEvaluationsInput,
   GetPreviewEvaluationsInput,
   GetTargetingRulesInput,
   GetVariationsInput,
@@ -1319,7 +1320,6 @@ export const deleteVariation = async ({
     });
   }
 
-  // Don't allow deleting variations from boolean flags
   if (foundFlag.type === "boolean") {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -1339,7 +1339,6 @@ export const deleteVariation = async ({
     });
   }
 
-  // Check if this is the only non-default variation or if it's the default
   const allVariations = await ctx.db.query.featureFlagVariation.findMany({
     where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
   });
@@ -1364,4 +1363,260 @@ export const deleteVariation = async ({
     .where(eq(featureFlagVariation.id, variationId));
 
   return { success: true };
+};
+
+export const getMetricsEvaluations = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetMetricsEvaluationsInput;
+}) => {
+  const {
+    flagId,
+    projectSlug,
+    environmentIds,
+    startDate,
+    endDate,
+    granularity,
+  } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId, organizationId }, { eq, and }) =>
+      and(
+        eq(id, flagId),
+        eq(projectId, foundProject.id),
+        eq(organizationId, ctx.organization.id)
+      ),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const rangeDays =
+    (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  const effectiveGranularity =
+    granularity ?? (rangeDays <= 1 ? "hour" : rangeDays <= 7 ? "6hour" : "day");
+
+  const truncInterval = effectiveGranularity === "day" ? "day" : "hour";
+
+  const environments = await ctx.db.query.environment.findMany({
+    where: ({ id, projectId, deletedAt }, { eq, isNull, and, inArray }) =>
+      and(
+        inArray(id, environmentIds),
+        eq(projectId, foundProject.id),
+        isNull(deletedAt)
+      ),
+    orderBy: (env, { asc }) => asc(env.createdAt),
+  });
+
+  const variations = await ctx.db.query.featureFlagVariation.findMany({
+    where: (table, { eq }) => eq(table.featureFlagId, flagId),
+    orderBy: (v, { asc }) => asc(v.sortOrder),
+  });
+
+  const evaluations = await ctx.db
+    .select({
+      time: sql<string>`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`,
+      environmentId: featureFlagEvaluation.environmentId,
+      variationId: featureFlagEvaluation.variationId,
+      count: count(),
+    })
+    .from(featureFlagEvaluation)
+    .where(
+      and(
+        eq(featureFlagEvaluation.featureFlagId, flagId),
+        inArray(featureFlagEvaluation.environmentId, environmentIds),
+        gte(featureFlagEvaluation.createdAt, startDate),
+        lt(featureFlagEvaluation.createdAt, endDate)
+      )
+    )
+    .groupBy(
+      sql`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`,
+      featureFlagEvaluation.environmentId,
+      featureFlagEvaluation.variationId
+    )
+    .orderBy(
+      sql`DATE_TRUNC('${sql.raw(truncInterval)}', ${featureFlagEvaluation.createdAt})`
+    );
+
+  const data = transformToMetricsData(
+    evaluations,
+    environments,
+    variations,
+    startDate,
+    endDate,
+    effectiveGranularity
+  );
+
+  const totals: Record<string, number> = {};
+  for (const variation of variations) {
+    totals[variation.id] = 0;
+  }
+  for (const evalEntry of evaluations) {
+    if (evalEntry.variationId) {
+      totals[evalEntry.variationId] =
+        (totals[evalEntry.variationId] ?? 0) + Number(evalEntry.count);
+    }
+  }
+
+  // Calculate previous period (same duration, shifted back)
+  const periodDuration = endDate.getTime() - startDate.getTime();
+  const previousStartDate = new Date(startDate.getTime() - periodDuration);
+  const previousEndDate = new Date(startDate);
+
+  const previousEvaluations = await ctx.db
+    .select({
+      variationId: featureFlagEvaluation.variationId,
+      count: count(),
+    })
+    .from(featureFlagEvaluation)
+    .where(
+      and(
+        eq(featureFlagEvaluation.featureFlagId, flagId),
+        inArray(featureFlagEvaluation.environmentId, environmentIds),
+        gte(featureFlagEvaluation.createdAt, previousStartDate),
+        lt(featureFlagEvaluation.createdAt, previousEndDate)
+      )
+    )
+    .groupBy(featureFlagEvaluation.variationId);
+
+  const previousTotals: Record<string, number> = {};
+  for (const variation of variations) {
+    previousTotals[variation.id] = 0;
+  }
+  for (const evalEntry of previousEvaluations) {
+    if (evalEntry.variationId) {
+      previousTotals[evalEntry.variationId] =
+        (previousTotals[evalEntry.variationId] ?? 0) + Number(evalEntry.count);
+    }
+  }
+
+  return {
+    data,
+    variations: variations.map((v) => ({ id: v.id, name: v.name })),
+    environments: environments.map((e) => ({ id: e.id, name: e.name })),
+    totals,
+    previousTotals,
+    granularity: effectiveGranularity,
+    startDate,
+    endDate,
+  };
+};
+
+const transformToMetricsData = (
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  startDate: Date,
+  endDate: Date,
+  granularity: "hour" | "6hour" | "day"
+) => {
+  const environmentMap = new Map(environments.map((e) => [e.id, e.name]));
+  const variationMap = new Map(variations.map((v) => [v.id, v.name]));
+
+  const buckets: Array<{
+    time: Date;
+    label: string;
+    byEnvironment: Record<string, Record<string, number>>;
+    total: number;
+  }> = [];
+
+  const bucketMs =
+    granularity === "hour"
+      ? 60 * 60 * 1000
+      : granularity === "6hour"
+        ? 6 * 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
+
+  let currentTime = new Date(startDate);
+  while (currentTime < endDate) {
+    const byEnvironment: Record<string, Record<string, number>> = {};
+    for (const env of environments) {
+      const envData: Record<string, number> = {};
+      for (const variation of variations) {
+        envData[variation.name] = 0;
+      }
+      byEnvironment[env.name] = envData;
+    }
+
+    buckets.push({
+      time: new Date(currentTime),
+      label: formatTimeLabel(currentTime, granularity),
+      byEnvironment,
+      total: 0,
+    });
+
+    currentTime = new Date(currentTime.getTime() + bucketMs);
+  }
+
+  for (const evalEntry of evaluations) {
+    const evalTime = new Date(evalEntry.time);
+    const envName = environmentMap.get(evalEntry.environmentId);
+    const varName = evalEntry.variationId
+      ? variationMap.get(evalEntry.variationId)
+      : null;
+
+    if (!(envName && varName)) {
+      continue;
+    }
+
+    const bucketIndex = buckets.findIndex((b) => {
+      const bucketEnd = new Date(b.time.getTime() + bucketMs);
+      return evalTime >= b.time && evalTime < bucketEnd;
+    });
+
+    if (bucketIndex !== -1) {
+      const bucket = buckets[bucketIndex];
+      if (bucket) {
+        const envData = bucket.byEnvironment[envName];
+        if (envData) {
+          envData[varName] = (envData[varName] ?? 0) + Number(evalEntry.count);
+        }
+        bucket.total += Number(evalEntry.count);
+      }
+    }
+  }
+
+  return buckets;
+};
+
+const formatTimeLabel = (
+  date: Date,
+  granularity: "hour" | "6hour" | "day"
+): string => {
+  if (granularity === "day") {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return date.toLocaleTimeString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    hour12: true,
+  });
 };

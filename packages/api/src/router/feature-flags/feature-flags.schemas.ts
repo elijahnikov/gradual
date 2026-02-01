@@ -249,3 +249,16 @@ export const deleteVariationSchema = z.object({
   organizationSlug: z.string(),
 });
 export type DeleteVariationInput = z.infer<typeof deleteVariationSchema>;
+
+export const getMetricsEvaluationsSchema = z.object({
+  flagId: z.uuid(),
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  environmentIds: z.array(z.uuid()).min(1),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  granularity: z.enum(["hour", "6hour", "day"]).optional(),
+});
+export type GetMetricsEvaluationsInput = z.infer<
+  typeof getMetricsEvaluationsSchema
+>;

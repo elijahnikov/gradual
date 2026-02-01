@@ -53,8 +53,19 @@ export default function MainFlagView({
             projectSlug={projectSlug}
           />
         );
-      case "metrics":
-        return <FlagMetrics />;
+      case "metrics": {
+        const selectedEnv = flag.environments.find(
+          (e) => e.environment.slug === environment
+        );
+        return (
+          <FlagMetrics
+            environmentId={selectedEnv?.environment.id}
+            flag={flag.flag}
+            organizationSlug={organizationSlug}
+            projectSlug={projectSlug}
+          />
+        );
+      }
       case "events":
         return <FlagEvents />;
       case "settings":
@@ -90,6 +101,8 @@ function TabContentSkeleton({ tab }: { tab: FlagTab }) {
       return <TargetingTabSkeleton />;
     case "variations":
       return <VariationsTabSkeleton />;
+    case "metrics":
+      return <MetricsTabSkeleton />;
     default:
       return <GenericTabSkeleton />;
   }
@@ -165,6 +178,55 @@ function VariationCardSkeleton() {
         </div>
       </div>
     </Card>
+  );
+}
+
+function MetricsTabSkeleton() {
+  return (
+    <div className="flex w-full flex-1 flex-col gap-3 p-3">
+      {/* Header with date picker and variations filter */}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-7 w-32 rounded-md" />
+        <Skeleton className="h-7 w-28 rounded-md" />
+      </div>
+      {/* Summary cards - single row */}
+      <div className="grid grid-cols-4 gap-3">
+        <Card className="p-1">
+          <div className="rounded-sm border bg-ui-bg-base p-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="mt-2 h-7 w-16" />
+            <Skeleton className="mt-1 h-3 w-32" />
+          </div>
+        </Card>
+        <Card className="p-1">
+          <div className="rounded-sm border bg-ui-bg-base p-3">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="mt-2 h-7 w-20" />
+            <Skeleton className="mt-1 h-3 w-28" />
+          </div>
+        </Card>
+        <Card className="p-1">
+          <div className="rounded-sm border bg-ui-bg-base p-3">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="mt-2 h-7 w-20" />
+            <Skeleton className="mt-1 h-3 w-28" />
+          </div>
+        </Card>
+        <Card className="p-1">
+          <div className="rounded-sm border bg-ui-bg-base p-3">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="mt-2 h-7 w-20" />
+            <Skeleton className="mt-1 h-3 w-28" />
+          </div>
+        </Card>
+      </div>
+      {/* Chart card - larger */}
+      <Card className="min-h-[400px] flex-1 p-1">
+        <div className="h-full rounded-sm border bg-ui-bg-base p-3">
+          <Skeleton className="h-full w-full rounded-md" />
+        </div>
+      </Card>
+    </div>
   );
 }
 

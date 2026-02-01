@@ -63,4 +63,8 @@ export const featureFlagsRouter = {
   deleteVariation: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.deleteVariationSchema)
     .mutation((opts) => services.deleteVariation({ ...opts })),
+
+  getMetricsEvaluations: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getMetricsEvaluationsSchema)
+    .query((opts) => services.getMetricsEvaluations({ ...opts })),
 } satisfies TRPCRouterRecord;
