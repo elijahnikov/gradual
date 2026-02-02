@@ -4,7 +4,9 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import {
   createTRPCClient,
   httpBatchStreamLink,
+  httpSubscriptionLink,
   loggerLink,
+  splitLink,
   unstable_localLink,
 } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
@@ -38,14 +40,26 @@ export const makeTRPCClient = createIsomorphicFn()
             env.NODE_ENV === "development" ||
             (op.direction === "down" && op.result instanceof Error),
         }),
-        httpBatchStreamLink({
-          transformer: SuperJSON,
-          url: `${getBaseUrl()}/api/trpc`,
-          headers() {
-            const headers = new Headers();
-            headers.set("x-trpc-source", "tanstack-start-client");
-            return headers;
-          },
+        splitLink({
+          condition: (op) => op.type === "subscription",
+          true: httpSubscriptionLink({
+            url: `${getBaseUrl()}/api/trpc`,
+            transformer: SuperJSON,
+            eventSourceOptions() {
+              const headers = new Headers();
+              headers.set("x-trpc-source", "tanstack-start-client");
+              return headers;
+            },
+          }),
+          false: httpBatchStreamLink({
+            transformer: SuperJSON,
+            url: `${getBaseUrl()}/api/trpc`,
+            headers() {
+              const headers = new Headers();
+              headers.set("x-trpc-source", "tanstack-start-client");
+              return headers;
+            },
+          }),
         }),
       ],
     });

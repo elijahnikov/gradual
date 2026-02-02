@@ -109,7 +109,7 @@ function TabContentSkeleton({ tab }: { tab: FlagTab }) {
 
 function TargetingTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
+    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         {/* Header */}
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -144,7 +144,7 @@ function TargetingTabSkeleton() {
 
 function VariationsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
+    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
       <div className="flex flex-col gap-3">
         <VariationCardSkeleton />
         <VariationCardSkeleton />
@@ -157,7 +157,7 @@ function VariationCardSkeleton() {
   return (
     <Card className="flex flex-col p-0">
       {/* Header & Value */}
-      <div className="p-3">
+      <div className="p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Skeleton className="h-5 w-24" />
@@ -170,7 +170,7 @@ function VariationCardSkeleton() {
         </div>
       </div>
       {/* Footer with evaluations */}
-      <div className="flex items-center border-t px-3 pt-2.5 pb-3">
+      <div className="flex items-center border-t px-2 pt-2 pb-2">
         <div className="flex items-center gap-1">
           <Skeleton className="size-4 rounded" />
           <Skeleton className="h-4 w-28" />
@@ -182,7 +182,7 @@ function VariationCardSkeleton() {
 
 function MetricsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col gap-3 p-3">
+    <div className="flex w-full flex-1 flex-col gap-3 p-2">
       {/* Header with date picker and variations filter */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-7 w-32 rounded-md" />
@@ -191,28 +191,28 @@ function MetricsTabSkeleton() {
       {/* Summary cards - single row */}
       <div className="grid grid-cols-4 gap-3">
         <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-3">
+          <div className="rounded-sm border bg-ui-bg-base p-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="mt-2 h-7 w-16" />
             <Skeleton className="mt-1 h-3 w-32" />
           </div>
         </Card>
         <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-3">
+          <div className="rounded-sm border bg-ui-bg-base p-2">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="mt-2 h-7 w-20" />
             <Skeleton className="mt-1 h-3 w-28" />
           </div>
         </Card>
         <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-3">
+          <div className="rounded-sm border bg-ui-bg-base p-2">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="mt-2 h-7 w-20" />
             <Skeleton className="mt-1 h-3 w-28" />
           </div>
         </Card>
         <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-3">
+          <div className="rounded-sm border bg-ui-bg-base p-2">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="mt-2 h-7 w-20" />
             <Skeleton className="mt-1 h-3 w-28" />
@@ -221,7 +221,7 @@ function MetricsTabSkeleton() {
       </div>
       {/* Chart card - larger */}
       <Card className="min-h-[400px] flex-1 p-1">
-        <div className="h-full rounded-sm border bg-ui-bg-base p-3">
+        <div className="h-full rounded-sm border bg-ui-bg-base p-2">
           <Skeleton className="h-full w-full rounded-md" />
         </div>
       </Card>

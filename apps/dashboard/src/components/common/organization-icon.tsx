@@ -14,7 +14,7 @@ export default function OrganizationIcon({
   size = "md",
 }: OrganizationIconProps) {
   return (
-    <Card className="flex w-fit items-center justify-center rounded-full p-[2px]">
+    <Card className="flex w-fit shrink-0 items-center justify-center rounded-full p-[2px]">
       <Avatar
         className={cn({
           "size-3": size === "xs",

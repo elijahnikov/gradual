@@ -295,14 +295,18 @@ export const featureFlagTargetingRule = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     targetId: uuid("target_id")
       .notNull()
-      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
-      .unique(),
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" }),
     attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
     operator: targetingOperatorEnum("operator").notNull(),
     value: jsonb("value").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [
     index("feature_flag_targeting_rule_target_idx").on(table.targetId),
+    index("feature_flag_targeting_rule_sort_idx").on(
+      table.targetId,
+      table.sortOrder
+    ),
   ]
 );
 
@@ -519,7 +523,6 @@ export const apiKey = pgTable(
   ]
 );
 
-// Evaluation & Analytics
 export const featureFlagEvaluation = pgTable(
   "feature_flag_evaluation",
   {
@@ -845,7 +848,7 @@ export const featureFlagEnvironmentRelations = relations(
 
 export const featureFlagTargetRelations = relations(
   featureFlagTarget,
-  ({ one }) => ({
+  ({ one, many }) => ({
     featureFlagEnvironment: one(featureFlagEnvironment, {
       fields: [featureFlagTarget.featureFlagEnvironmentId],
       references: [featureFlagEnvironment.id],
@@ -854,7 +857,7 @@ export const featureFlagTargetRelations = relations(
       fields: [featureFlagTarget.variationId],
       references: [featureFlagVariation.id],
     }),
-    rule: one(featureFlagTargetingRule),
+    rules: many(featureFlagTargetingRule),
     individual: one(featureFlagIndividualTarget),
     segment: one(featureFlagSegmentTarget),
   })

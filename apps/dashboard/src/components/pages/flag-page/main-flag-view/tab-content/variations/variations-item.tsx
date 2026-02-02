@@ -15,9 +15,10 @@ import {
 import {
   RiCheckLine,
   RiCloseLine,
+  RiDeleteBinFill,
   RiDeleteBinLine,
   RiFlashlightFill,
-  RiPencilLine,
+  RiPencilFill,
 } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
@@ -240,7 +241,7 @@ export default function VariationsItem({
   const renderValue = () => {
     if (flagType === "boolean") {
       return (
-        <Badge color={variation.value === true ? "green" : "grey"} size="lg">
+        <Badge className="font-mono" size="lg" variant="outline">
           {variation.value === true ? "true" : "false"}
         </Badge>
       );
@@ -319,11 +320,11 @@ export default function VariationsItem({
                 onChange={(e) => setEditedName(e.target.value)}
                 value={editedName}
               />
-            ) : (
+            ) : flagType !== "boolean" ? (
               <Text size="base" weight="plus">
                 {variation.name}
               </Text>
-            )}
+            ) : null}
             {variation.isDefault && (
               <Badge size="default" variant="info">
                 Default
@@ -364,9 +365,9 @@ export default function VariationsItem({
                     className="size-6 opacity-0 transition-opacity group-hover:opacity-100"
                     onClick={() => setIsEditing(true)}
                     size="small"
-                    variant="ghost"
+                    variant="outline"
                   >
-                    <RiPencilLine className="size-4 shrink-0" />
+                    <RiPencilFill className="size-4 shrink-0" />
                   </Button>
                   {canDelete ? (
                     <Button
@@ -374,9 +375,9 @@ export default function VariationsItem({
                       disabled={deleteMutation.isPending}
                       onClick={handleDelete}
                       size="small"
-                      variant="ghost"
+                      variant="outline"
                     >
-                      <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error" />
+                      <RiDeleteBinFill className="size-4 shrink-0 text-ui-fg-error" />
                     </Button>
                   ) : (
                     <TooltipProvider>

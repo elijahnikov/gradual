@@ -2,7 +2,6 @@ import { Button } from "@gradual/ui/button";
 import { Heading } from "@gradual/ui/heading";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@gradual/ui/input-otp";
 import { LoadingButton } from "@gradual/ui/loading-button";
-// import { Logo } from "@gradual/ui/logo";
 import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";

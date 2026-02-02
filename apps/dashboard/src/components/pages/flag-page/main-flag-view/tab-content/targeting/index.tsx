@@ -110,14 +110,20 @@ function FlagTargetingContent({
         variationId: target.variationId,
       };
 
-      if (target.type === "rule" && target.rule) {
-        base.conditions = [
-          {
-            attributeKey: target.rule.attributeKey,
-            operator: target.rule.operator as TargetingOperator,
-            value: target.rule.value,
-          },
-        ];
+      if (target.type === "rule" && target.rules && target.rules.length > 0) {
+        base.conditions = target.rules.map((rule) => {
+          const attribute = attributeByKey.get(rule.attributeKey);
+          let contextKind: ContextKind | undefined;
+          if (attribute?.contextId) {
+            contextKind = contextIdToKind.get(attribute.contextId);
+          }
+          return {
+            attributeKey: rule.attributeKey,
+            operator: rule.operator as TargetingOperator,
+            value: rule.value,
+            contextKind,
+          };
+        });
       } else if (target.type === "individual" && target.individual) {
         base.attributeKey = target.individual.attributeKey;
         base.attributeValue = target.individual.attributeValue;
@@ -177,9 +183,9 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
+    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 p-2 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>

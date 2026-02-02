@@ -12,22 +12,12 @@ import { RiAddLine, RiSubtractFill } from "@remixicon/react";
 import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
 import { ContextSelect } from "./context-select";
-import type { ContextKind, RuleCondition, TargetingOperator } from "./types";
-
-const OPERATORS: { label: string; value: TargetingOperator }[] = [
-  { label: "equals", value: "equals" },
-  { label: "does not equal", value: "not_equals" },
-  { label: "contains", value: "contains" },
-  { label: "does not contain", value: "not_contains" },
-  { label: "starts with", value: "starts_with" },
-  { label: "ends with", value: "ends_with" },
-  { label: "is in list", value: "in" },
-  { label: "is not in list", value: "not_in" },
-  { label: "greater than", value: "greater_than" },
-  { label: "less than", value: "less_than" },
-  { label: "greater than or equal to", value: "greater_than_or_equal" },
-  { label: "less than or equal to", value: "less_than_or_equal" },
-];
+import {
+  type ContextKind,
+  OPERATOR_OPTIONS,
+  type RuleCondition,
+  type TargetingOperator,
+} from "./types";
 
 interface RuleConditionBuilderProps {
   conditions: RuleCondition[];
@@ -148,7 +138,7 @@ function ConditionRow({
         />
 
         <Select
-          items={OPERATORS}
+          items={OPERATOR_OPTIONS}
           onValueChange={(value) => {
             if (value) {
               onChange({ operator: value as TargetingOperator });
@@ -160,7 +150,7 @@ function ConditionRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} className="pb-2">
-            {OPERATORS.map((op) => (
+            {OPERATOR_OPTIONS.map((op) => (
               <SelectItem key={op.value} value={op.value}>
                 {op.label}
               </SelectItem>

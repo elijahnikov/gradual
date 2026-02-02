@@ -92,7 +92,7 @@ export default function ProjectBreadcrumbs() {
   return (
     <Breadcrumb className="sticky top-0 z-50 flex h-9 w-full items-center border-b bg-ui-bg-base px-2.5">
       <BreadcrumbList>
-        <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-sm hover:bg-ui-bg-subtle">
+        <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-xs hover:bg-ui-bg-subtle">
           <BreadcrumbLink
             render={
               <Link
@@ -110,7 +110,7 @@ export default function ProjectBreadcrumbs() {
             <BreadcrumbSeparator />
             {isFlagDetailPage && breadcrumbs.flagName ? (
               <>
-                <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-sm hover:bg-ui-bg-subtle">
+                <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-xs hover:bg-ui-bg-subtle">
                   <BreadcrumbLink
                     render={
                       <Link
@@ -124,12 +124,12 @@ export default function ProjectBreadcrumbs() {
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
-                <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
+                <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
                   <BreadcrumbPage>{breadcrumbs.flagName}</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             ) : (
-              <BreadcrumbItem className="px-1 py-0.5 font-medium text-sm">
+              <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
                 <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
               </BreadcrumbItem>
             )}

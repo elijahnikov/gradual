@@ -146,9 +146,12 @@ export default function FlagSidebar({
         setSavingField(null);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: [["featureFlags", "getByKey"]],
-        });
+        await queryClient.invalidateQueries(
+          trpc.featureFlags.getByKey.pathFilter()
+        );
+        await queryClient.invalidateQueries(
+          trpc.featureFlags.getBreadcrumbInfo.pathFilter()
+        );
         setOptimisticName(undefined);
         setOptimisticDescription(undefined);
         setOptimisticMaintainerId(undefined);
@@ -214,7 +217,7 @@ export default function FlagSidebar({
   };
 
   return (
-    <div className="flex h-full w-72 min-w-72 flex-col border-l bg-ui-bg-base">
+    <div className="flex h-full w-64 min-w-64 flex-col border-l bg-ui-bg-base">
       {/* Title & Description */}
       <div className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">

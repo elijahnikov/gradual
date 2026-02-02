@@ -35,6 +35,16 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
           : null,
     },
   }),
+  sse: {
+    maxDurationMs: 5 * 60 * 1000,
+    ping: {
+      enabled: true,
+      intervalMs: 3000,
+    },
+    client: {
+      reconnectAfterInactivityMs: 5000,
+    },
+  },
 });
 
 export const createTRPCRouter = t.router;

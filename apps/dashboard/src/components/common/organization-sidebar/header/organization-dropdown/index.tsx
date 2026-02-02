@@ -42,7 +42,7 @@ export default function OrganizationDropdown() {
   );
 
   return (
-    <div className="flex w-full items-center gap-2">
+    <div className="relative -left-1 flex w-full items-center">
       <SidebarGroup className="p-0">
         <SidebarGroupContent>
           <SidebarMenu>
@@ -59,7 +59,7 @@ export default function OrganizationDropdown() {
                         "after:button-neutral-gradient flex items-center justify-center rounded-full border bg-ui-button-neutral px-0.5 text-ui-fg-base",
                         "hover:after:button-neutral-hover-gradient hover:bg-ui-button-neutral-hover",
                         "active:after:button-neutral-pressed-gradient active:bg-ui-button-neutral-pressed",
-                        "items-centers z-50 h-8 ring-0 focus-visible:shadow-buttons-neutral-focus",
+                        "items-centers z-50 h-8 min-w-8 shrink-0 ring-0 focus-visible:shadow-buttons-neutral-focus",
                       ])}
                       size="lg"
                     />

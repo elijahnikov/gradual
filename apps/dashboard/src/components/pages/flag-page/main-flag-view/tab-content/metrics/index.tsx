@@ -72,7 +72,7 @@ function MetricsContent({
 
   if (!environmentId) {
     return (
-      <div className="flex w-full flex-1 flex-col p-3">
+      <div className="flex w-full flex-1 flex-col p-2">
         <Card className="flex h-full w-full flex-1 flex-col items-center justify-center p-8">
           <p className="text-ui-fg-muted">
             Select an environment to view metrics
@@ -83,7 +83,7 @@ function MetricsContent({
   }
 
   return (
-    <div className="flex w-full flex-1 flex-col gap-3 p-3">
+    <div className="flex w-full flex-1 flex-col gap-3 p-2">
       <MetricsHeader variations={data.variations} />
       <MetricsSummary
         previousTotals={data.previousTotals}
@@ -91,7 +91,7 @@ function MetricsContent({
         variations={data.variations}
       />
       <Card className="min-h-[400px] flex-1 p-1">
-        <div className="h-full rounded-sm border bg-ui-bg-base p-3">
+        <div className="h-full rounded-sm border bg-ui-bg-subtle p-2">
           <MetricsChart data={data.data} variations={data.variations} />
         </div>
       </Card>
