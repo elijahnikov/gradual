@@ -20,7 +20,6 @@ export default function DefaultVariation({
   defaultVariationId,
   onDefaultVariationChange,
 }: DefaultVariationProps) {
-  // Get variations from store (eliminates prop drilling)
   const variations = useTargetingStore((s) => s.variations);
 
   const variationItems = useMemo(

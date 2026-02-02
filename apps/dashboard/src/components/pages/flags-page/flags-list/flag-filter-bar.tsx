@@ -202,53 +202,48 @@ export default function FlagFilterBar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="relative flex items-center gap-2">
-        <div className="mr-15 flex items-center gap-3">
-          {environmentsLoading ? (
+      <div className="relative -left-5 flex items-center gap-3">
+        {environmentsLoading ? (
+          <>
+            <Skeleton className="h-7 w-34 rounded-sm" />
+            <Separator orientation="vertical" />
+            <Skeleton className="h-7 w-34 rounded-sm" />
+          </>
+        ) : (
+          selectedEnvironments.map((env, index) => (
             <>
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-5 w-20" />
-            </>
-          ) : (
-            selectedEnvironments.map((env, index) => (
-              <>
-                <div
-                  className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-3 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
-                  key={env.id}
-                >
-                  <Text className="w-full" size="xsmall" weight="plus">
-                    {env.name}
-                  </Text>
-                  {canRemove && (
-                    <Button
-                      className="relative right-0 aspect-square size-5!"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveEnvironment(env.id);
-                      }}
-                      type="button"
-                      variant="ghost"
-                    >
-                      <RiCloseLine className="size-3.5 shrink-0" />
-                    </Button>
-                  )}
-                </div>
-
-                {index < selectedEnvironments.length - 1 && (
-                  <Separator orientation="vertical" />
+              <div
+                className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-3 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
+                key={env.id}
+              >
+                <Text className="w-full" size="xsmall" weight="plus">
+                  {env.name}
+                </Text>
+                {canRemove && (
+                  <Button
+                    className="relative right-0 aspect-square size-5!"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveEnvironment(env.id);
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RiCloseLine className="size-3.5 shrink-0" />
+                  </Button>
                 )}
-              </>
-            ))
-          )}
-        </div>
+              </div>
+
+              {index < selectedEnvironments.length - 1 && (
+                <Separator orientation="vertical" />
+              )}
+            </>
+          ))
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button
-                className="absolute top-0 right-2.5 size-7 p-0"
-                size="small"
-                variant="outline"
-              />
+              <Button className="size-7 p-0" size="small" variant="outline" />
             }
           >
             <RiAddLine className="size-4 shrink-0 text-ui-fg-muted" />

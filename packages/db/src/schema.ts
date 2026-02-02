@@ -295,8 +295,7 @@ export const featureFlagTargetingRule = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     targetId: uuid("target_id")
       .notNull()
-      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
-      .unique(),
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" }),
     attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
     operator: targetingOperatorEnum("operator").notNull(),
     value: jsonb("value").notNull(),
@@ -845,7 +844,7 @@ export const featureFlagEnvironmentRelations = relations(
 
 export const featureFlagTargetRelations = relations(
   featureFlagTarget,
-  ({ one }) => ({
+  ({ one, many }) => ({
     featureFlagEnvironment: one(featureFlagEnvironment, {
       fields: [featureFlagTarget.featureFlagEnvironmentId],
       references: [featureFlagEnvironment.id],
@@ -854,7 +853,7 @@ export const featureFlagTargetRelations = relations(
       fields: [featureFlagTarget.variationId],
       references: [featureFlagVariation.id],
     }),
-    rule: one(featureFlagTargetingRule),
+    rules: many(featureFlagTargetingRule),
     individual: one(featureFlagIndividualTarget),
     segment: one(featureFlagSegmentTarget),
   })

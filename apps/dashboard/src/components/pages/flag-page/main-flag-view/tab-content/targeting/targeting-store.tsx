@@ -16,7 +16,6 @@ export interface LocalTarget {
   name: string;
   variationId: string;
   conditions?: RuleCondition[];
-  // For individual targets
   contextKind?: ContextKind;
   attributeKey?: string;
   attributeValue?: string;
@@ -115,7 +114,6 @@ export const createTargetingStore = () =>
     initialize: (config) => {
       const existingTargets = config.existingTargets ?? [];
 
-      // Build attributesByContextKind map
       const attributesByContextKind = new Map<
         ContextKind | "uncategorized",
         Attribute[]

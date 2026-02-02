@@ -28,6 +28,7 @@ import _ from "lodash";
 import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { type LocalTarget, useTargetingStore } from "./targeting-store";
+import type { RuleCondition } from "./types";
 
 interface DiffItem {
   type: "added" | "removed" | "modified";
@@ -143,14 +144,113 @@ function FieldChange({
   );
 }
 
+function formatOperator(op: string): string {
+  const operatorLabels: Record<string, string> = {
+    equals: "equals",
+    not_equals: "does not equal",
+    contains: "contains",
+    not_contains: "does not contain",
+    starts_with: "starts with",
+    ends_with: "ends with",
+    in: "is in",
+    not_in: "is not in",
+    greater_than: "is greater than",
+    less_than: "is less than",
+    greater_than_or_equal: "is greater than or equal to",
+    less_than_or_equal: "is less than or equal to",
+    exists: "exists",
+    not_exists: "does not exist",
+  };
+  return operatorLabels[op] ?? op;
+}
+
+function ConditionDisplay({
+  condition,
+  originalCondition,
+  index,
+}: {
+  condition: RuleCondition;
+  originalCondition?: RuleCondition;
+  index: number;
+}) {
+  const prefix = index === 0 ? "If" : "and";
+
+  const attrChanged =
+    originalCondition &&
+    originalCondition.attributeKey !== condition.attributeKey;
+  const opChanged =
+    originalCondition && originalCondition.operator !== condition.operator;
+  const valueChanged =
+    originalCondition &&
+    String(originalCondition.value) !== String(condition.value);
+
+  const isNew = !originalCondition;
+
+  return (
+    <Text className="text-ui-fg-muted" size="xsmall">
+      {prefix}{" "}
+      {attrChanged ? (
+        <>
+          <span className="text-ui-fg-disabled line-through">
+            {originalCondition.attributeKey || "attribute"}
+          </span>
+          <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+          <span className="font-medium text-ui-fg-subtle">
+            {condition.attributeKey || "attribute"}
+          </span>
+        </>
+      ) : (
+        <span className="font-medium text-ui-fg-subtle">
+          {condition.attributeKey || "attribute"}
+        </span>
+      )}{" "}
+      {opChanged ? (
+        <>
+          <span className="text-ui-fg-disabled line-through">
+            {formatOperator(originalCondition.operator)}
+          </span>
+          <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+          <span className="font-medium text-ui-fg-subtle">
+            {formatOperator(condition.operator)}
+          </span>
+        </>
+      ) : (
+        <span>{formatOperator(condition.operator)}</span>
+      )}{" "}
+      {valueChanged ? (
+        <>
+          <span className="text-ui-fg-disabled line-through">
+            {String(originalCondition.value) || "value"}
+          </span>
+          <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+          <span className="font-medium text-ui-fg-subtle">
+            {String(condition.value) || "value"}
+          </span>
+        </>
+      ) : (
+        <span className="font-medium text-ui-fg-subtle">
+          {String(condition.value) || "value"}
+        </span>
+      )}
+      {isNew && (
+        <Badge className="ml-1" size="sm" variant="success">
+          new
+        </Badge>
+      )}
+    </Text>
+  );
+}
+
 function TargetSummary({
   target,
   originalTarget,
   variationsById,
+  segmentsById,
 }: {
   target: LocalTarget;
   originalTarget?: LocalTarget;
   variationsById: Map<string, { name: string }>;
+  segmentsById: Map<string, { name: string }>;
 }) {
   const variation = variationsById.get(target.variationId);
   const originalVariation = originalTarget
@@ -160,37 +260,116 @@ function TargetSummary({
   const variationChanged =
     originalTarget && originalTarget.variationId !== target.variationId;
 
+  const conditions = target.conditions ?? [];
+  const originalConditions = originalTarget?.conditions ?? [];
+
+  const removedConditions = originalConditions.slice(conditions.length);
+
+  const attrKeyChanged =
+    originalTarget &&
+    target.type === "individual" &&
+    originalTarget.attributeKey !== target.attributeKey;
+  const attrValueChanged =
+    originalTarget &&
+    target.type === "individual" &&
+    originalTarget.attributeValue !== target.attributeValue;
+
+  const segmentChanged =
+    originalTarget &&
+    target.type === "segment" &&
+    originalTarget.segmentId !== target.segmentId;
+  const segment = target.segmentId
+    ? segmentsById.get(target.segmentId)
+    : undefined;
+  const originalSegment =
+    originalTarget?.segmentId && segmentChanged
+      ? segmentsById.get(originalTarget.segmentId)
+      : undefined;
+
   return (
     <div className="flex flex-col gap-0.5">
-      {target.type === "rule" && target.conditions?.[0] && (
-        <FieldChange
-          label={`When ${target.conditions[0].attributeKey} ${target.conditions[0].operator}`}
-          newValue={String(target.conditions[0].value)}
-          oldValue={
-            originalTarget?.conditions?.[0] &&
-            String(originalTarget.conditions[0].value) !==
-              String(target.conditions[0].value)
-              ? String(originalTarget.conditions[0].value)
-              : undefined
-          }
-        />
+      {target.type === "rule" && (
+        <>
+          {conditions.map((condition, index) => (
+            <ConditionDisplay
+              condition={condition}
+              index={index}
+              key={index}
+              originalCondition={originalConditions[index]}
+            />
+          ))}
+          {removedConditions.map((condition, index) => (
+            <Text
+              className="text-ui-fg-disabled line-through"
+              key={`removed-${index}`}
+              size="xsmall"
+            >
+              {index + conditions.length === 0 ? "If" : "and"}{" "}
+              {condition.attributeKey} {formatOperator(condition.operator)}{" "}
+              {String(condition.value)}
+              <Badge className="ml-1" size="sm" variant="error">
+                removed
+              </Badge>
+            </Text>
+          ))}
+        </>
       )}
 
-      {target.type === "individual" && target.attributeKey && (
-        <FieldChange
-          label={`Where ${target.attributeKey} is`}
-          newValue={target.attributeValue ?? ""}
-          oldValue={
-            originalTarget?.attributeValue !== target.attributeValue
-              ? originalTarget?.attributeValue
-              : undefined
-          }
-        />
-      )}
-
-      {target.type === "segment" && target.segmentId && (
+      {target.type === "individual" && (
         <Text className="text-ui-fg-muted" size="xsmall">
-          Users in segment
+          Where{" "}
+          {attrKeyChanged ? (
+            <>
+              <span className="text-ui-fg-disabled line-through">
+                {originalTarget?.attributeKey || "attribute"}
+              </span>
+              <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+              <span className="font-medium text-ui-fg-subtle">
+                {target.attributeKey || "attribute"}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-ui-fg-subtle">
+              {target.attributeKey || "attribute"}
+            </span>
+          )}{" "}
+          is{" "}
+          {attrValueChanged ? (
+            <>
+              <span className="text-ui-fg-disabled line-through">
+                {originalTarget?.attributeValue || "value"}
+              </span>
+              <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+              <span className="font-medium text-ui-fg-subtle">
+                {target.attributeValue || "value"}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-ui-fg-subtle">
+              {target.attributeValue || "value"}
+            </span>
+          )}
+        </Text>
+      )}
+
+      {target.type === "segment" && (
+        <Text className="text-ui-fg-muted" size="xsmall">
+          Users in segment{" "}
+          {segmentChanged ? (
+            <>
+              <span className="text-ui-fg-disabled line-through">
+                {originalSegment?.name || "segment"}
+              </span>
+              <RiArrowRightLine className="mx-1 inline size-3 text-ui-fg-disabled" />
+              <span className="font-medium text-ui-fg-subtle">
+                {segment?.name || "segment"}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-ui-fg-subtle">
+              {segment?.name || "segment"}
+            </span>
+          )}
         </Text>
       )}
 
@@ -220,6 +399,7 @@ export function ReviewChangesModal() {
     (s) => s.originalDefaultVariationId
   );
   const variationsById = useTargetingStore((s) => s.variationsById);
+  const segmentsById = useTargetingStore((s) => s.segmentsById);
   const flagId = useTargetingStore((s) => s.flagId);
   const environmentSlug = useTargetingStore((s) => s.environmentSlug);
   const organizationSlug = useTargetingStore((s) => s.organizationSlug);
@@ -449,6 +629,7 @@ export function ReviewChangesModal() {
                             </div>
                             <TargetSummary
                               originalTarget={diff.originalTarget}
+                              segmentsById={segmentsById}
                               target={diff.target}
                               variationsById={variationsById}
                             />

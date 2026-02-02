@@ -12,18 +12,15 @@ interface IndividualTargetCardProps {
 }
 
 export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
-  // Get target data from store
   const target = useTargetingStore((s) =>
     s.targets.find((t) => t.id === targetId)
   );
 
-  // Get target position info for move actions
   const targetIndex = useTargetingStore((s) =>
     s.targets.findIndex((t) => t.id === targetId)
   );
   const targetsCount = useTargetingStore((s) => s.targets.length);
 
-  // Get stable action references from store (rerender-functional-setstate)
   const updateTargetName = useTargetingStore((s) => s.updateTargetName);
   const updateTargetVariation = useTargetingStore(
     (s) => s.updateTargetVariation
@@ -34,11 +31,9 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
   const deleteTarget = useTargetingStore((s) => s.deleteTarget);
   const moveTarget = useTargetingStore((s) => s.moveTarget);
 
-  // Get shared data from store
   const organizationSlug = useTargetingStore((s) => s.organizationSlug);
   const projectSlug = useTargetingStore((s) => s.projectSlug);
 
-  // Stable callbacks using store actions
   const handleNameChange = useCallback(
     (name: string) => updateTargetName(targetId, name),
     [updateTargetName, targetId]

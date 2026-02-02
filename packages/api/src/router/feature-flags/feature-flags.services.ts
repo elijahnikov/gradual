@@ -854,7 +854,7 @@ export const getTargetingRules = async ({
         orderBy: (target, { asc }) => asc(target.sortOrder),
         with: {
           variation: true,
-          rule: true,
+          rules: true,
           individual: true,
           segment: true,
         },
@@ -965,8 +965,7 @@ export const saveTargetingRules = async ({
       switch (target.type) {
         case "rule":
           if (target.conditions && target.conditions.length > 0) {
-            const condition = target.conditions[0];
-            if (condition) {
+            for (const condition of target.conditions) {
               await tx.insert(featureFlagTargetingRule).values({
                 targetId: insertedTarget.id,
                 attributeKey: condition.attributeKey,

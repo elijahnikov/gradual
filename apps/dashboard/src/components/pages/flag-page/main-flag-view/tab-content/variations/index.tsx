@@ -7,6 +7,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 import VariationsItem from "./variations-item";
 
@@ -26,6 +27,8 @@ export default function FlagVariations({
 }: FlagVariationsProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const newVariationRef = useRef<HTMLDivElement>(null);
+  const [scrollToNew, setScrollToNew] = useState(false);
 
   const variationsQueryOptions = trpc.featureFlags.getVariations.queryOptions({
     flagId: flag.flag.id,
@@ -37,20 +40,27 @@ export default function FlagVariations({
 
   const flagType = flag.flag.type as FlagType;
 
+  useEffect(() => {
+    if (scrollToNew && newVariationRef.current) {
+      newVariationRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setScrollToNew(false);
+    }
+  }, [scrollToNew]);
+
   const addMutation = useMutation(
     trpc.featureFlags.addVariation.mutationOptions({
       onMutate: async (newVariation) => {
-        // Cancel outgoing refetches
         await queryClient.cancelQueries({
           queryKey: variationsQueryOptions.queryKey,
         });
 
-        // Snapshot previous value
         const previousVariations = queryClient.getQueryData<Variation[]>(
           variationsQueryOptions.queryKey
         );
 
-        // Optimistically add the new variation
         if (previousVariations) {
           const optimisticVariation: Variation = {
             id: `temp-${Date.now()}`,
@@ -74,8 +84,10 @@ export default function FlagVariations({
 
         return { previousVariations };
       },
+      onSuccess: () => {
+        setTimeout(() => setScrollToNew(true), 50);
+      },
       onError: (error, _variables, context) => {
-        // Rollback on error
         if (context?.previousVariations) {
           queryClient.setQueryData(
             variationsQueryOptions.queryKey,
@@ -89,7 +101,6 @@ export default function FlagVariations({
         });
       },
       onSettled: () => {
-        // Refetch to get the real data
         queryClient.invalidateQueries({
           queryKey: variationsQueryOptions.queryKey,
         });
@@ -115,7 +126,7 @@ export default function FlagVariations({
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col p-3 sm:p-3">
+    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
       {flagType !== "boolean" && (
         <div className="mb-3 flex justify-end">
           <Button
@@ -130,17 +141,21 @@ export default function FlagVariations({
         </div>
       )}
       <div className="flex flex-col gap-3">
-        {variations.map((variation) => (
-          <VariationsItem
-            flagId={flag.flag.id}
-            flagType={flagType}
-            key={variation.id}
-            organizationSlug={organizationSlug}
-            projectSlug={projectSlug}
-            variation={variation}
-            variationCount={variations.length}
-          />
-        ))}
+        {variations.map((variation, index) => {
+          const isLast = index === variations.length - 1;
+          return (
+            <div key={variation.id} ref={isLast ? newVariationRef : undefined}>
+              <VariationsItem
+                flagId={flag.flag.id}
+                flagType={flagType}
+                organizationSlug={organizationSlug}
+                projectSlug={projectSlug}
+                variation={variation}
+                variationCount={variations.length}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

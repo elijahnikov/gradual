@@ -91,7 +91,7 @@ export default function MetricsSummary({
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-4 gap-3">
         <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-3">
+          <div className="rounded-sm border bg-ui-bg-subtle p-3">
             <Text className="text-ui-fg-muted" size="small">
               Total Evaluations
             </Text>
@@ -106,7 +106,7 @@ export default function MetricsSummary({
           const change = calculateChange(stat.count, stat.previousCount);
           return (
             <Card className="p-1" key={stat.id}>
-              <div className="rounded-sm border bg-ui-bg-base p-3">
+              <div className="rounded-sm border bg-ui-bg-subtle p-3">
                 <div className="flex items-center gap-2">
                   <div
                     className="size-3 rounded-full"

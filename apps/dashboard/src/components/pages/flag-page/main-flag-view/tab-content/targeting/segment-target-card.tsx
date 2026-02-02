@@ -13,7 +13,6 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
     s.targets.find((t) => t.id === targetId)
   );
 
-  // Get target position info for move actions
   const targetIndex = useTargetingStore((s) =>
     s.targets.findIndex((t) => t.id === targetId)
   );
