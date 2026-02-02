@@ -518,7 +518,6 @@ export const apiKey = pgTable(
   ]
 );
 
-// Evaluation & Analytics
 export const featureFlagEvaluation = pgTable(
   "feature_flag_evaluation",
   {

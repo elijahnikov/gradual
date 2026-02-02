@@ -146,9 +146,12 @@ export default function FlagSidebar({
         setSavingField(null);
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: [["featureFlags", "getByKey"]],
-        });
+        await queryClient.invalidateQueries(
+          trpc.featureFlags.getByKey.pathFilter()
+        );
+        await queryClient.invalidateQueries(
+          trpc.featureFlags.getBreadcrumbInfo.pathFilter()
+        );
         setOptimisticName(undefined);
         setOptimisticDescription(undefined);
         setOptimisticMaintainerId(undefined);
