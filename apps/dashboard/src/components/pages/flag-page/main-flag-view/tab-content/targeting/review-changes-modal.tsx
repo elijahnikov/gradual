@@ -28,7 +28,7 @@ import _ from "lodash";
 import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { type LocalTarget, useTargetingStore } from "./targeting-store";
-import type { RuleCondition } from "./types";
+import { OPERATOR_LABELS, type RuleCondition } from "./types";
 
 interface DiffItem {
   type: "added" | "removed" | "modified";
@@ -145,23 +145,7 @@ function FieldChange({
 }
 
 function formatOperator(op: string): string {
-  const operatorLabels: Record<string, string> = {
-    equals: "equals",
-    not_equals: "does not equal",
-    contains: "contains",
-    not_contains: "does not contain",
-    starts_with: "starts with",
-    ends_with: "ends with",
-    in: "is in",
-    not_in: "is not in",
-    greater_than: "is greater than",
-    less_than: "is less than",
-    greater_than_or_equal: "is greater than or equal to",
-    less_than_or_equal: "is less than or equal to",
-    exists: "exists",
-    not_exists: "does not exist",
-  };
-  return operatorLabels[op] ?? op;
+  return OPERATOR_LABELS[op as keyof typeof OPERATOR_LABELS] ?? op;
 }
 
 function ConditionDisplay({
@@ -499,7 +483,7 @@ export function ReviewChangesModal() {
                   <>
                     <div className="flex flex-col gap-3">
                       <Text
-                        className="text-ui-fg-muted uppercase tracking-wide"
+                        className="font-mono text-ui-fg-muted uppercase tracking-wide"
                         size="xsmall"
                       >
                         Default Variation
@@ -529,7 +513,7 @@ export function ReviewChangesModal() {
                   <>
                     <div className="flex flex-col gap-3">
                       <Text
-                        className="text-ui-fg-muted uppercase tracking-wide"
+                        className="font-mono text-ui-fg-muted uppercase tracking-wide"
                         size="xsmall"
                       >
                         Order Changed
@@ -568,7 +552,7 @@ export function ReviewChangesModal() {
                 {diffs.length > 0 && (
                   <div className="flex flex-col gap-3">
                     <Text
-                      className="text-ui-fg-muted uppercase tracking-wide"
+                      className="font-mono text-ui-fg-muted uppercase tracking-wide"
                       size="xsmall"
                     >
                       Targeting Rules

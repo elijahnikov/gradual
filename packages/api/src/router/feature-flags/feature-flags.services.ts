@@ -46,7 +46,10 @@ import type {
   UpdateFeatureFlagInput,
   UpdateVariationInput,
 } from "./feature-flags.schemas";
-import { transformToMetricsData } from "./feature-flags.utils";
+import {
+  transformEvaluationsToHourlyData,
+  transformToMetricsData,
+} from "./feature-flags.utils";
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
   ctx,
@@ -519,7 +522,6 @@ export const getPreviewEvaluations = async ({
   const twentyFourHoursAgo = new Date();
   twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24, 0, 0, 0);
 
-  // Fetch only the selected environments
   const environments = await ctx.db.query.environment.findMany({
     where: ({ id, projectId, deletedAt }, { eq, isNull, and, inArray }) =>
       and(
@@ -570,114 +572,6 @@ export const getPreviewEvaluations = async ({
     totals,
     environments: environments.map((e) => ({ id: e.id, name: e.name })),
   };
-};
-
-const initializeHourlyStructures = (
-  environments: Array<{ id: string; name: string }>,
-  variations: Array<{ id: string; name: string }>
-) => {
-  const totals: Record<string, Record<string, number>> = {};
-  for (const env of environments) {
-    const envTotals: Record<string, number> = {};
-    for (const variation of variations) {
-      envTotals[variation.name] = 0;
-    }
-    totals[env.name] = envTotals;
-  }
-  return totals;
-};
-
-const processHourData = (
-  hourDate: Date,
-  evaluations: Array<{
-    time: string;
-    environmentId: string;
-    variationId: string | null;
-    count: number | bigint;
-  }>,
-  environments: Array<{ id: string; name: string }>,
-  variations: Array<{ id: string; name: string }>,
-  environmentMap: Map<string, string>,
-  variationMap: Map<string, string>,
-  totals: Record<string, Record<string, number>>
-) => {
-  const formattedTime = hourDate.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    hour12: true,
-  });
-
-  const byEnvironment: Record<string, Record<string, number>> = {};
-  for (const env of environments) {
-    const envData: Record<string, number> = {};
-    for (const variation of variations) {
-      envData[variation.name] = 0;
-    }
-    byEnvironment[env.name] = envData;
-  }
-
-  const evaluationsForHour = evaluations.filter((e) => {
-    const eDate = new Date(e.time);
-    return eDate.getTime() === hourDate.getTime();
-  });
-
-  for (const evalEntry of evaluationsForHour) {
-    const envName = environmentMap.get(evalEntry.environmentId);
-    const varName = evalEntry.variationId
-      ? variationMap.get(evalEntry.variationId)
-      : null;
-
-    if (envName && varName) {
-      const c = Number(evalEntry.count);
-      const envData = byEnvironment[envName];
-      const envTotals = totals[envName];
-      if (envData) {
-        envData[varName] = c;
-      }
-      if (envTotals) {
-        envTotals[varName] = (envTotals[varName] ?? 0) + c;
-      }
-    }
-  }
-
-  return { time: formattedTime, byEnvironment };
-};
-
-const transformEvaluationsToHourlyData = (
-  evaluations: Array<{
-    time: string;
-    environmentId: string;
-    variationId: string | null;
-    count: number | bigint;
-  }>,
-  environments: Array<{ id: string; name: string }>,
-  variations: Array<{ id: string; name: string }>,
-  today: Date
-) => {
-  const environmentMap = new Map(environments.map((e) => [e.id, e.name]));
-  const variationMap = new Map(variations.map((v) => [v.id, v.name]));
-
-  const totals = initializeHourlyStructures(environments, variations);
-  const hourlyData: Array<{
-    time: string;
-    byEnvironment: Record<string, Record<string, number>>;
-  }> = [];
-
-  for (let i = 23; i >= 0; i--) {
-    const hourDate = new Date(today);
-    hourDate.setHours(hourDate.getHours() - i, 0, 0, 0);
-    const hourEntry = processHourData(
-      hourDate,
-      evaluations,
-      environments,
-      variations,
-      environmentMap,
-      variationMap,
-      totals
-    );
-    hourlyData.push(hourEntry);
-  }
-
-  return { hourlyData, totals };
 };
 
 export const seedEvaluations = async ({
@@ -855,7 +749,9 @@ export const getTargetingRules = async ({
         orderBy: (target, { asc }) => asc(target.sortOrder),
         with: {
           variation: true,
-          rules: true,
+          rules: {
+            orderBy: (rule, { asc }) => asc(rule.sortOrder),
+          },
           individual: true,
           segment: true,
         },
@@ -966,13 +862,17 @@ export const saveTargetingRules = async ({
       switch (target.type) {
         case "rule":
           if (target.conditions && target.conditions.length > 0) {
-            for (const condition of target.conditions) {
-              await tx.insert(featureFlagTargetingRule).values({
-                targetId: insertedTarget.id,
-                attributeKey: condition.attributeKey,
-                operator: condition.operator,
-                value: condition.value,
-              });
+            for (let j = 0; j < target.conditions.length; j++) {
+              const condition = target.conditions[j];
+              if (condition) {
+                await tx.insert(featureFlagTargetingRule).values({
+                  targetId: insertedTarget.id,
+                  attributeKey: condition.attributeKey,
+                  operator: condition.operator,
+                  value: condition.value,
+                  sortOrder: j,
+                });
+              }
             }
           }
           break;
@@ -1250,7 +1150,6 @@ export const addVariation = async ({
     });
   }
 
-  // Don't allow adding variations to boolean flags
   if (foundFlag.type === "boolean") {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -1258,7 +1157,6 @@ export const addVariation = async ({
     });
   }
 
-  // Get the current max sort order
   const existingVariations = await ctx.db.query.featureFlagVariation.findMany({
     where: ({ featureFlagId }, { eq }) => eq(featureFlagId, foundFlag.id),
     orderBy: ({ sortOrder }, { desc }) => desc(sortOrder),

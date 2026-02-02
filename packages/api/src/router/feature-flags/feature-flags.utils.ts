@@ -94,3 +94,111 @@ const formatTimeLabel = (
     hour12: true,
   });
 };
+
+export const initializeHourlyStructures = (
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>
+) => {
+  const totals: Record<string, Record<string, number>> = {};
+  for (const env of environments) {
+    const envTotals: Record<string, number> = {};
+    for (const variation of variations) {
+      envTotals[variation.name] = 0;
+    }
+    totals[env.name] = envTotals;
+  }
+  return totals;
+};
+
+export const processHourData = (
+  hourDate: Date,
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  environmentMap: Map<string, string>,
+  variationMap: Map<string, string>,
+  totals: Record<string, Record<string, number>>
+) => {
+  const formattedTime = hourDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    hour12: true,
+  });
+
+  const byEnvironment: Record<string, Record<string, number>> = {};
+  for (const env of environments) {
+    const envData: Record<string, number> = {};
+    for (const variation of variations) {
+      envData[variation.name] = 0;
+    }
+    byEnvironment[env.name] = envData;
+  }
+
+  const evaluationsForHour = evaluations.filter((e) => {
+    const eDate = new Date(e.time);
+    return eDate.getTime() === hourDate.getTime();
+  });
+
+  for (const evalEntry of evaluationsForHour) {
+    const envName = environmentMap.get(evalEntry.environmentId);
+    const varName = evalEntry.variationId
+      ? variationMap.get(evalEntry.variationId)
+      : null;
+
+    if (envName && varName) {
+      const c = Number(evalEntry.count);
+      const envData = byEnvironment[envName];
+      const envTotals = totals[envName];
+      if (envData) {
+        envData[varName] = c;
+      }
+      if (envTotals) {
+        envTotals[varName] = (envTotals[varName] ?? 0) + c;
+      }
+    }
+  }
+
+  return { time: formattedTime, byEnvironment };
+};
+
+export const transformEvaluationsToHourlyData = (
+  evaluations: Array<{
+    time: string;
+    environmentId: string;
+    variationId: string | null;
+    count: number | bigint;
+  }>,
+  environments: Array<{ id: string; name: string }>,
+  variations: Array<{ id: string; name: string }>,
+  today: Date
+) => {
+  const environmentMap = new Map(environments.map((e) => [e.id, e.name]));
+  const variationMap = new Map(variations.map((v) => [v.id, v.name]));
+
+  const totals = initializeHourlyStructures(environments, variations);
+  const hourlyData: Array<{
+    time: string;
+    byEnvironment: Record<string, Record<string, number>>;
+  }> = [];
+
+  for (let i = 23; i >= 0; i--) {
+    const hourDate = new Date(today);
+    hourDate.setHours(hourDate.getHours() - i, 0, 0, 0);
+    const hourEntry = processHourData(
+      hourDate,
+      evaluations,
+      environments,
+      variations,
+      environmentMap,
+      variationMap,
+      totals
+    );
+    hourlyData.push(hourEntry);
+  }
+
+  return { hourlyData, totals };
+};

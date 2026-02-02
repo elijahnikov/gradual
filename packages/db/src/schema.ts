@@ -299,9 +299,14 @@ export const featureFlagTargetingRule = pgTable(
     attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
     operator: targetingOperatorEnum("operator").notNull(),
     value: jsonb("value").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [
     index("feature_flag_targeting_rule_target_idx").on(table.targetId),
+    index("feature_flag_targeting_rule_sort_idx").on(
+      table.targetId,
+      table.sortOrder
+    ),
   ]
 );
 
