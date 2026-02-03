@@ -5,6 +5,7 @@ import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
 import { seedDefaultAttributes } from "../attributes/attributes.services";
 import { createEnvironment } from "../environment";
+import { getEnvironmentColorByIndex } from "../environment/environment.utils";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
@@ -45,8 +46,9 @@ export const createProject = async ({
       input: {
         name: "Production",
         slug: "production",
-        organizationId: ctx.organization.id,
-        projectId: createdProject.id,
+        organizationSlug: ctx.organization.slug,
+        projectSlug: createdProject.slug,
+        color: getEnvironmentColorByIndex(0),
       },
       ctx,
     }),
@@ -54,8 +56,9 @@ export const createProject = async ({
       input: {
         name: "Development",
         slug: "development",
-        organizationId: ctx.organization.id,
-        projectId: createdProject.id,
+        organizationSlug: ctx.organization.slug,
+        projectSlug: createdProject.slug,
+        color: getEnvironmentColorByIndex(1),
       },
       ctx,
     }),

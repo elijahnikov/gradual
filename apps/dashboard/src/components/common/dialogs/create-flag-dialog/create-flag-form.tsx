@@ -243,8 +243,10 @@ export default function CreateFlagForm({
       <Form {...form}>
         <form
           className="grid h-full grid-cols-2 divide-x"
-          id="login-form"
-          onSubmit={form.handleSubmit(onSubmit)}
+          id="create-flag-form"
+          onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            console.log(errors);
+          })}
         >
           <div className="space-y-4 p-4">
             <div className="grid grid-cols-2 gap-4">
@@ -619,7 +621,7 @@ export default function CreateFlagForm({
             !form.formState.isValid ||
             Object.keys(form.formState.errors).length > 0
           }
-          form="login-form"
+          form="create-flag-form"
           loading={isCreatingFlag}
           size="small"
           type="submit"

@@ -24,6 +24,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
       environments.map((env) => ({
         label: env.environment.name,
         value: env.environment.slug,
+        color: env.environment.color,
       })),
     [environments]
   );
@@ -49,7 +50,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
   );
 
   return (
-    <div className="sticky top-0 z-50 flex h-9 min-h-9 items-center justify-between border-b bg-ui-bg-base py-2 pr-2 pl-1">
+    <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center justify-between border-b bg-ui-bg-base py-2 pr-2 pl-1">
       <div className="flex items-center gap-x-2">
         <Tabs onValueChange={handleTabChange} value={tab}>
           <TabsList className="h-8 shadow-elevation-card-rest">
@@ -79,12 +80,32 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
         value={currentEnvironment?.value ?? ""}
       >
         <SelectTrigger className="h-6! min-h-6! w-40 text-xs! sm:max-h-6!">
-          <SelectValue />
+          <SelectValue>
+            <div className="flex items-center gap-x-0.5">
+              <div
+                className="mr-1.5 size-4! shrink-0! rounded-full border"
+                style={{
+                  backgroundColor: currentEnvironment?.color ?? undefined,
+                }}
+              />
+              {currentEnvironment?.label}
+            </div>
+          </SelectValue>
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           {environmentItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
+            <SelectItem
+              className="flex items-center gap-x-1.5"
+              key={item.value}
+              value={item.value}
+            >
+              <div className="flex items-center gap-x-0.5">
+                <div
+                  className="mr-1.5 size-4! shrink-0! rounded-full border"
+                  style={{ backgroundColor: item.color ?? undefined }}
+                />
+                {item.label}
+              </div>
             </SelectItem>
           ))}
         </SelectContent>

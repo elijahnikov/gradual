@@ -54,7 +54,7 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
   return (
     <FlagContextMenu flag={flag.featureFlag}>
       <div
-        className="group/flag flex h-16 items-center px-4 data-[selected=true]:bg-ui-button-recall/10"
+        className="group/flag flex h-16 items-center border-0 px-4 data-[selected=true]:bg-ui-button-recall/10"
         data-selected={isSelected}
       >
         {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
@@ -111,16 +111,18 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
             />
           </div>
 
-          {maintainer ? (
-            <Avatar className="shadow-buttons-neutral">
-              <AvatarImage src={maintainer?.image ?? undefined} />
-              <AvatarFallback>{maintainer?.name?.charAt(0)}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <Card className="flex size-8 items-center justify-center rounded-full">
-              <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
-            </Card>
-          )}
+          <div className="relative -left-3.5 ml-2">
+            {maintainer ? (
+              <Avatar className="size-6 shadow-buttons-neutral">
+                <AvatarImage src={maintainer?.image ?? undefined} />
+                <AvatarFallback>{maintainer?.name?.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <Card className="flex size-8 items-center justify-center rounded-full">
+                <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </FlagContextMenu>

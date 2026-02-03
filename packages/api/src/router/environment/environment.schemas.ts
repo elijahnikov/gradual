@@ -7,12 +7,19 @@ import { environment } from "@gradual/db/schema";
 import z from "zod/v4";
 
 export type CreateEnvironmentInput = z.infer<typeof createEnvironmentSchema>;
-export const createEnvironmentSchema = createInsertSchema(environment).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
-});
+export const createEnvironmentSchema = createInsertSchema(environment)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    deletedAt: true,
+    projectId: true,
+    organizationId: true,
+  })
+  .extend({
+    organizationSlug: z.string(),
+    projectSlug: z.string(),
+  });
 
 export type ListEnvironmentsInput = z.infer<typeof listEnvironmentsSchema>;
 export const listEnvironmentsSchema = createSelectSchema(environment).pick({

@@ -204,19 +204,22 @@ export default function FlagFilterBar({
       </div>
       <div className="relative -left-5 flex items-center gap-3">
         {environmentsLoading ? (
-          <>
+          <div className="flex items-center gap-5">
             <Skeleton className="h-7 w-34 rounded-sm" />
-            <Separator orientation="vertical" />
             <Skeleton className="h-7 w-34 rounded-sm" />
-          </>
+          </div>
         ) : (
           selectedEnvironments.map((env, index) => (
             <>
               <div
-                className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-3 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
+                className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-1.5 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
                 key={env.id}
               >
-                <Text className="w-full" size="xsmall" weight="plus">
+                <span
+                  className="size-4 shrink-0 rounded-full border"
+                  style={{ backgroundColor: env.color ?? undefined }}
+                />
+                <Text className="w-full truncate" size="xsmall" weight="plus">
                   {env.name}
                 </Text>
                 {canRemove && (
@@ -252,9 +255,14 @@ export default function FlagFilterBar({
             {canAddMore &&
               availableEnvironments.map((env) => (
                 <DropdownMenuItem
+                  className="flex items-center gap-x-1.5"
                   key={env.id}
                   onClick={() => handleAddEnvironment(env.id)}
                 >
+                  <span
+                    className="size-4 shrink-0 rounded-full border"
+                    style={{ backgroundColor: env.color ?? undefined }}
+                  />
                   {env.name}
                 </DropdownMenuItem>
               ))}

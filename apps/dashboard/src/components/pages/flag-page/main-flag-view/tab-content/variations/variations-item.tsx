@@ -311,7 +311,7 @@ export default function VariationsItem({
 
   return (
     <Card className="group relative flex flex-col p-0">
-      <div className="p-3">
+      <div className="p-3 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isEditing ? (
