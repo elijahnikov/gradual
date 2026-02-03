@@ -1,23 +1,37 @@
+interface SnapshotJobMessage {
+  orgId: string;
+  projectId: string;
+  environmentSlug: string;
+}
+
+interface SnapshotJobMessage {
+  orgId: string;
+  projectId: string;
+  environmentSlug: string;
+}
+
 interface Env {
   GRADUAL_API_KEY: KVNamespace;
   GRADUAL_SNAPSHOT: KVNamespace;
+  SNAPSHOT_QUEUE: Queue<SnapshotJobMessage>;
   CLOUDFLARE_WORKERS_ADMIN_KEY: string;
+  API_INTERNAL_URL: string;
 }
 
-async function handleSnapshot(
-  snapshotId: string | null,
-  env: Env,
-  request: Request
-): Promise<Response> {
+async function handleSnapshot(request: Request, env: Env): Promise<Response> {
   if (!verifyAdminAuth(request, env)) {
     return new Response("Unauthorized", { status: 401 });
   }
-  if (!snapshotId) {
-    return new Response("Missing snapshot id", { status: 400 });
+
+  const url = new URL(request.url);
+  const key = url.searchParams.get("key");
+
+  if (!key) {
+    return new Response("Missing snapshot key", { status: 400 });
   }
 
   try {
-    const snapshot = await env.GRADUAL_SNAPSHOT.get(snapshotId);
+    const snapshot = await env.GRADUAL_SNAPSHOT.get(key);
     if (snapshot === null) {
       return new Response("Snapshot not found", { status: 404 });
     }
@@ -29,6 +43,94 @@ async function handleSnapshot(
     return new Response(err instanceof Error ? err.message : "KV error", {
       status: 500,
     });
+  }
+}
+
+async function handleQueueSnapshot(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  console.log("[Worker] Received queue-snapshot request");
+
+  if (!verifyAdminAuth(request, env)) {
+    console.log("[Worker] Unauthorized - invalid admin key");
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as SnapshotJobMessage;
+    console.log("[Worker] Queue request body:", JSON.stringify(body));
+
+    if (!(body.orgId && body.projectId && body.environmentSlug)) {
+      return new Response(
+        "Missing required fields: orgId, projectId, environmentSlug",
+        { status: 400 }
+      );
+    }
+
+    await env.SNAPSHOT_QUEUE.send({
+      orgId: body.orgId,
+      projectId: body.projectId,
+      environmentSlug: body.environmentSlug,
+    });
+
+    console.log("[Worker] Message sent to queue");
+    return new Response(
+      JSON.stringify({ success: true, message: "Snapshot job queued" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (err) {
+    console.error("[Worker] Error queuing snapshot job:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error queuing snapshot job",
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePublishSnapshot(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (!verifyAdminAuth(request, env)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as {
+      key: string;
+      snapshot: unknown;
+    };
+
+    if (!(body.key && body.snapshot)) {
+      return new Response("Missing required fields: key, snapshot", {
+        status: 400,
+      });
+    }
+
+    await env.GRADUAL_SNAPSHOT.put(body.key, JSON.stringify(body.snapshot));
+
+    return new Response(JSON.stringify({ success: true, key: body.key }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("Error publishing snapshot:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error publishing snapshot",
+      { status: 500 }
+    );
   }
 }
 
@@ -194,14 +296,89 @@ async function handleRevokeApiKey(
   }
 }
 
+async function handleBuildSnapshotSync(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (!verifyAdminAuth(request, env)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as SnapshotJobMessage;
+
+    if (!(body.orgId && body.projectId && body.environmentSlug)) {
+      return new Response(
+        "Missing required fields: orgId, projectId, environmentSlug",
+        { status: 400 }
+      );
+    }
+
+    const { orgId, projectId, environmentSlug } = body;
+    const url = `${env.API_INTERNAL_URL}/api/trpc/snapshots.buildForWorker`;
+    console.log(
+      `[Sync] Building snapshot: ${orgId}/${projectId}/${environmentSlug}`
+    );
+    console.log(`[Sync] Calling API: ${url}`);
+
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({
+        json: {
+          orgId,
+          projectId,
+          environmentSlug,
+          workerSecret: env.CLOUDFLARE_WORKERS_ADMIN_KEY,
+        },
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Sync] API error: ${errorText}`);
+      return new Response(errorText, { status: response.status });
+    }
+
+    const result = (await response.json()) as { result: { data: unknown } };
+    const snapshot = result.result.data;
+
+    const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
+    await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));
+
+    console.log(`[Sync] Snapshot published: ${key}`);
+    return new Response(JSON.stringify({ success: true, key }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("[Sync] Error:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error building snapshot",
+      { status: 500 }
+    );
+  }
+}
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const requestUrl = new URL(request.url);
     const { pathname } = requestUrl;
 
     if (pathname === "/api/v1/snapshot") {
-      const snapshotId = requestUrl.searchParams.get("id");
-      return await handleSnapshot(snapshotId, env, request);
+      return await handleSnapshot(request, env);
+    }
+
+    if (pathname === "/api/v1/queue-snapshot") {
+      return await handleQueueSnapshot(request, env);
+    }
+
+    if (pathname === "/api/v1/publish-snapshot") {
+      return await handlePublishSnapshot(request, env);
     }
 
     if (pathname === "/api/v1/submit-api-key") {
@@ -216,6 +393,64 @@ export default {
       return await handleRevokeApiKey(request, env);
     }
 
+    // Direct snapshot build (bypasses queue, for testing)
+    if (pathname === "/api/v1/build-snapshot-sync") {
+      return await handleBuildSnapshotSync(request, env);
+    }
+
     return new Response("Not found", { status: 404 });
+  },
+
+  async queue(batch, env): Promise<void> {
+    const messages = batch.messages as Message<SnapshotJobMessage>[];
+    console.log(
+      `[Worker Queue] Processing batch of ${messages.length} messages`
+    );
+
+    for (const msg of messages) {
+      const { orgId, projectId, environmentSlug } = msg.body;
+      console.log(
+        `[Worker Queue] Processing: ${orgId}/${projectId}/${environmentSlug}`
+      );
+
+      try {
+        const url = `${env.API_INTERNAL_URL}/api/trpc/snapshots.buildForWorker`;
+        console.log(`[Worker Queue] Calling API: ${url}`);
+
+        const response = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify({
+            json: {
+              orgId,
+              projectId,
+              environmentSlug,
+              workerSecret: env.CLOUDFLARE_WORKERS_ADMIN_KEY,
+            },
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to build snapshot: ${errorText}`);
+          msg.retry();
+          continue;
+        }
+
+        const result = (await response.json()) as { result: { data: unknown } };
+        const snapshot = result.result.data;
+
+        const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
+        await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));
+
+        console.log(`Snapshot published: ${key}`);
+        msg.ack();
+      } catch (err) {
+        console.error("Error processing snapshot job:", err);
+        msg.retry();
+      }
+    }
   },
 } satisfies ExportedHandler<Env>;

@@ -7,6 +7,7 @@ import { organizationRouter } from "./router/organization/organization.router";
 import { organizationMemberRouter } from "./router/organization-member/organization-member.router";
 import { projectRouter } from "./router/project/project.router";
 import { segmentsRouter } from "./router/segments/segments.router";
+import { snapshotsRouter } from "./router/snapshots/snapshots.router";
 import { createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   apiKey: apiKeyRouter,
   featureFlags: featureFlagsRouter,
   segments: segmentsRouter,
+  snapshots: snapshotsRouter,
 });
 
 export type AppRouter = typeof appRouter;
