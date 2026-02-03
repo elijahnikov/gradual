@@ -29,6 +29,7 @@ import {
 import { TRPCError } from "@trpc/server";
 
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
+import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
   AddVariationInput,
   CreateCompleteFeatureFlagInput,
@@ -50,6 +51,33 @@ import {
   transformEvaluationsToHourlyData,
   transformToMetricsData,
 } from "./feature-flags.utils";
+
+async function queueSnapshotsForAllEnvironments(
+  ctx: ProtectedOrganizationTRPCContext,
+  projectId: string
+): Promise<void> {
+  const environments = await ctx.db.query.environment.findMany({
+    where: (
+      { projectId: envProjectId, organizationId, deletedAt },
+      { eq, and, isNull }
+    ) =>
+      and(
+        eq(envProjectId, projectId),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  for (const env of environments) {
+    queueSnapshotPublish({
+      orgId: ctx.organization.id,
+      projectId,
+      environmentSlug: env.slug,
+    }).catch((err) => {
+      console.error(`Failed to queue snapshot publish for ${env.slug}:`, err);
+    });
+  }
+}
 
 export const getAllFeatureFlagsByProjectAndOrganization = async ({
   ctx,
@@ -823,7 +851,7 @@ export const saveTargetingRules = async ({
     });
   }
 
-  return await ctx.db.transaction(async (tx) => {
+  const result = await ctx.db.transaction(async (tx) => {
     await tx
       .delete(featureFlagTarget)
       .where(
@@ -906,6 +934,16 @@ export const saveTargetingRules = async ({
 
     return { success: true, targetCount: targets.length };
   });
+
+  queueSnapshotPublish({
+    orgId: ctx.organization.id,
+    projectId: foundProject.id,
+    environmentSlug,
+  }).catch((err) => {
+    console.error("Failed to queue snapshot publish:", err);
+  });
+
+  return result;
 };
 
 export const updateFeatureFlag = async ({
@@ -1113,6 +1151,8 @@ export const updateVariation = async ({
     .where(eq(featureFlagVariation.id, variationId))
     .returning();
 
+  queueSnapshotsForAllEnvironments(ctx, foundProject.id);
+
   return updatedVariation;
 };
 
@@ -1180,6 +1220,8 @@ export const addVariation = async ({
       sortOrder: nextSortOrder,
     })
     .returning();
+
+  queueSnapshotsForAllEnvironments(ctx, foundProject.id);
 
   return newVariation;
 };
@@ -1259,6 +1301,8 @@ export const deleteVariation = async ({
   await ctx.db
     .delete(featureFlagVariation)
     .where(eq(featureFlagVariation.id, variationId));
+
+  queueSnapshotsForAllEnvironments(ctx, foundProject.id);
 
   return { success: true };
 };

@@ -192,3 +192,5 @@ export type ProtectedOrganizationTRPCContext = ProtectedTRPCContext & {
   organization: InferSelectModel<typeof organization>;
   organizationMember: InferSelectModel<typeof member>;
 };
+
+export type PublicTRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;

@@ -8,11 +8,28 @@
   "kv_namespaces": [
     {
       "binding": "GRADUAL_API_KEY",
-      "id": "7f37c9404a64470fa0788f1b687c7df8"
+      "id": "7f37c9404a64470fa0788f1b687c7df8",
+      "preview_id": "1154e146d2b94e32927ccc82f1c0b71f"
     },
     {
       "binding": "GRADUAL_SNAPSHOT",
-      "id": "c8fa7f048ebd47c59c165f27a9aa54d0"
+      "id": "c8fa7f048ebd47c59c165f27a9aa54d0",
+      "preview_id": "f949cdc323dd45d8b70842f6d261de13"
     }
-  ]
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SNAPSHOT_QUEUE",
+        "queue": "snapshot-queue"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "snapshot-queue",
+        "max_batch_size": 10,
+        "max_retries": 3
+      }
+    ]
+  }
 }
