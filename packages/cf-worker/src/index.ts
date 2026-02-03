@@ -4,12 +4,6 @@ interface SnapshotJobMessage {
   environmentSlug: string;
 }
 
-interface SnapshotJobMessage {
-  orgId: string;
-  projectId: string;
-  environmentSlug: string;
-}
-
 interface Env {
   GRADUAL_API_KEY: KVNamespace;
   GRADUAL_SNAPSHOT: KVNamespace;
