@@ -269,7 +269,7 @@ export const createCompleteFeatureFlag = async ({
     });
   }
 
-  return await ctx.db.transaction(async (tx) => {
+  const result = await ctx.db.transaction(async (tx) => {
     const createdFlags = (await tx
       .insert(featureFlag)
       .values({
@@ -378,10 +378,26 @@ export const createCompleteFeatureFlag = async ({
     }
 
     return {
-      ...createdFlag,
+      flag: createdFlag,
       variations: createdVariations,
+      environments: allEnvironments,
     };
   });
+
+  for (const env of result.environments) {
+    queueSnapshotPublish({
+      orgId: ctx.organization.id,
+      projectId: foundProject.id,
+      environmentSlug: env.slug,
+    }).catch((err) => {
+      console.error(`Failed to queue snapshot for ${env.slug}:`, err);
+    });
+  }
+
+  return {
+    ...result.flag,
+    variations: result.variations,
+  };
 };
 
 export const getFeatureFlagByKey = async ({
