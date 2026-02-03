@@ -294,7 +294,6 @@ export async function queueSnapshotPublish({
   console.log(
     `[Snapshot] Queuing snapshot for ${orgId}/${projectId}/${environmentSlug}`
   );
-  console.log(`[Snapshot] POST ${url}`);
 
   try {
     const response = await fetch(url, {
@@ -320,7 +319,6 @@ export async function queueSnapshotPublish({
       return { queued: false };
     }
 
-    console.log("[Snapshot] Successfully queued");
     return { queued: true };
   } catch (err) {
     console.error("[Snapshot] Error queuing snapshot publish:", err);
