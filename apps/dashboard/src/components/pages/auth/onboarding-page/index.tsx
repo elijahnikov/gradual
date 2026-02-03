@@ -100,8 +100,8 @@ export default function OnboardingPageComponent() {
 
     if (organizationSlug) {
       navigate({
-        to: "/$organizationSlug",
-        params: { organizationSlug },
+        to: "/$organizationSlug/$projectSlug",
+        params: { organizationSlug, projectSlug: "default" },
       });
     } else {
       navigate({ to: "/" });

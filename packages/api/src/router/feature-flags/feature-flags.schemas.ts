@@ -134,7 +134,7 @@ export const getPreviewEvaluationsSchema = z.object({
   flagId: z.uuid(),
   organizationId: z.string(),
   projectId: z.string(),
-  environmentIds: z.array(z.uuid()).min(1).max(2),
+  environmentIds: z.array(z.uuid()).min(1).max(3),
 });
 
 export const seedEvaluationsSchema = z.object({

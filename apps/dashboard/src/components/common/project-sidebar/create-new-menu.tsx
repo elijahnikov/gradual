@@ -12,10 +12,13 @@ import {
   RiFlagLine,
 } from "@remixicon/react";
 import { useState } from "react";
+import CreateEnvironmentDialog from "../dialogs/create-environment-dialog";
 import CreateFlagDialog from "../dialogs/create-flag-dialog";
 
 export default function CreateNewMenu() {
   const [isCreateFlagDialogOpen, setIsCreateFlagDialogOpen] =
+    useState<boolean>(false);
+  const [isCreateEnvironmentDialogOpen, setIsCreateEnvironmentDialogOpen] =
     useState<boolean>(false);
 
   return (
@@ -38,7 +41,9 @@ export default function CreateNewMenu() {
             <RiFlagLine className="size-4" />
             Feature flag
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setIsCreateEnvironmentDialogOpen(true)}
+          >
             <RiEarthFill className="size-4" />
             Environment
           </DropdownMenuItem>
@@ -51,6 +56,10 @@ export default function CreateNewMenu() {
       <CreateFlagDialog
         onOpenChange={setIsCreateFlagDialogOpen}
         open={isCreateFlagDialogOpen}
+      />
+      <CreateEnvironmentDialog
+        onOpenChange={setIsCreateEnvironmentDialogOpen}
+        open={isCreateEnvironmentDialogOpen}
       />
     </>
   );

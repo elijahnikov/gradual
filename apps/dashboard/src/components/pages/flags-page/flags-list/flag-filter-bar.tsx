@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
+import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
 import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
 import { flagsSearchParams, type SortBy } from "./flags-search-params";
@@ -47,6 +48,7 @@ export default function FlagFilterBar({
     useQueryStates(flagsSearchParams);
 
   const [searchInput, setSearchInput] = useState(search);
+  const [createEnvDialogOpen, setCreateEnvDialogOpen] = useState(false);
 
   const { data: project } = useQuery(
     trpc.project.getBySlug.queryOptions({
@@ -204,19 +206,22 @@ export default function FlagFilterBar({
       </div>
       <div className="relative -left-5 flex items-center gap-3">
         {environmentsLoading ? (
-          <>
+          <div className="flex items-center gap-5">
             <Skeleton className="h-7 w-34 rounded-sm" />
-            <Separator orientation="vertical" />
             <Skeleton className="h-7 w-34 rounded-sm" />
-          </>
+          </div>
         ) : (
           selectedEnvironments.map((env, index) => (
             <>
               <div
-                className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-3 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
+                className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-1.5 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
                 key={env.id}
               >
-                <Text className="w-full" size="xsmall" weight="plus">
+                <span
+                  className="size-4 shrink-0 rounded-full border"
+                  style={{ backgroundColor: env.color ?? undefined }}
+                />
+                <Text className="w-full truncate" size="xsmall" weight="plus">
                   {env.name}
                 </Text>
                 {canRemove && (
@@ -252,9 +257,14 @@ export default function FlagFilterBar({
             {canAddMore &&
               availableEnvironments.map((env) => (
                 <DropdownMenuItem
+                  className="flex items-center gap-x-1.5"
                   key={env.id}
                   onClick={() => handleAddEnvironment(env.id)}
                 >
+                  <span
+                    className="size-4 shrink-0 rounded-full border"
+                    style={{ backgroundColor: env.color ?? undefined }}
+                  />
                   {env.name}
                 </DropdownMenuItem>
               ))}
@@ -268,17 +278,17 @@ export default function FlagFilterBar({
                 Maximum of 3 environments
               </div>
             )}
-            <DropdownMenuItem
-              onClick={() => {
-                // TODO: Open create environment dialog
-              }}
-            >
+            <DropdownMenuItem onClick={() => setCreateEnvDialogOpen(true)}>
               <RiAddLine className="size-4 shrink-0 text-ui-fg-muted" />
               Create new environment
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <CreateEnvironmentDialog
+        onOpenChange={setCreateEnvDialogOpen}
+        open={createEnvDialogOpen}
+      />
     </div>
   );
 }

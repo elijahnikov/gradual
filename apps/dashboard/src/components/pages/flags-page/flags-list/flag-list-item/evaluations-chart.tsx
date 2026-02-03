@@ -19,7 +19,6 @@ const VARIATION_COLORS = [
   "#ec4899", // Pink
 ];
 
-// Sanitize name for use as CSS variable name
 const sanitizeCssVarName = (name: string) =>
   name.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
 
@@ -62,18 +61,24 @@ export default function EvaluationsPreviewChart({
         };
       }
 
-      const dataByEnv = evaluations.environments.map((env) => ({
-        env,
-        data: evaluations.data.map((d) => ({
-          time: d.time,
-          ...d.byEnvironment[env.name],
-        })),
-      }));
-
       const variations = evaluations.variations.map((v, i) => ({
         ...v,
         cssKey: sanitizeCssVarName(v.name),
         color: VARIATION_COLORS[i % VARIATION_COLORS.length],
+      }));
+
+      const defaultValues: Record<string, number> = {};
+      for (const v of variations) {
+        defaultValues[v.name] = 0;
+      }
+
+      const dataByEnv = evaluations.environments.map((env) => ({
+        env,
+        data: evaluations.data.map((d) => ({
+          time: d.time,
+          ...defaultValues,
+          ...d.byEnvironment[env.name],
+        })),
       }));
 
       const config: ChartConfig = {};
@@ -115,7 +120,7 @@ export default function EvaluationsPreviewChart({
           >
             <AreaChart accessibilityLayer data={data}>
               <XAxis dataKey="time" hide />
-              <YAxis domain={[0, "auto"]} hide />
+              <YAxis domain={[0, (max: number) => Math.max(max, 1)]} hide />
               <ChartTooltip
                 animationDuration={0}
                 content={<ChartTooltipContent className="absolute top-10" />}

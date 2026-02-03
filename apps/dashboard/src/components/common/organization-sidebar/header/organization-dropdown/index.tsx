@@ -129,7 +129,7 @@ export default function OrganizationDropdown() {
 }
 
 export const OrganizationDropdownSkeleton = () => (
-  <div className="flex w-full flex-col gap-2">
-    <Skeleton className="h-8 w-full" />
+  <div className="relative -left-1 flex w-full flex-col gap-2">
+    <Skeleton className="h-8 w-8 rounded-full" />
   </div>
 );

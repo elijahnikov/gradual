@@ -148,6 +148,10 @@ function VariationsTabSkeleton() {
       <div className="flex flex-col gap-3">
         <VariationCardSkeleton />
         <VariationCardSkeleton />
+        <VariationCardSkeleton />
+        <VariationCardSkeleton />
+        <VariationCardSkeleton />
+        <VariationCardSkeleton />
       </div>
     </div>
   );

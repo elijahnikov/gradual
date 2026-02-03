@@ -1,5 +1,9 @@
 import { and, eq, isNull } from "@gradual/db";
-import { environment } from "@gradual/db/schema";
+import {
+  environment,
+  featureFlag,
+  featureFlagEnvironment,
+} from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
@@ -18,13 +22,14 @@ export const createEnvironment = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateEnvironmentInput;
 }) => {
-  const { organizationId: organizationIdInput, projectId } = input;
+  const { organization } = ctx;
+  const { projectSlug } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
-    where: ({ id, organizationId, deletedAt }, { eq, isNull, and }) =>
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
       and(
-        eq(id, projectId),
-        eq(organizationId, organizationIdInput),
+        eq(slug, projectSlug),
+        eq(organizationId, organization.id),
         isNull(deletedAt)
       ),
   });
@@ -35,8 +40,48 @@ export const createEnvironment = async ({
 
   const [createdEnvironment] = await ctx.db
     .insert(environment)
-    .values(input)
+    .values({
+      ...input,
+      organizationId: organization.id,
+      projectId: foundProject.id,
+    })
     .returning();
+
+  const existingFlags = await ctx.db.query.featureFlag.findMany({
+    where: and(
+      eq(featureFlag.projectId, foundProject.id),
+      isNull(featureFlag.archivedAt)
+    ),
+    with: {
+      environments: {
+        limit: 1,
+      },
+      variations: {
+        where: (v, { eq }) => eq(v.isDefault, true),
+        limit: 1,
+      },
+    },
+  });
+
+  if (existingFlags.length > 0 && createdEnvironment) {
+    await ctx.db.insert(featureFlagEnvironment).values(
+      existingFlags.map((flag) => {
+        const existingEnvConfig = flag.environments[0];
+        const defaultVariation = flag.variations[0];
+
+        return {
+          featureFlagId: flag.id,
+          environmentId: createdEnvironment.id,
+          enabled: false,
+          defaultVariationId:
+            existingEnvConfig?.defaultVariationId ?? defaultVariation?.id,
+          offVariationId:
+            existingEnvConfig?.offVariationId ?? defaultVariation?.id,
+        };
+      })
+    );
+  }
+
   return createdEnvironment;
 };
 
