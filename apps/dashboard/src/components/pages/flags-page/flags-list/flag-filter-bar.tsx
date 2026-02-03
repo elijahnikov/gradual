@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
+import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
 import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
 import { flagsSearchParams, type SortBy } from "./flags-search-params";
@@ -47,6 +48,7 @@ export default function FlagFilterBar({
     useQueryStates(flagsSearchParams);
 
   const [searchInput, setSearchInput] = useState(search);
+  const [createEnvDialogOpen, setCreateEnvDialogOpen] = useState(false);
 
   const { data: project } = useQuery(
     trpc.project.getBySlug.queryOptions({
@@ -276,17 +278,17 @@ export default function FlagFilterBar({
                 Maximum of 3 environments
               </div>
             )}
-            <DropdownMenuItem
-              onClick={() => {
-                // TODO: Open create environment dialog
-              }}
-            >
+            <DropdownMenuItem onClick={() => setCreateEnvDialogOpen(true)}>
               <RiAddLine className="size-4 shrink-0 text-ui-fg-muted" />
               Create new environment
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <CreateEnvironmentDialog
+        onOpenChange={setCreateEnvDialogOpen}
+        open={createEnvDialogOpen}
+      />
     </div>
   );
 }
