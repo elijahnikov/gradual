@@ -1,5 +1,16 @@
 # @gradual-so/sdk-react
 
+## 0.4.0
+
+### Minor Changes
+
+- [#30](https://github.com/elijahnikov/gradual/pull/30) [`0fbe3f5`](https://github.com/elijahnikov/gradual/commit/0fbe3f5a003526c4f4663096377c3476a31f4cb9) Thanks [@elijahnikov](https://github.com/elijahnikov)! - workspace fix
+
+### Patch Changes
+
+- Updated dependencies [[`0fbe3f5`](https://github.com/elijahnikov/gradual/commit/0fbe3f5a003526c4f4663096377c3476a31f4cb9)]:
+  - @gradual-so/sdk@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
