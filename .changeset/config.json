@@ -17,11 +17,9 @@
     "@gradual/ui",
     "@gradual/dashboard",
     "@gradual/expo",
-    "@gradual/tsconfig",
     "@gradual/tailwind-config",
     "@gradual/github",
     "cf-worker",
-    "marketing",
-    "gradual"
+    "marketing"
   ]
 }

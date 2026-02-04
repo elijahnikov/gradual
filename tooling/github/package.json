@@ -1,3 +1,5 @@
 {
-  "name": "@gradual/github"
+  "name": "@gradual/github",
+  "version": "0.0.0",
+  "private": true
 }
