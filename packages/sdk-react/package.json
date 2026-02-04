@@ -1,6 +1,6 @@
 {
   "name": "@gradual-so/sdk-react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Gradual feature flag SDK for React",
   "type": "module",
   "main": "./dist/index.cjs",

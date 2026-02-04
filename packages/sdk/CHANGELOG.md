@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.3.0
+
+### Minor Changes
+
+- [#28](https://github.com/elijahnikov/gradual/pull/28) [`6ab54ef`](https://github.com/elijahnikov/gradual/commit/6ab54ef3c8c40db64389a9b89417c9c39bbadebb) Thanks [@elijahnikov](https://github.com/elijahnikov)! - workspace dependency resolution
+
 ## 0.2.0
 
 ### Minor Changes
