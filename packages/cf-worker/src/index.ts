@@ -358,6 +358,93 @@ async function handleBuildSnapshotSync(
   }
 }
 
+// SDK Endpoints (no admin auth - uses SDK API key)
+
+async function handleSdkInit(request: Request, env: Env): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as { apiKey?: string };
+    const apiKey = body.apiKey;
+
+    if (!apiKey) {
+      return Response.json(
+        { valid: false, error: "Missing API key" },
+        { status: 400 }
+      );
+    }
+
+    const value = await env.GRADUAL_API_KEY.get(`apiKey:${apiKey}`);
+    if (!value) {
+      return Response.json(
+        { valid: false, error: "Invalid API key" },
+        { status: 401 }
+      );
+    }
+
+    const metadata = JSON.parse(value) as { orgId: string; projectId: string };
+    return Response.json({ valid: true, ...metadata }, { status: 200 });
+  } catch (err) {
+    console.error("[SDK Init] Error:", err);
+    return Response.json(
+      { valid: false, error: "Server error" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleSdkSnapshot(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (request.method !== "GET") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  // Extract API key from Authorization header
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return Response.json(
+      { error: "Missing Authorization header" },
+      { status: 401 }
+    );
+  }
+  const apiKey = authHeader.slice(7);
+
+  // Verify API key and get org/project
+  const keyData = await env.GRADUAL_API_KEY.get(`apiKey:${apiKey}`);
+  if (!keyData) {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  }
+  const { orgId, projectId } = JSON.parse(keyData) as {
+    orgId: string;
+    projectId: string;
+  };
+
+  // Get environment from query param
+  const url = new URL(request.url);
+  const environment = url.searchParams.get("environment");
+  if (!environment) {
+    return Response.json(
+      { error: "Missing environment parameter" },
+      { status: 400 }
+    );
+  }
+
+  // Fetch snapshot from KV
+  const snapshotKey = `snapshot:${orgId}:${projectId}:${environment}`;
+  const snapshot = await env.GRADUAL_SNAPSHOT.get(snapshotKey);
+  if (!snapshot) {
+    return Response.json({ error: "Snapshot not found" }, { status: 404 });
+  }
+
+  return new Response(snapshot, {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const requestUrl = new URL(request.url);
@@ -390,6 +477,15 @@ export default {
     // Direct snapshot build (bypasses queue, for testing)
     if (pathname === "/api/v1/build-snapshot-sync") {
       return await handleBuildSnapshotSync(request, env);
+    }
+
+    // SDK endpoints (no admin auth)
+    if (pathname === "/api/v1/sdk/init") {
+      return await handleSdkInit(request, env);
+    }
+
+    if (pathname === "/api/v1/sdk/snapshot") {
+      return await handleSdkSnapshot(request, env);
     }
 
     return new Response("Not found", { status: 404 });

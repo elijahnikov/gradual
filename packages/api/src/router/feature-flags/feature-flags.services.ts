@@ -740,6 +740,8 @@ export const deleteFlags = async ({
       )
     );
 
+  queueSnapshotsForAllEnvironments(ctx, project.id);
+
   return { success: true, deleted: flagIds.length };
 };
 
