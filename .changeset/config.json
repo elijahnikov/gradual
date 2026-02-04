@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "elijahnikov/gradual" }
+  ],
+  "commit": false,
+  "fixed": [],
+  "linked": [["@gradual-so/sdk", "@gradual-so/sdk-react"]],
+  "access": "public",
+  "baseBranch": "master",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@gradual/api",
+    "@gradual/auth",
+    "@gradual/db",
+    "@gradual/ui",
+    "@gradual/dashboard",
+    "@gradual/expo",
+    "@gradual/tsconfig",
+    "@gradual/tailwind-config",
+    "@gradual/github",
+    "cf-worker",
+    "marketing",
+    "gradual"
+  ]
+}
