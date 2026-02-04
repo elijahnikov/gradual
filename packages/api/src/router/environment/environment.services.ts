@@ -6,6 +6,7 @@ import {
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
+import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
   CreateEnvironmentInput,
   DeleteEnvironmentInput,
@@ -80,6 +81,17 @@ export const createEnvironment = async ({
         };
       })
     );
+
+    queueSnapshotPublish({
+      orgId: organization.id,
+      projectId: foundProject.id,
+      environmentSlug: createdEnvironment.slug,
+    }).catch((err) => {
+      console.error(
+        `Failed to queue snapshot for ${createdEnvironment.slug}:`,
+        err
+      );
+    });
   }
 
   return createdEnvironment;

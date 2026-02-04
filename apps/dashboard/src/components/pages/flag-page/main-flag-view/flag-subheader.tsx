@@ -83,7 +83,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
           <SelectValue>
             <div className="flex items-center gap-x-0.5">
               <div
-                className="mr-1.5 size-4! shrink-0! rounded-full border"
+                className="mr-1.5 size-3.5! shrink-0! rounded-full"
                 style={{
                   backgroundColor: currentEnvironment?.color ?? undefined,
                 }}
@@ -101,7 +101,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
             >
               <div className="flex items-center gap-x-0.5">
                 <div
-                  className="mr-1.5 size-4! shrink-0! rounded-full border"
+                  className="mr-1.5 size-4! shrink-0! rounded-full"
                   style={{ backgroundColor: item.color ?? undefined }}
                 />
                 {item.label}

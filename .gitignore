@@ -55,6 +55,8 @@ dist/
 .tanstack
 
 packages/cf-worker/.wrangler/
+packages/cf-worker/.dev.vars
+.dev.vars
 
 .astro/
 apps/marketing/.astro

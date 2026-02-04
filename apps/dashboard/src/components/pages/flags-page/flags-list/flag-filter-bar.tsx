@@ -218,7 +218,7 @@ export default function FlagFilterBar({
                 key={env.id}
               >
                 <span
-                  className="size-4 shrink-0 rounded-full border"
+                  className="size-4 shrink-0 rounded-full"
                   style={{ backgroundColor: env.color ?? undefined }}
                 />
                 <Text className="w-full truncate" size="xsmall" weight="plus">
@@ -262,7 +262,7 @@ export default function FlagFilterBar({
                   onClick={() => handleAddEnvironment(env.id)}
                 >
                   <span
-                    className="size-4 shrink-0 rounded-full border"
+                    className="size-4 shrink-0 rounded-full"
                     style={{ backgroundColor: env.color ?? undefined }}
                   />
                   {env.name}
