@@ -1,5 +1,16 @@
 # @gradual-so/sdk-react
 
+## 0.2.0
+
+### Minor Changes
+
+- [#26](https://github.com/elijahnikov/gradual/pull/26) [`48b68c7`](https://github.com/elijahnikov/gradual/commit/48b68c78c530e65b9ce34d4de93d005ae5435333) Thanks [@elijahnikov](https://github.com/elijahnikov)! - fix workspace dependency resolution
+
+### Patch Changes
+
+- Updated dependencies [[`48b68c7`](https://github.com/elijahnikov/gradual/commit/48b68c78c530e65b9ce34d4de93d005ae5435333)]:
+  - @gradual-so/sdk@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
