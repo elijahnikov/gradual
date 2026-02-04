@@ -1,0 +1,58 @@
+{
+  "name": "@gradual-so/sdk-react",
+  "version": "0.0.1",
+  "description": "Gradual feature flag SDK for React",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "license": "MIT",
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "gradual",
+    "react",
+    "hooks",
+    "sdk"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gradual-io/gradual",
+    "directory": "packages/sdk-react"
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@gradual-so/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@gradual/tsconfig": "workspace:*",
+    "@types/react": "catalog:react",
+    "react": "catalog:react",
+    "tsup": "^8.5.1",
+    "typescript": "catalog:"
+  }
+}
