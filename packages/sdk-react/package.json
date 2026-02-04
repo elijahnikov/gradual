@@ -47,7 +47,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@gradual-so/sdk": "workspace:*"
+    "@gradual-so/sdk": "^0.3.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
