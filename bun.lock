@@ -21,6 +21,7 @@
     },
     "apps/dashboard": {
       "name": "@gradual/dashboard",
+      "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.969.0",
         "@aws-sdk/s3-request-presigner": "^3.969.0",
@@ -75,6 +76,7 @@
     },
     "apps/expo": {
       "name": "@gradual/expo",
+      "version": "0.0.0",
       "dependencies": {
         "@better-auth/expo": "catalog:better-auth",
         "@legendapp/list": "^2.0.14",
@@ -124,6 +126,7 @@
     },
     "packages/api": {
       "name": "@gradual/api",
+      "version": "0.0.0",
       "dependencies": {
         "@gradual/auth": "*",
         "@gradual/db": "*",
@@ -138,6 +141,7 @@
     },
     "packages/auth": {
       "name": "@gradual/auth",
+      "version": "0.0.0",
       "dependencies": {
         "@better-auth/expo": "catalog:better-auth",
         "@gradual/db": "*",
@@ -167,6 +171,7 @@
     },
     "packages/db": {
       "name": "@gradual/db",
+      "version": "0.0.0",
       "dependencies": {
         "@planetscale/database": "^1.19.0",
         "@vercel/postgres": "^0.10.0",
@@ -183,9 +188,8 @@
     },
     "packages/sdk": {
       "name": "@gradual-so/sdk",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "devDependencies": {
-        "@gradual/tsconfig": "workspace:*",
         "tsup": "^8.5.1",
         "typescript": "catalog:",
         "vitest": "^4.0.18",
@@ -193,12 +197,11 @@
     },
     "packages/sdk-react": {
       "name": "@gradual-so/sdk-react",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "dependencies": {
         "@gradual-so/sdk": "workspace:*",
       },
       "devDependencies": {
-        "@gradual/tsconfig": "workspace:*",
         "@types/react": "catalog:react",
         "react": "catalog:react",
         "tsup": "^8.5.1",
@@ -210,6 +213,7 @@
     },
     "packages/ui": {
       "name": "@gradual/ui",
+      "version": "0.0.0",
       "dependencies": {
         "@base-ui/react": "^1.0.0",
         "@react-three/fiber": "^9.3.0",
@@ -239,9 +243,11 @@
     },
     "tooling/github": {
       "name": "@gradual/github",
+      "version": "0.0.0",
     },
     "tooling/tailwind": {
       "name": "@gradual/tailwind-config",
+      "version": "0.0.0",
       "dependencies": {
         "@tailwindcss/postcss": "catalog:tailwind",
         "postcss": "catalog:tailwind",
@@ -255,6 +261,7 @@
     },
     "tooling/typescript": {
       "name": "@gradual/tsconfig",
+      "version": "0.0.0",
     },
   },
   "catalog": {
