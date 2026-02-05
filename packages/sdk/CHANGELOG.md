@@ -1,5 +1,15 @@
 # @gradual-so/sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- [#35](https://github.com/elijahnikov/gradual/pull/35) [`4222eb8`](https://github.com/elijahnikov/gradual/commit/4222eb89447b1a01891422d6cc25d7a77c8bdb3e) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Add polling to refetch
+
+### Patch Changes
+
+- properly run refresh on client sdk
+
 ## 0.4.1
 
 ### Patch Changes

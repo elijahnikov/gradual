@@ -6,6 +6,7 @@ export type {
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
+  PollingOptions,
   SnapshotFlag,
   SnapshotRuleCondition,
   SnapshotSegment,

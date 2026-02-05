@@ -14,12 +14,20 @@ export interface FlagDetail<T> {
   isReady: boolean;
 }
 
-function useGradualContext(): { gradual: Gradual; isReady: boolean } {
+function useGradualContext(): {
+  gradual: Gradual;
+  isReady: boolean;
+  version: number;
+} {
   const context = useContext(GradualContext);
   if (!context.gradual) {
     throw new Error("useFlag must be used within a <GradualProvider>");
   }
-  return { gradual: context.gradual, isReady: context.isReady };
+  return {
+    gradual: context.gradual,
+    isReady: context.isReady,
+    version: context.version,
+  };
 }
 
 /**
@@ -95,8 +103,9 @@ export function useFlag<T>(
   key: string,
   options: UseFlagOptions<T>
 ): T | FlagDetail<T> {
-  const { gradual, isReady } = useGradualContext();
+  const { gradual, isReady, version } = useGradualContext();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version triggers re-evaluation on snapshot update
   const value = useMemo(() => {
     if (!isReady) {
       return options.fallback;
@@ -105,7 +114,7 @@ export function useFlag<T>(
       fallback: options.fallback,
       context: options.context,
     });
-  }, [gradual, isReady, key, options.fallback, options.context]);
+  }, [gradual, isReady, key, options.fallback, options.context, version]);
 
   if (options.detail) {
     return {
