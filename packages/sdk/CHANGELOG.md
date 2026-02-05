@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- [`3907659`](https://github.com/elijahnikov/gradual/commit/390765994737caf4dedd707e29e68909a8c38541) Thanks [@elijahnikov](https://github.com/elijahnikov)! - fix: add CORS to SDK routes and defensive null check on snapshot
+
 ## 0.4.0
 
 ### Minor Changes
