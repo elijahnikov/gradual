@@ -557,17 +557,14 @@ describe("evaluateFlag", () => {
         ],
       });
 
-      // Individual match takes priority (sortOrder 0)
       expect(
         evaluateFlag(flag, { user: { userId: "user-1", plan: "pro" } }, {})
       ).toBe("variant-a");
 
-      // Rule match when individual doesn't match
       expect(
         evaluateFlag(flag, { user: { userId: "user-2", plan: "pro" } }, {})
       ).toBe("variant-b");
 
-      // Default when nothing matches
       expect(
         evaluateFlag(flag, { user: { userId: "user-2", plan: "free" } }, {})
       ).toBe("control");
@@ -616,7 +613,6 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      // No user context provided, rule should not match
       expect(evaluateFlag(flag, { device: { type: "mobile" } }, {})).toBe(true);
     });
   });

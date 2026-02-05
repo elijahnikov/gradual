@@ -66,6 +66,24 @@ class GradualClient implements Gradual {
       isEnabled: this.isEnabledSync.bind(this),
       get: this.getSync.bind(this),
     };
+
+    // Polling defaults: enabled=true, interval=10000ms
+    const pollingEnabled = options.polling?.enabled ?? true;
+    const pollingIntervalMs = options.polling?.intervalMs ?? 10_000;
+
+    // Start polling after init if enabled
+    if (pollingEnabled) {
+      this.initPromise.then(() => {
+        setInterval(async () => {
+          try {
+            await this.refresh();
+          } catch (error) {
+            // Silent fail - don't crash the app
+            console.warn("Gradual: Polling refresh failed", error);
+          }
+        }, pollingIntervalMs);
+      });
+    }
   }
 
   private async init(): Promise<void> {
