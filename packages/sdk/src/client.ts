@@ -34,6 +34,9 @@ export interface Gradual {
   /** Get the current snapshot (for debugging) */
   getSnapshot(): EnvironmentSnapshot | null;
 
+  /** Subscribe to snapshot updates from polling (returns unsubscribe function) */
+  onUpdate(callback: () => void): () => void;
+
   /** Sync methods (throw if not ready) */
   sync: GradualSync;
 }
@@ -53,6 +56,7 @@ class GradualClient implements Gradual {
   private readonly initPromise: Promise<void>;
   private snapshot: EnvironmentSnapshot | null = null;
   private identifiedContext: EvaluationContext = {};
+  private readonly updateListeners: Set<() => void> = new Set();
 
   readonly sync: GradualSync;
 
@@ -67,18 +71,21 @@ class GradualClient implements Gradual {
       get: this.getSync.bind(this),
     };
 
-    // Polling defaults: enabled=true, interval=10000ms
     const pollingEnabled = options.polling?.enabled ?? true;
     const pollingIntervalMs = options.polling?.intervalMs ?? 10_000;
 
-    // Start polling after init if enabled
     if (pollingEnabled) {
       this.initPromise.then(() => {
         setInterval(async () => {
           try {
+            const previousVersion = this.snapshot?.version;
             await this.refresh();
+            if (this.snapshot && this.snapshot.version !== previousVersion) {
+              for (const cb of this.updateListeners) {
+                cb();
+              }
+            }
           } catch (error) {
-            // Silent fail - don't crash the app
             console.warn("Gradual: Polling refresh failed", error);
           }
         }, pollingIntervalMs);
@@ -224,6 +231,11 @@ class GradualClient implements Gradual {
 
   getSnapshot(): EnvironmentSnapshot | null {
     return this.snapshot;
+  }
+
+  onUpdate(callback: () => void): () => void {
+    this.updateListeners.add(callback);
+    return () => this.updateListeners.delete(callback);
   }
 }
 

@@ -1,6 +1,6 @@
 # @gradual-so/sdk-react
 
-## 0.5.0
+## 0.6.0
 
 ### Minor Changes
 
@@ -8,8 +8,10 @@
 
 ### Patch Changes
 
+- properly run refresh on client sdk
+
 - Updated dependencies [[`4222eb8`](https://github.com/elijahnikov/gradual/commit/4222eb89447b1a01891422d6cc25d7a77c8bdb3e)]:
-  - @gradual-so/sdk@0.5.0
+  - @gradual-so/sdk@0.6.0
 
 ## 0.4.1
 
