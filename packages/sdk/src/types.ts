@@ -69,10 +69,16 @@ export interface EvaluationContext {
   [contextKind: string]: Record<string, unknown>;
 }
 
+export interface PollingOptions {
+  enabled?: boolean;
+  intervalMs?: number;
+}
+
 export interface GradualOptions {
   apiKey: string;
   environment: string;
   baseUrl?: string;
+  polling?: PollingOptions;
 }
 
 export interface FlagOptions<T> {
