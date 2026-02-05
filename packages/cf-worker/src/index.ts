@@ -246,8 +246,10 @@ async function adminBuildSnapshotSync(
       return new Response(errorText, { status: response.status });
     }
 
-    const result = (await response.json()) as { result: { data: unknown } };
-    const snapshot = result.result.data;
+    const result = (await response.json()) as {
+      result: { data: { json: unknown } };
+    };
+    const snapshot = result.result.data.json;
     const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
 
     await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));
@@ -400,8 +402,10 @@ async function processSnapshotQueue(
         continue;
       }
 
-      const result = (await response.json()) as { result: { data: unknown } };
-      const snapshot = result.result.data;
+      const result = (await response.json()) as {
+        result: { data: { json: unknown } };
+      };
+      const snapshot = result.result.data.json;
       const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
 
       await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));

@@ -165,7 +165,8 @@ export async function buildEnvironmentSnapshot({
     segments[seg.key] = {
       key: seg.key,
       conditions: (seg.conditions ?? []).map((c) => ({
-        attributeKey: c.attribute,
+        contextKind: c.contextKind,
+        attributeKey: c.attributeKey,
         operator: c.operator as TargetingOperator,
         value: c.value,
       })),
@@ -225,6 +226,7 @@ export async function buildEnvironmentSnapshot({
       switch (t.target.type) {
         case "rule":
           snapshotTarget.conditions = t.rules.map((r) => ({
+            contextKind: r.contextKind,
             attributeKey: r.attributeKey,
             operator: r.operator as TargetingOperator,
             value: r.value,
@@ -233,6 +235,7 @@ export async function buildEnvironmentSnapshot({
 
         case "individual":
           if (t.individual) {
+            snapshotTarget.contextKind = t.individual.contextKind;
             snapshotTarget.attributeKey = t.individual.attributeKey;
             snapshotTarget.attributeValue = t.individual.attributeValue;
           }

@@ -15,6 +15,7 @@ export type TargetingOperator =
   | "not_exists";
 
 export interface SnapshotRuleCondition {
+  contextKind: string;
   attributeKey: string;
   operator: TargetingOperator;
   value: unknown;
@@ -30,6 +31,7 @@ export interface SnapshotTarget {
   variationKey: string;
   sortOrder: number;
   conditions?: SnapshotRuleCondition[];
+  contextKind?: string;
   attributeKey?: string;
   attributeValue?: string;
   segmentKey?: string;
@@ -64,7 +66,7 @@ export interface EnvironmentSnapshot {
 }
 
 export interface EvaluationContext {
-  [key: string]: unknown;
+  [contextKind: string]: Record<string, unknown>;
 }
 
 export interface GradualOptions {

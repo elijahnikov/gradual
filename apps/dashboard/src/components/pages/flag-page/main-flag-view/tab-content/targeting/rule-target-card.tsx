@@ -72,6 +72,7 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
       ? target.conditions
       : [
           {
+            contextKind: "user",
             attributeKey: attributes[0]?.key ?? "",
             operator: "equals" as const,
             value: "",

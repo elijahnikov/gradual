@@ -9,7 +9,8 @@ export const listSegmentsSchema = z.object({
 });
 
 const segmentConditionSchema = z.object({
-  attribute: z.string(),
+  contextKind: z.string(),
+  attributeKey: z.string(),
   operator: z.string(),
   value: z.unknown(),
 });

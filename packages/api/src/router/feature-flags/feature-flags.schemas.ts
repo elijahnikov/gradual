@@ -178,6 +178,7 @@ const targetingOperatorSchema = z.enum([
 ]);
 
 const ruleConditionSchema = z.object({
+  contextKind: z.string(),
   attributeKey: z.string(),
   operator: targetingOperatorSchema,
   value: z.unknown(),
@@ -189,6 +190,7 @@ const targetSchema = z.object({
   name: z.string(),
   variationId: z.uuid(),
   conditions: z.array(ruleConditionSchema).optional(),
+  contextKind: z.string().optional(),
   attributeKey: z.string().optional(),
   attributeValue: z.string().optional(),
   segmentId: z.uuid().optional(),
