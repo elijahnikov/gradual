@@ -16,7 +16,7 @@ export interface LocalTarget {
   name: string;
   variationId: string;
   conditions?: RuleCondition[];
-  contextKind?: ContextKind;
+  contextKind?: string;
   attributeKey?: string;
   attributeValue?: string;
   segmentId?: string;
@@ -73,7 +73,7 @@ interface TargetingActions {
   updateTargetConditions: (id: string, conditions: RuleCondition[]) => void;
   updateTargetIndividual: (
     id: string,
-    contextKind: ContextKind | undefined,
+    contextKind: string | undefined,
     attributeKey: string,
     attributeValue: string
   ) => void;

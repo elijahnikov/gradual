@@ -34,12 +34,17 @@ describe("evaluateFlag", () => {
             variationKey: "on",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "plan", operator: "equals", value: "pro" },
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { plan: "pro" }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(false);
     });
   });
 
@@ -84,12 +89,15 @@ describe("evaluateFlag", () => {
             type: "individual",
             variationKey: "off",
             sortOrder: 0,
+            contextKind: "user",
             attributeKey: "userId",
             attributeValue: "user-123",
           },
         ],
       });
-      expect(evaluateFlag(flag, { userId: "user-123" }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { userId: "user-123" } }, {})).toBe(
+        false
+      );
     });
 
     it("does not match different user", () => {
@@ -99,12 +107,33 @@ describe("evaluateFlag", () => {
             type: "individual",
             variationKey: "off",
             sortOrder: 0,
+            contextKind: "user",
             attributeKey: "userId",
             attributeValue: "user-123",
           },
         ],
       });
-      expect(evaluateFlag(flag, { userId: "user-456" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { userId: "user-456" } }, {})).toBe(
+        true
+      );
+    });
+
+    it("does not match when context kind is missing", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "individual",
+            variationKey: "off",
+            sortOrder: 0,
+            contextKind: "user",
+            attributeKey: "userId",
+            attributeValue: "user-123",
+          },
+        ],
+      });
+      expect(evaluateFlag(flag, { device: { userId: "user-123" } }, {})).toBe(
+        true
+      );
     });
   });
 
@@ -117,13 +146,18 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "plan", operator: "equals", value: "pro" },
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { plan: "pro" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { plan: "free" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { plan: "free" } }, {})).toBe(true);
     });
 
     it("matches not_equals operator", () => {
@@ -134,13 +168,18 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "plan", operator: "not_equals", value: "pro" },
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "not_equals",
+                value: "pro",
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { plan: "free" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { plan: "pro" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { plan: "free" } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(true);
     });
 
     it("matches contains operator on strings", () => {
@@ -152,6 +191,7 @@ describe("evaluateFlag", () => {
             sortOrder: 0,
             conditions: [
               {
+                contextKind: "user",
                 attributeKey: "email",
                 operator: "contains",
                 value: "@gradual.so",
@@ -160,8 +200,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { email: "eli@gradual.so" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { email: "eli@other.com" }, {})).toBe(true);
+      expect(
+        evaluateFlag(flag, { user: { email: "eli@gradual.so" } }, {})
+      ).toBe(false);
+      expect(evaluateFlag(flag, { user: { email: "eli@other.com" } }, {})).toBe(
+        true
+      );
     });
 
     it("matches starts_with operator", () => {
@@ -173,6 +217,7 @@ describe("evaluateFlag", () => {
             sortOrder: 0,
             conditions: [
               {
+                contextKind: "location",
                 attributeKey: "country",
                 operator: "starts_with",
                 value: "US",
@@ -181,8 +226,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { country: "US-CA" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { country: "UK-LDN" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { location: { country: "US-CA" } }, {})).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { location: { country: "UK-LDN" } }, {})).toBe(
+        true
+      );
     });
 
     it("matches ends_with operator", () => {
@@ -194,6 +243,7 @@ describe("evaluateFlag", () => {
             sortOrder: 0,
             conditions: [
               {
+                contextKind: "user",
                 attributeKey: "email",
                 operator: "ends_with",
                 value: ".com",
@@ -202,8 +252,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { email: "eli@test.com" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { email: "eli@test.io" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { email: "eli@test.com" } }, {})).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { user: { email: "eli@test.io" } }, {})).toBe(
+        true
+      );
     });
 
     it("matches greater_than operator", () => {
@@ -214,14 +268,19 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "age", operator: "greater_than", value: 18 },
+              {
+                contextKind: "user",
+                attributeKey: "age",
+                operator: "greater_than",
+                value: 18,
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { age: 25 }, {})).toBe(false);
-      expect(evaluateFlag(flag, { age: 18 }, {})).toBe(true);
-      expect(evaluateFlag(flag, { age: 10 }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { age: 25 } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { age: 18 } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { age: 10 } }, {})).toBe(true);
     });
 
     it("matches less_than operator", () => {
@@ -232,13 +291,18 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "score", operator: "less_than", value: 50 },
+              {
+                contextKind: "user",
+                attributeKey: "score",
+                operator: "less_than",
+                value: 50,
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { score: 30 }, {})).toBe(false);
-      expect(evaluateFlag(flag, { score: 50 }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { score: 30 } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { score: 50 } }, {})).toBe(true);
     });
 
     it("matches in operator", () => {
@@ -250,6 +314,7 @@ describe("evaluateFlag", () => {
             sortOrder: 0,
             conditions: [
               {
+                contextKind: "location",
                 attributeKey: "country",
                 operator: "in",
                 value: ["US", "UK", "CA"],
@@ -258,8 +323,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { country: "US" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { country: "DE" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { location: { country: "US" } }, {})).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { location: { country: "DE" } }, {})).toBe(
+        true
+      );
     });
 
     it("matches not_in operator", () => {
@@ -271,6 +340,7 @@ describe("evaluateFlag", () => {
             sortOrder: 0,
             conditions: [
               {
+                contextKind: "location",
                 attributeKey: "country",
                 operator: "not_in",
                 value: ["CN", "RU"],
@@ -279,8 +349,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { country: "US" }, {})).toBe(false);
-      expect(evaluateFlag(flag, { country: "CN" }, {})).toBe(true);
+      expect(evaluateFlag(flag, { location: { country: "US" } }, {})).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { location: { country: "CN" } }, {})).toBe(
+        true
+      );
     });
 
     it("matches exists operator", () => {
@@ -291,13 +365,18 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "betaUser", operator: "exists", value: null },
+              {
+                contextKind: "user",
+                attributeKey: "betaUser",
+                operator: "exists",
+                value: null,
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { betaUser: true }, {})).toBe(false);
-      expect(evaluateFlag(flag, {}, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { betaUser: true } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: {} }, {})).toBe(true);
     });
 
     it("matches not_exists operator", () => {
@@ -308,13 +387,18 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "banned", operator: "not_exists", value: null },
+              {
+                contextKind: "user",
+                attributeKey: "banned",
+                operator: "not_exists",
+                value: null,
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, {}, {})).toBe(false);
-      expect(evaluateFlag(flag, { banned: true }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: {} }, {})).toBe(false);
+      expect(evaluateFlag(flag, { user: { banned: true } }, {})).toBe(true);
     });
 
     it("requires all conditions to match (AND logic)", () => {
@@ -325,19 +409,65 @@ describe("evaluateFlag", () => {
             variationKey: "off",
             sortOrder: 0,
             conditions: [
-              { attributeKey: "plan", operator: "equals", value: "pro" },
-              { attributeKey: "country", operator: "equals", value: "US" },
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+              {
+                contextKind: "location",
+                attributeKey: "country",
+                operator: "equals",
+                value: "US",
+              },
             ],
           },
         ],
       });
-      expect(evaluateFlag(flag, { plan: "pro", country: "US" }, {})).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { plan: "pro", country: "UK" }, {})).toBe(true);
-      expect(evaluateFlag(flag, { plan: "free", country: "US" }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(
+          flag,
+          { user: { plan: "pro" }, location: { country: "US" } },
+          {}
+        )
+      ).toBe(false);
+      expect(
+        evaluateFlag(
+          flag,
+          { user: { plan: "pro" }, location: { country: "UK" } },
+          {}
+        )
+      ).toBe(true);
+      expect(
+        evaluateFlag(
+          flag,
+          { user: { plan: "free" }, location: { country: "US" } },
+          {}
+        )
+      ).toBe(true);
+    });
+
+    it("supports custom context kinds", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "rule",
+            variationKey: "off",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "company",
+                attributeKey: "size",
+                operator: "greater_than",
+                value: 100,
+              },
+            ],
+          },
+        ],
+      });
+      expect(evaluateFlag(flag, { company: { size: 500 } }, {})).toBe(false);
+      expect(evaluateFlag(flag, { company: { size: 50 } }, {})).toBe(true);
     });
   });
 
@@ -347,7 +477,12 @@ describe("evaluateFlag", () => {
         "beta-users": {
           key: "beta-users",
           conditions: [
-            { attributeKey: "betaUser", operator: "equals", value: true },
+            {
+              contextKind: "user",
+              attributeKey: "betaUser",
+              operator: "equals",
+              value: true,
+            },
           ],
         },
       };
@@ -363,8 +498,12 @@ describe("evaluateFlag", () => {
         ],
       });
 
-      expect(evaluateFlag(flag, { betaUser: true }, segments)).toBe(false);
-      expect(evaluateFlag(flag, { betaUser: false }, segments)).toBe(true);
+      expect(evaluateFlag(flag, { user: { betaUser: true } }, segments)).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { user: { betaUser: false } }, segments)).toBe(
+        true
+      );
     });
 
     it("falls through when segment not found", () => {
@@ -398,6 +537,7 @@ describe("evaluateFlag", () => {
             type: "individual",
             variationKey: "variant-a",
             sortOrder: 0,
+            contextKind: "user",
             attributeKey: "userId",
             attributeValue: "user-1",
           },
@@ -406,26 +546,31 @@ describe("evaluateFlag", () => {
             variationKey: "variant-b",
             sortOrder: 1,
             conditions: [
-              { attributeKey: "plan", operator: "equals", value: "pro" },
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
             ],
           },
         ],
       });
 
       // Individual match takes priority (sortOrder 0)
-      expect(evaluateFlag(flag, { userId: "user-1", plan: "pro" }, {})).toBe(
-        "variant-a"
-      );
+      expect(
+        evaluateFlag(flag, { user: { userId: "user-1", plan: "pro" } }, {})
+      ).toBe("variant-a");
 
       // Rule match when individual doesn't match
-      expect(evaluateFlag(flag, { userId: "user-2", plan: "pro" }, {})).toBe(
-        "variant-b"
-      );
+      expect(
+        evaluateFlag(flag, { user: { userId: "user-2", plan: "pro" } }, {})
+      ).toBe("variant-b");
 
       // Default when nothing matches
-      expect(evaluateFlag(flag, { userId: "user-2", plan: "free" }, {})).toBe(
-        "control"
-      );
+      expect(
+        evaluateFlag(flag, { user: { userId: "user-2", plan: "free" } }, {})
+      ).toBe("control");
     });
   });
 
@@ -451,6 +596,28 @@ describe("evaluateFlag", () => {
         theme: "dark",
         limit: 100,
       });
+    });
+
+    it("returns default when context kind is missing", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "rule",
+            variationKey: "off",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+          },
+        ],
+      });
+      // No user context provided, rule should not match
+      expect(evaluateFlag(flag, { device: { type: "mobile" } }, {})).toBe(true);
     });
   });
 });

@@ -34,7 +34,7 @@ export function RuleConditionBuilder({
 }: RuleConditionBuilderProps) {
   const handleAddCondition = useCallback(() => {
     const newCondition: RuleCondition = {
-      contextKind: undefined,
+      contextKind: "user",
       attributeKey: "",
       operator: "equals",
       value: "",

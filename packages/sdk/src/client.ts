@@ -120,7 +120,18 @@ class GradualClient implements Gradual {
   private mergeContext(options?: {
     context?: EvaluationContext;
   }): EvaluationContext {
-    return { ...this.identifiedContext, ...options?.context };
+    const merged: EvaluationContext = {};
+    const allKinds = new Set([
+      ...Object.keys(this.identifiedContext),
+      ...Object.keys(options?.context ?? {}),
+    ]);
+    for (const kind of allKinds) {
+      merged[kind] = {
+        ...this.identifiedContext[kind],
+        ...options?.context?.[kind],
+      };
+    }
+    return merged;
   }
 
   private evaluate(key: string, context: EvaluationContext): unknown {

@@ -10,8 +10,8 @@ function evaluateCondition(
   condition: SnapshotRuleCondition,
   context: EvaluationContext
 ): boolean {
-  const { attributeKey, operator, value } = condition;
-  const contextValue = context[attributeKey];
+  const { contextKind, attributeKey, operator, value } = condition;
+  const contextValue = context[contextKind]?.[attributeKey];
 
   switch (operator) {
     case "equals":
@@ -118,8 +118,15 @@ function evaluateTarget(
 ): boolean {
   switch (target.type) {
     case "individual":
-      if (target.attributeKey && target.attributeValue !== undefined) {
-        return context[target.attributeKey] === target.attributeValue;
+      if (
+        target.contextKind &&
+        target.attributeKey &&
+        target.attributeValue !== undefined
+      ) {
+        return (
+          context[target.contextKind]?.[target.attributeKey] ===
+          target.attributeValue
+        );
       }
       return false;
 

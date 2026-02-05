@@ -913,6 +913,7 @@ export const saveTargetingRules = async ({
               if (condition) {
                 await tx.insert(featureFlagTargetingRule).values({
                   targetId: insertedTarget.id,
+                  contextKind: condition.contextKind,
                   attributeKey: condition.attributeKey,
                   operator: condition.operator,
                   value: condition.value,
@@ -924,9 +925,14 @@ export const saveTargetingRules = async ({
           break;
 
         case "individual":
-          if (target.attributeKey && target.attributeValue !== undefined) {
+          if (
+            target.contextKind &&
+            target.attributeKey &&
+            target.attributeValue !== undefined
+          ) {
             await tx.insert(featureFlagIndividualTarget).values({
               targetId: insertedTarget.id,
+              contextKind: target.contextKind,
               attributeKey: target.attributeKey,
               attributeValue: target.attributeValue,
             });

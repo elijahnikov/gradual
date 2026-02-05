@@ -111,29 +111,16 @@ function FlagTargetingContent({
       };
 
       if (target.type === "rule" && target.rules && target.rules.length > 0) {
-        base.conditions = target.rules.map((rule) => {
-          const attribute = attributeByKey.get(rule.attributeKey);
-          let contextKind: ContextKind | undefined;
-          if (attribute?.contextId) {
-            contextKind = contextIdToKind.get(attribute.contextId);
-          }
-          return {
-            attributeKey: rule.attributeKey,
-            operator: rule.operator as TargetingOperator,
-            value: rule.value,
-            contextKind,
-          };
-        });
+        base.conditions = target.rules.map((rule) => ({
+          contextKind: rule.contextKind,
+          attributeKey: rule.attributeKey,
+          operator: rule.operator as TargetingOperator,
+          value: rule.value,
+        }));
       } else if (target.type === "individual" && target.individual) {
+        base.contextKind = target.individual.contextKind;
         base.attributeKey = target.individual.attributeKey;
         base.attributeValue = target.individual.attributeValue;
-        const attribute = attributeByKey.get(target.individual.attributeKey);
-        if (attribute?.contextId) {
-          const contextKind = contextIdToKind.get(attribute.contextId);
-          if (contextKind) {
-            base.contextKind = contextKind;
-          }
-        }
       } else if (target.type === "segment" && target.segment) {
         base.segmentId = target.segment.segmentId;
       }

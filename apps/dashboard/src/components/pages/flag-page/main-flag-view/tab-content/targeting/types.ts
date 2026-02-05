@@ -41,7 +41,7 @@ export const OPERATOR_LABELS: Record<TargetingOperator, string> =
   ) as Record<TargetingOperator, string>;
 
 export interface RuleCondition {
-  contextKind?: ContextKind;
+  contextKind: string;
   attributeKey: string;
   operator: TargetingOperator;
   value: unknown;
@@ -57,6 +57,6 @@ export type Attribute = RouterOutputs["attributes"]["list"][number];
 
 export type Context = RouterOutputs["attributes"]["listContexts"][number];
 
-export type ContextKind = "user" | "device" | "organization" | "location";
+export type ContextKind = string;
 
 export type Segment = RouterOutputs["segments"]["list"][number];

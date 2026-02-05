@@ -296,6 +296,7 @@ export const featureFlagTargetingRule = pgTable(
     targetId: uuid("target_id")
       .notNull()
       .references(() => featureFlagTarget.id, { onDelete: "cascade" }),
+    contextKind: varchar("context_kind", { length: 256 }).notNull(),
     attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
     operator: targetingOperatorEnum("operator").notNull(),
     value: jsonb("value").notNull(),
@@ -318,6 +319,7 @@ export const featureFlagIndividualTarget = pgTable(
       .notNull()
       .references(() => featureFlagTarget.id, { onDelete: "cascade" })
       .unique(),
+    contextKind: varchar("context_kind", { length: 256 }).notNull(),
     attributeKey: varchar("attribute_key", { length: 256 }).notNull(),
     attributeValue: text("attribute_value").notNull(),
     attributeValueJson: jsonb("attribute_value_json"),
@@ -353,7 +355,7 @@ export const context = pgTable(
   "context",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
-    kind: contextKindEnum("kind").notNull(),
+    kind: varchar("kind", { length: 256 }).notNull(),
     name: varchar("name", { length: 256 }).notNull(),
     description: text("description"),
     projectId: uuid("project_id")
@@ -465,7 +467,8 @@ export const segment = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     conditions: jsonb("conditions").notNull().$type<
       Array<{
-        attribute: string;
+        contextKind: string;
+        attributeKey: string;
         operator: string;
         value: unknown;
       }>

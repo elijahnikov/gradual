@@ -15,6 +15,7 @@ export type TargetingOperator =
   | "not_exists";
 
 export interface SnapshotRuleCondition {
+  contextKind: string;
   attributeKey: string;
   operator: TargetingOperator;
   value: unknown;
@@ -31,6 +32,7 @@ export interface SnapshotTarget {
   sortOrder: number;
 
   conditions?: SnapshotRuleCondition[];
+  contextKind?: string;
   attributeKey?: string;
   attributeValue?: string;
   segmentKey?: string;
