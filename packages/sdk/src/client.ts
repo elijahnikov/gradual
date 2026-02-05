@@ -125,11 +125,14 @@ class GradualClient implements Gradual {
 
   private evaluate(key: string, context: EvaluationContext): unknown {
     const snapshot = this.ensureReady();
+    if (!snapshot.flags) {
+      return undefined;
+    }
     const flag = snapshot.flags[key];
     if (!flag) {
       return undefined;
     }
-    return evaluateFlag(flag, context, snapshot.segments);
+    return evaluateFlag(flag, context, snapshot.segments ?? {});
   }
 
   async ready(): Promise<void> {

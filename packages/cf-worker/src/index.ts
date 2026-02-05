@@ -414,14 +414,32 @@ async function processSnapshotQueue(
 }
 
 export default {
-  fetch(request, env, _ctx): Promise<Response> {
+  async fetch(request, env, _ctx): Promise<Response> {
     const { pathname } = new URL(request.url);
+    const isSDKRoute =
+      pathname === "/api/v1/sdk/init" || pathname === "/api/v1/sdk/snapshot";
+
+    if (isSDKRoute && request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
+    let response: Response;
 
     switch (pathname) {
       case "/api/v1/sdk/init":
-        return sdkInit(request, env);
+        response = await sdkInit(request, env);
+        break;
       case "/api/v1/sdk/snapshot":
-        return sdkGetSnapshot(request, env);
+        response = await sdkGetSnapshot(request, env);
+        break;
       case "/api/v1/snapshot":
         return adminGetSnapshot(request, env);
       case "/api/v1/queue-snapshot":
@@ -437,8 +455,11 @@ export default {
       case "/api/v1/revoke-api-key":
         return adminRevokeApiKey(request, env);
       default:
-        return Promise.resolve(new Response("Not found", { status: 404 }));
+        return new Response("Not found", { status: 404 });
     }
+
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   },
 
   queue(batch, env): Promise<void> {
