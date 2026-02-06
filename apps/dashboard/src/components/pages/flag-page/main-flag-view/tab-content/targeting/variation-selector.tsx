@@ -35,6 +35,7 @@ export function VariationSelector({
       variations.map((variation) => ({
         label: variation.name,
         value: variation.id,
+        color: variation.color,
       })),
     [variations]
   );
@@ -67,14 +68,30 @@ export function VariationSelector({
                 Rollout
               </span>
             ) : (
-              selectedVariation?.label
+              <span className="flex items-center gap-1.5">
+                {selectedVariation?.color && (
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: selectedVariation.color }}
+                  />
+                )}
+                {selectedVariation?.label}
+              </span>
             )}
           </SelectValue>
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           {variationItems.map((item) => (
             <SelectItem key={item.value} value={item.value}>
-              {item.label}
+              <span className="flex items-center gap-1.5">
+                {item.color && (
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                )}
+                {item.label}
+              </span>
             </SelectItem>
           ))}
           <SelectSeparator className="-mx-2" />

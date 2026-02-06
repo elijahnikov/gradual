@@ -1,3 +1,4 @@
+import { getVariationColorByIndex } from "@gradual/api/utils";
 import {
   type ChartConfig,
   ChartContainer,
@@ -11,13 +12,6 @@ import { useMemo } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
-
-const VARIATION_COLORS = [
-  "#32AA40", // Green
-  "#f59e0b", // Amber
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-];
 
 const sanitizeCssVarName = (name: string) =>
   name.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
@@ -64,7 +58,7 @@ export default function EvaluationsPreviewChart({
       const variations = evaluations.variations.map((v, i) => ({
         ...v,
         cssKey: sanitizeCssVarName(v.name),
-        color: VARIATION_COLORS[i % VARIATION_COLORS.length],
+        color: v.color ?? getVariationColorByIndex(i),
       }));
 
       const defaultValues: Record<string, number> = {};

@@ -262,6 +262,7 @@ export const updateVariationSchema = z.object({
   name: z.string().min(1).optional(),
   value: z.union([z.string(), z.number(), z.boolean(), z.any()]).optional(),
   description: z.string().nullable().optional(),
+  color: z.string().max(7).nullable().optional(),
 });
 export type UpdateVariationInput = z.infer<typeof updateVariationSchema>;
 
@@ -272,6 +273,7 @@ export const addVariationSchema = z.object({
   name: z.string().min(1, "Variation name is required"),
   value: z.union([z.string(), z.number(), z.boolean(), z.any()]),
   description: z.string().nullable().optional(),
+  color: z.string().max(7).nullable().optional(),
 });
 export type AddVariationInput = z.infer<typeof addVariationSchema>;
 

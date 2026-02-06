@@ -1,3 +1,4 @@
+import { getVariationColorByIndex } from "@gradual/api/utils";
 import { Badge } from "@gradual/ui/badge";
 import { Button } from "@gradual/ui/button";
 import { Input } from "@gradual/ui/input";
@@ -26,14 +27,6 @@ interface RolloutEditorProps {
 }
 
 const TOTAL_WEIGHT = 100_000;
-const COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-yellow-500",
-  "bg-purple-500",
-  "bg-pink-500",
-  "bg-orange-500",
-];
 
 function weightToPercent(weight: number): string {
   return (weight / 1000).toFixed(1);
@@ -83,7 +76,12 @@ function PercentInput({
 }
 
 interface PercentageSliderProps {
-  variations: Array<{ variationId: string; weight: number; name: string }>;
+  variations: Array<{
+    variationId: string;
+    weight: number;
+    name: string;
+    color: string;
+  }>;
   onChange: (
     newWeights: Array<{ variationId: string; weight: number }>
   ) => void;
@@ -124,21 +122,24 @@ function PercentageSlider({ variations, onChange }: PercentageSliderProps) {
 
       const newWeights: Array<{ variationId: string; weight: number }> = [];
       let prevPosition = 0;
+      let allocatedWeight = 0;
 
       for (let i = 0; i < variations.length; i++) {
         const variation = variations[i];
         if (!variation) {
           continue;
         }
+        const isLast = i === variations.length - 1;
         const currentPosition =
           i < newPositions.length ? (newPositions[i] ?? 100) : 100;
-        const weight = Math.round(
-          ((currentPosition - prevPosition) / 100) * TOTAL_WEIGHT
-        );
+        const weight = isLast
+          ? TOTAL_WEIGHT - allocatedWeight
+          : Math.round(((currentPosition - prevPosition) / 100) * TOTAL_WEIGHT);
         newWeights.push({
           variationId: variation.variationId,
           weight: Math.max(0, weight),
         });
+        allocatedWeight += Math.max(0, weight);
         prevPosition = currentPosition;
       }
 
@@ -190,7 +191,7 @@ function PercentageSlider({ variations, onChange }: PercentageSliderProps) {
       result.push({
         variationId: variation.variationId,
         width: Math.max(0, width),
-        color: COLORS[i % COLORS.length] ?? "bg-gray-500",
+        color: variation.color,
         name: variation.name,
         percent: weightToPercent(variation.weight),
       });
@@ -200,18 +201,24 @@ function PercentageSlider({ variations, onChange }: PercentageSliderProps) {
     return result;
   }, [variations, thumbPositions]);
 
-  if (variations.length < 2) {
+  if (variations.length === 0) {
     return null;
   }
+
+  const disabled = variations.length < 2;
 
   return (
     <div className="relative h-8 w-full" ref={trackRef}>
       <div className="flex h-full w-full overflow-hidden rounded-md border border-ui-border-base">
         {segments.map((segment) => (
           <div
-            className={`${segment.color} flex h-full items-center justify-center`}
+            className="flex h-full items-center justify-center"
             key={segment.variationId}
-            style={{ width: `${segment.width}%` }}
+            style={{
+              width: `${segment.width}%`,
+              backgroundColor: segment.color,
+              opacity: disabled ? 0.5 : 1,
+            }}
             title={`${segment.name}: ${segment.percent}%`}
           >
             {segment.width >= 8 && (
@@ -222,27 +229,28 @@ function PercentageSlider({ variations, onChange }: PercentageSliderProps) {
           </div>
         ))}
       </div>
-      {thumbPositions.map((position, index) => {
-        const variation = variations[index];
-        if (!variation) {
-          return null;
-        }
-        return (
-          // biome-ignore lint/a11y/noNoninteractiveElementInteractions: <>
-          // biome-ignore lint/a11y/noStaticElementInteractions: <>
-          <div
-            className="absolute top-0 z-10 flex h-full w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center"
-            key={`thumb-${variation.variationId}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setDraggingIndex(index);
-            }}
-            style={{ left: `${position}%` }}
-          >
-            <div className="h-5 w-1.5 rounded-full bg-white shadow-md ring-1 ring-black/10" />
-          </div>
-        );
-      })}
+      {!disabled &&
+        thumbPositions.map((position, index) => {
+          const variation = variations[index];
+          if (!variation) {
+            return null;
+          }
+          return (
+            // biome-ignore lint/a11y/noNoninteractiveElementInteractions: <>
+            // biome-ignore lint/a11y/noStaticElementInteractions: <>
+            <div
+              className="absolute top-0 z-10 flex h-full w-4 -translate-x-1/2 cursor-ew-resize items-center justify-center"
+              key={`thumb-${variation.variationId}`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setDraggingIndex(index);
+              }}
+              style={{ left: `${position}%` }}
+            >
+              <div className="h-5 w-1.5 rounded-full bg-white shadow-md ring-1 ring-black/10" />
+            </div>
+          );
+        })}
     </div>
   );
 }
@@ -277,11 +285,15 @@ export function RolloutEditor({
 
   const sliderVariations = useMemo(
     () =>
-      rollout.variations.map((rv) => ({
-        variationId: rv.variationId,
-        weight: rv.weight,
-        name: variationsById.get(rv.variationId)?.name ?? "Unknown",
-      })),
+      rollout.variations.map((rv, index) => {
+        const variation = variationsById.get(rv.variationId);
+        return {
+          variationId: rv.variationId,
+          weight: rv.weight,
+          name: variation?.name ?? "Unknown",
+          color: variation?.color ?? getVariationColorByIndex(index),
+        };
+      }),
     [rollout.variations, variationsById]
   );
 
@@ -307,6 +319,9 @@ export function RolloutEditor({
       const newVariations = rollout.variations.filter(
         (rv) => rv.variationId !== variationId
       );
+      if (newVariations.length === 1 && newVariations[0]) {
+        newVariations[0] = { ...newVariations[0], weight: TOTAL_WEIGHT };
+      }
       onRolloutChange({ ...rollout, variations: newVariations });
     },
     [rollout, onRolloutChange]
@@ -346,7 +361,7 @@ export function RolloutEditor({
         </div>
       )}
 
-      {rollout.variations.length > 1 && (
+      {rollout.variations.length > 0 && (
         <div className="px-3 sm:px-4">
           <PercentageSlider
             onChange={handleSliderChange}
@@ -358,7 +373,7 @@ export function RolloutEditor({
       <div className="flex flex-col gap-2">
         {rollout.variations.map((rv, index) => {
           const variation = variationsById.get(rv.variationId);
-          const color = COLORS[index % COLORS.length];
+          const color = variation?.color ?? getVariationColorByIndex(index);
 
           return (
             <>
@@ -366,7 +381,10 @@ export function RolloutEditor({
                 className="flex items-center gap-2 px-3 sm:px-4"
                 key={rv.variationId}
               >
-                <div className={`${color} h-3 w-3 shrink-0 rounded-full`} />
+                <div
+                  className="h-3 w-3 shrink-0 rounded-[4px]"
+                  style={{ backgroundColor: color }}
+                />
                 <Text className="min-w-20 shrink-0" size="small">
                   {variation?.name ?? "Unknown"}
                 </Text>
@@ -400,7 +418,7 @@ export function RolloutEditor({
 
       <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4">
         {availableVariations.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {availableVariations.map((v) => (
               <Button
                 key={v.id}
@@ -409,6 +427,12 @@ export function RolloutEditor({
                 variant="outline"
               >
                 <RiAddLine className="size-3" />
+                {v.color && (
+                  <div
+                    className="mr-1 h-3 w-3 shrink-0 rounded-[4px]"
+                    style={{ backgroundColor: v.color }}
+                  />
+                )}
                 {v.name}
               </Button>
             ))}

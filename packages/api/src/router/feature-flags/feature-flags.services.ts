@@ -302,6 +302,7 @@ export const createCompleteFeatureFlag = async ({
           name: variation.name,
           value: variation.value,
           description: variation.description,
+          color: variation.color,
           isDefault: variation.isDefault,
           rolloutPercentage: variation.rolloutPercentage,
           sortOrder: variation.sortOrder,
@@ -466,6 +467,7 @@ export const getFeatureFlagByKey = async ({
       name: featureFlagVariation.name,
       value: featureFlagVariation.value,
       description: featureFlagVariation.description,
+      color: featureFlagVariation.color,
       isDefault: featureFlagVariation.isDefault,
       sortOrder: featureFlagVariation.sortOrder,
     })
@@ -616,7 +618,11 @@ export const getPreviewEvaluations = async ({
 
   return {
     data: hourlyData,
-    variations: variations.map((v) => ({ id: v.id, name: v.name })),
+    variations: variations.map((v) => ({
+      id: v.id,
+      name: v.name,
+      color: v.color,
+    })),
     totals,
     environments: environments.map((e) => ({ id: e.id, name: e.name })),
   };
@@ -1178,6 +1184,7 @@ export const getVariations = async ({
       name: featureFlagVariation.name,
       value: featureFlagVariation.value,
       description: featureFlagVariation.description,
+      color: featureFlagVariation.color,
       isDefault: featureFlagVariation.isDefault,
       rolloutPercentage: featureFlagVariation.rolloutPercentage,
       sortOrder: featureFlagVariation.sortOrder,
@@ -1203,7 +1210,8 @@ export const updateVariation = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: UpdateVariationInput;
 }) => {
-  const { variationId, flagId, projectSlug, name, value, description } = input;
+  const { variationId, flagId, projectSlug, name, value, description, color } =
+    input;
   const { organization: org } = ctx;
 
   const foundProject = await ctx.db.query.project.findFirst({
@@ -1246,6 +1254,7 @@ export const updateVariation = async ({
     name: string;
     value: unknown;
     description: string | null;
+    color: string | null;
   }> = {};
 
   if (name !== undefined) {
@@ -1256,6 +1265,9 @@ export const updateVariation = async ({
   }
   if (description !== undefined) {
     updateData.description = description;
+  }
+  if (color !== undefined) {
+    updateData.color = color;
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -1280,7 +1292,7 @@ export const addVariation = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: AddVariationInput;
 }) => {
-  const { flagId, projectSlug, name, value, description } = input;
+  const { flagId, projectSlug, name, value, description, color } = input;
   const { organization: org } = ctx;
 
   const foundProject = await ctx.db.query.project.findFirst({
@@ -1332,6 +1344,7 @@ export const addVariation = async ({
       name,
       value,
       description: description ?? null,
+      color: color ?? null,
       isDefault: false,
       rolloutPercentage: 0,
       sortOrder: nextSortOrder,
@@ -1572,7 +1585,11 @@ export const getMetricsEvaluations = async ({
 
   return {
     data,
-    variations: variations.map((v) => ({ id: v.id, name: v.name })),
+    variations: variations.map((v) => ({
+      id: v.id,
+      name: v.name,
+      color: v.color,
+    })),
     environments: environments.map((e) => ({ id: e.id, name: e.name })),
     totals,
     previousTotals,

@@ -1,3 +1,4 @@
+import { getVariationColorByIndex } from "@gradual/api/utils";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
@@ -9,15 +10,6 @@ import {
 import { useState } from "react";
 import { useMetricsStore } from "./metrics-store";
 import type { MetricsVariation } from "./types";
-
-const VARIATION_COLORS = [
-  "#32AA40", // Green
-  "#f59e0b", // Amber
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-  "#06b6d4", // Cyan
-  "#f97316", // Orange
-];
 
 const MAX_VISIBLE_CARDS = 3; // Total + 3 variations = 4 cards in one row
 
@@ -55,7 +47,7 @@ export default function MetricsSummary({
         count,
         previousCount,
         percentage,
-        color: VARIATION_COLORS[index % VARIATION_COLORS.length],
+        color: v.color ?? getVariationColorByIndex(index),
       };
     });
 
