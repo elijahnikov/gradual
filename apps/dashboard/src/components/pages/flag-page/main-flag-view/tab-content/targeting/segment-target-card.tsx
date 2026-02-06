@@ -2,6 +2,7 @@ import { Text } from "@gradual/ui/text";
 import { useCallback } from "react";
 import { SegmentSelect } from "./segment-select";
 import TargetingCard from "./targeting-card";
+import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 
 interface SegmentTargetCardProps {
@@ -22,6 +23,8 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
   const updateTargetVariation = useTargetingStore(
     (s) => s.updateTargetVariation
   );
+  const updateTargetRollout = useTargetingStore((s) => s.updateTargetRollout);
+  const setTargetMode = useTargetingStore((s) => s.setTargetMode);
   const updateTargetSegment = useTargetingStore((s) => s.updateTargetSegment);
   const deleteTarget = useTargetingStore((s) => s.deleteTarget);
   const moveTarget = useTargetingStore((s) => s.moveTarget);
@@ -39,6 +42,16 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
   const handleVariationChange = useCallback(
     (variationId: string) => updateTargetVariation(targetId, variationId),
     [updateTargetVariation, targetId]
+  );
+
+  const handleRolloutChange = useCallback(
+    (rollout: LocalRollout) => updateTargetRollout(targetId, rollout),
+    [updateTargetRollout, targetId]
+  );
+
+  const handleModeChange = useCallback(
+    (mode: "single" | "rollout") => setTargetMode(targetId, mode),
+    [setTargetMode, targetId]
   );
 
   const handleSegmentChange = useCallback(
@@ -75,12 +88,14 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
       isLast={targetIndex === targetsCount - 1}
       name={target.name}
       onDelete={handleDelete}
+      onModeChange={handleModeChange}
       onMoveDown={handleMoveDown}
       onMoveUp={handleMoveUp}
       onNameChange={handleNameChange}
+      onRolloutChange={handleRolloutChange}
       onVariationChange={handleVariationChange}
+      rollout={target.rollout}
       selectedVariationId={target.variationId}
-      targetId={targetId}
     >
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

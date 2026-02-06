@@ -3,9 +3,11 @@ import { eq } from "@gradual/db";
 import {
   featureFlagEnvironment,
   type featureFlagIndividualTarget,
+  type featureFlagRolloutVariation,
   type featureFlagSegmentTarget,
   type featureFlagTarget,
   type featureFlagTargetingRule,
+  type featureFlagTargetRollout,
   featureFlagVariation,
   type segment,
 } from "@gradual/db/schema";
@@ -24,6 +26,7 @@ import type {
 import type {
   EnvironmentSnapshot,
   SnapshotFlag,
+  SnapshotRollout,
   SnapshotSegment,
   SnapshotTarget,
   SnapshotVariation,
@@ -108,6 +111,15 @@ export async function buildEnvironmentSnapshot({
     individual: typeof featureFlagIndividualTarget.$inferSelect | null;
     segmentTarget: typeof featureFlagSegmentTarget.$inferSelect | null;
     segment: typeof segment.$inferSelect | null;
+    rollout:
+      | (typeof featureFlagTargetRollout.$inferSelect & {
+          variations: Array<
+            typeof featureFlagRolloutVariation.$inferSelect & {
+              variation: typeof featureFlagVariation.$inferSelect;
+            }
+          >;
+        })
+      | null;
   }> = [];
 
   if (flagEnvIds.length > 0) {
@@ -126,6 +138,16 @@ export async function buildEnvironmentSnapshot({
             segment: true,
           },
         },
+        rollout: {
+          with: {
+            variations: {
+              with: {
+                variation: true,
+              },
+              orderBy: (v, { asc }) => asc(v.sortOrder),
+            },
+          },
+        },
       },
     });
 
@@ -136,6 +158,7 @@ export async function buildEnvironmentSnapshot({
       individual: t.individual,
       segmentTarget: t.segment,
       segment: t.segment?.segment ?? null,
+      rollout: t.rollout,
     }));
   }
 
@@ -146,6 +169,46 @@ export async function buildEnvironmentSnapshot({
       targetsByFlagEnvId.set(key, []);
     }
     targetsByFlagEnvId.get(key)?.push(t);
+  }
+
+  const defaultRolloutsByFlagEnvId = new Map<
+    string,
+    {
+      bucketContextKind: string;
+      bucketAttributeKey: string;
+      seed: string | null;
+      variations: Array<{
+        variationName: string;
+        weight: number;
+      }>;
+    }
+  >();
+
+  if (flagEnvIds.length > 0) {
+    const defaultRolloutsRaw =
+      await ctx.db.query.featureFlagDefaultRollout.findMany({
+        where: (dr, { inArray }) => inArray(dr.flagEnvironmentId, flagEnvIds),
+        with: {
+          variations: {
+            with: {
+              variation: true,
+            },
+            orderBy: (v, { asc }) => asc(v.sortOrder),
+          },
+        },
+      });
+
+    for (const dr of defaultRolloutsRaw) {
+      defaultRolloutsByFlagEnvId.set(dr.flagEnvironmentId, {
+        bucketContextKind: dr.bucketContextKind,
+        bucketAttributeKey: dr.bucketAttributeKey,
+        seed: dr.seed,
+        variations: dr.variations.map((v) => ({
+          variationName: v.variation.name,
+          weight: v.weight,
+        })),
+      });
+    }
   }
 
   const allSegments = await ctx.db.query.segment.findMany({
@@ -215,13 +278,27 @@ export async function buildEnvironmentSnapshot({
       : [];
 
     for (const t of flagTargets) {
-      const variationKey = t.variation?.name ?? defaultVariationKey;
-
       const snapshotTarget: SnapshotTarget = {
         type: t.target.type as "rule" | "individual" | "segment",
-        variationKey,
         sortOrder: t.target.sortOrder,
       };
+
+      if (t.rollout && t.rollout.variations.length > 0) {
+        const rollout: SnapshotRollout = {
+          variations: t.rollout.variations.map((rv) => ({
+            variationKey: rv.variation.name,
+            weight: rv.weight,
+          })),
+          bucketContextKind: t.rollout.bucketContextKind,
+          bucketAttributeKey: t.rollout.bucketAttributeKey,
+        };
+        if (t.rollout.seed) {
+          rollout.seed = t.rollout.seed;
+        }
+        snapshotTarget.rollout = rollout;
+      } else {
+        snapshotTarget.variationKey = t.variation?.name ?? defaultVariationKey;
+      }
 
       switch (t.target.type) {
         case "rule":
@@ -257,15 +334,37 @@ export async function buildEnvironmentSnapshot({
       targets.push(snapshotTarget);
     }
 
-    snapshotFlags[flag.key] = {
+    const defaultRolloutData = flagEnvConfig
+      ? defaultRolloutsByFlagEnvId.get(flagEnvConfig.flagEnv.id)
+      : null;
+
+    const snapshotFlag: SnapshotFlag = {
       key: flag.key,
       type: flag.type as "boolean" | "string" | "number" | "json",
       enabled: flagEnvConfig?.flagEnv.enabled ?? false,
       variations,
-      defaultVariationKey,
       offVariationKey,
       targets,
     };
+
+    if (defaultRolloutData && defaultRolloutData.variations.length > 0) {
+      const defaultRollout: SnapshotRollout = {
+        variations: defaultRolloutData.variations.map((v) => ({
+          variationKey: v.variationName,
+          weight: v.weight,
+        })),
+        bucketContextKind: defaultRolloutData.bucketContextKind,
+        bucketAttributeKey: defaultRolloutData.bucketAttributeKey,
+      };
+      if (defaultRolloutData.seed) {
+        defaultRollout.seed = defaultRolloutData.seed;
+      }
+      snapshotFlag.defaultRollout = defaultRollout;
+    } else {
+      snapshotFlag.defaultVariationKey = defaultVariationKey;
+    }
+
+    snapshotFlags[flag.key] = snapshotFlag;
   }
 
   const version = Date.now();

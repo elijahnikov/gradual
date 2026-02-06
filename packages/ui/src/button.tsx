@@ -62,6 +62,7 @@ const buttonVariants = cva(
         ),
       },
       size: {
+        xsmall: "txt-compact-xsmall-plus gap-x-0.5 px-1.5 py-0.5",
         small: "txt-compact-small-plus gap-x-1.5 px-2 py-1",
         base: "txt-compact-small-plus gap-x-1.5 px-3 py-1.5",
         large: "txt-compact-medium-plus gap-x-1.5 px-4 py-2.5",

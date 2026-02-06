@@ -15,12 +15,16 @@ import {
 } from "@gradual/db";
 import {
   featureFlag,
+  featureFlagDefaultRollout,
+  featureFlagDefaultRolloutVariation,
   featureFlagEnvironment,
   featureFlagEvaluation,
   featureFlagIndividualTarget,
+  featureFlagRolloutVariation,
   featureFlagSegmentTarget,
   featureFlagTarget,
   featureFlagTargetingRule,
+  featureFlagTargetRollout,
   featureFlagVariation,
   organization,
   project,
@@ -791,6 +795,16 @@ export const getTargetingRules = async ({
       and(eq(featureFlagId, flagId), eq(environmentId, foundEnvironment.id)),
     with: {
       defaultVariation: true,
+      defaultRollout: {
+        with: {
+          variations: {
+            orderBy: (rv, { asc }) => asc(rv.sortOrder),
+            with: {
+              variation: true,
+            },
+          },
+        },
+      },
       targets: {
         orderBy: (target, { asc }) => asc(target.sortOrder),
         with: {
@@ -800,6 +814,16 @@ export const getTargetingRules = async ({
           },
           individual: true,
           segment: true,
+          rollout: {
+            with: {
+              variations: {
+                orderBy: (rv, { asc }) => asc(rv.sortOrder),
+                with: {
+                  variation: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -822,8 +846,14 @@ export const saveTargetingRules = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: SaveTargetingRulesInput;
 }) => {
-  const { flagId, environmentSlug, projectSlug, targets, defaultVariationId } =
-    input;
+  const {
+    flagId,
+    environmentSlug,
+    projectSlug,
+    targets,
+    defaultVariationId,
+    defaultRollout,
+  } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
     where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
@@ -877,9 +907,46 @@ export const saveTargetingRules = async ({
       );
 
     await tx
-      .update(featureFlagEnvironment)
-      .set({ defaultVariationId })
-      .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+      .delete(featureFlagDefaultRollout)
+      .where(
+        eq(featureFlagDefaultRollout.flagEnvironmentId, flagEnvironment.id)
+      );
+
+    if (defaultRollout) {
+      await tx
+        .update(featureFlagEnvironment)
+        .set({ defaultVariationId: null })
+        .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+
+      const [insertedDefaultRollout] = await tx
+        .insert(featureFlagDefaultRollout)
+        .values({
+          flagEnvironmentId: flagEnvironment.id,
+          bucketContextKind: defaultRollout.bucketContextKind,
+          bucketAttributeKey: defaultRollout.bucketAttributeKey,
+          seed: defaultRollout.seed,
+        })
+        .returning();
+
+      if (insertedDefaultRollout) {
+        for (let i = 0; i < defaultRollout.variations.length; i++) {
+          const rv = defaultRollout.variations[i];
+          if (rv) {
+            await tx.insert(featureFlagDefaultRolloutVariation).values({
+              defaultRolloutId: insertedDefaultRollout.id,
+              variationId: rv.variationId,
+              weight: rv.weight,
+              sortOrder: i,
+            });
+          }
+        }
+      }
+    } else if (defaultVariationId) {
+      await tx
+        .update(featureFlagEnvironment)
+        .set({ defaultVariationId })
+        .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+    }
 
     for (let i = 0; i < targets.length; i++) {
       const target = targets[i];
@@ -892,7 +959,7 @@ export const saveTargetingRules = async ({
         .values({
           name: target.name,
           featureFlagEnvironmentId: flagEnvironment.id,
-          variationId: target.variationId,
+          variationId: target.variationId ?? null,
           type: target.type,
           sortOrder: i,
         })
@@ -903,6 +970,32 @@ export const saveTargetingRules = async ({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create target",
         });
+      }
+
+      if (target.rollout) {
+        const [insertedRollout] = await tx
+          .insert(featureFlagTargetRollout)
+          .values({
+            targetId: insertedTarget.id,
+            bucketContextKind: target.rollout.bucketContextKind,
+            bucketAttributeKey: target.rollout.bucketAttributeKey,
+            seed: target.rollout.seed,
+          })
+          .returning();
+
+        if (insertedRollout) {
+          for (let j = 0; j < target.rollout.variations.length; j++) {
+            const rv = target.rollout.variations[j];
+            if (rv) {
+              await tx.insert(featureFlagRolloutVariation).values({
+                rolloutId: insertedRollout.id,
+                variationId: rv.variationId,
+                weight: rv.weight,
+                sortOrder: j,
+              });
+            }
+          }
+        }
       }
 
       switch (target.type) {

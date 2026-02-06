@@ -8,6 +8,8 @@ export type {
   IsEnabledOptions,
   PollingOptions,
   SnapshotFlag,
+  SnapshotRollout,
+  SnapshotRolloutVariation,
   SnapshotRuleCondition,
   SnapshotSegment,
   SnapshotTarget,

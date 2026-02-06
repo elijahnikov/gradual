@@ -2,24 +2,32 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@gradual/ui/select";
 import { Text } from "@gradual/ui/text";
+import { RiPercentLine } from "@remixicon/react";
 import { useMemo } from "react";
 import type { Variation } from "./types";
 
+const ROLLOUT_VALUE = "__rollout__";
+
 interface VariationSelectorProps {
   variations: Variation[];
-  value: string;
+  value?: string;
+  isRollout?: boolean;
   onChange: (variationId: string) => void;
+  onRolloutSelect: () => void;
   label?: string;
 }
 
 export function VariationSelector({
   variations,
   value,
+  isRollout,
   onChange,
+  onRolloutSelect,
   label = "Serve",
 }: VariationSelectorProps) {
   const variationItems = useMemo(
@@ -31,22 +39,37 @@ export function VariationSelector({
     [variations]
   );
 
+  const displayValue = isRollout ? ROLLOUT_VALUE : (value ?? "");
+  const selectedVariation = variationItems.find((v) => v.value === value);
+
   return (
     <div className="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <Text className="text-ui-fg-subtle" size="small">
-        {label}
-      </Text>
+      {label && (
+        <Text className="text-ui-fg-subtle" size="small">
+          {label}
+        </Text>
+      )}
       <Select
-        items={variationItems}
         onValueChange={(val) => {
-          if (val) {
+          if (val === ROLLOUT_VALUE) {
+            onRolloutSelect();
+          } else if (val) {
             onChange(val);
           }
         }}
-        value={value}
+        value={displayValue}
       >
         <SelectTrigger className="w-full sm:w-40">
-          <SelectValue />
+          <SelectValue>
+            {isRollout ? (
+              <span className="flex items-center gap-1.5">
+                <RiPercentLine className="size-3.5" />
+                Rollout
+              </span>
+            ) : (
+              selectedVariation?.label
+            )}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>
           {variationItems.map((item) => (
@@ -54,6 +77,13 @@ export function VariationSelector({
               {item.label}
             </SelectItem>
           ))}
+          <SelectSeparator className="-mx-2" />
+          <SelectItem value={ROLLOUT_VALUE}>
+            <span className="flex items-center gap-1.5">
+              <RiPercentLine className="size-3.5" />
+              Rollout
+            </span>
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>

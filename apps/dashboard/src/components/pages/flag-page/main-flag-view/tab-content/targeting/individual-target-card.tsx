@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { AttributeSelect } from "./attribute-select";
 import { ContextSelect } from "./context-select";
 import TargetingCard from "./targeting-card";
+import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 import type { ContextKind } from "./types";
 
@@ -25,6 +26,8 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
   const updateTargetVariation = useTargetingStore(
     (s) => s.updateTargetVariation
   );
+  const updateTargetRollout = useTargetingStore((s) => s.updateTargetRollout);
+  const setTargetMode = useTargetingStore((s) => s.setTargetMode);
   const updateTargetIndividual = useTargetingStore(
     (s) => s.updateTargetIndividual
   );
@@ -42,6 +45,16 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
   const handleVariationChange = useCallback(
     (variationId: string) => updateTargetVariation(targetId, variationId),
     [updateTargetVariation, targetId]
+  );
+
+  const handleRolloutChange = useCallback(
+    (rollout: LocalRollout) => updateTargetRollout(targetId, rollout),
+    [updateTargetRollout, targetId]
+  );
+
+  const handleModeChange = useCallback(
+    (mode: "single" | "rollout") => setTargetMode(targetId, mode),
+    [setTargetMode, targetId]
   );
 
   const handleDelete = useCallback(
@@ -85,12 +98,14 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
       isLast={targetIndex === targetsCount - 1}
       name={target.name}
       onDelete={handleDelete}
+      onModeChange={handleModeChange}
       onMoveDown={handleMoveDown}
       onMoveUp={handleMoveUp}
       onNameChange={handleNameChange}
+      onRolloutChange={handleRolloutChange}
       onVariationChange={handleVariationChange}
+      rollout={target.rollout}
       selectedVariationId={target.variationId}
-      targetId={targetId}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">

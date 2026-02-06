@@ -16,15 +16,19 @@ import {
   RiMore2Fill,
 } from "@remixicon/react";
 import type { ReactNode } from "react";
+import { RolloutEditor } from "./rollout-editor";
+import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 import { VariationSelector } from "./variation-selector";
 
 interface TargetingCardProps {
-  targetId: string;
   name: string;
   onNameChange: (name: string) => void;
-  selectedVariationId: string;
+  selectedVariationId?: string;
+  rollout?: LocalRollout;
   onVariationChange: (variationId: string) => void;
+  onRolloutChange: (rollout: LocalRollout) => void;
+  onModeChange: (mode: "single" | "rollout") => void;
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -37,7 +41,10 @@ export default function TargetingCard({
   name,
   onNameChange,
   selectedVariationId,
+  rollout,
   onVariationChange,
+  onRolloutChange,
+  onModeChange,
   onDelete,
   onMoveUp,
   onMoveDown,
@@ -46,64 +53,76 @@ export default function TargetingCard({
   children,
 }: TargetingCardProps) {
   const variations = useTargetingStore((s) => s.variations);
+  const defaultVariationId = useTargetingStore((s) => s.defaultVariationId);
+
+  const isRollout = !!rollout;
+  const effectiveVariationId =
+    selectedVariationId ?? defaultVariationId ?? variations[0]?.id ?? "";
 
   return (
     <Card className="flex w-full max-w-3xl flex-col p-0">
       <div className="flex flex-col gap-3 p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-x-2">
-          <div className="flex w-full items-center gap-2">
-            <Input
-              className="h-7 w-full text-sm"
-              onChange={(e) => onNameChange(e.target.value)}
-              placeholder="Target name"
-              value={name}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <Input
+            className="h-7 w-full text-sm"
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Target name"
+            value={name}
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button className="size-7" size="small" variant="outline" />
+              }
+            >
+              <RiMore2Fill className="size-4 shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={isFirst} onClick={onMoveUp}>
+                <RiArrowUpLine className={cn(isFirst && "text-ui-fg-muted!")} />
+                Move up
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={isLast} onClick={onMoveDown}>
+                <RiArrowDownLine
+                  className={cn(isLast && "text-ui-fg-muted!")}
+                />
+                Move down
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-ui-fg-error!"
+                onClick={onDelete}
+              >
+                <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error! focus:text-ui-fg-error!" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex flex-col gap-2">{children}</div>
       </div>
 
-      <div className="flex w-full items-center border-t pt-3">
-        <div className="flex w-full flex-col gap-3 px-3 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-4">
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button className="size-6" size="small" variant="outline" />
-                }
-              >
-                <RiMore2Fill className="size-4 shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem disabled={isFirst} onClick={onMoveUp}>
-                  <RiArrowUpLine
-                    className={cn(isFirst && "text-ui-fg-muted!")}
-                  />
-                  Move up
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={isLast} onClick={onMoveDown}>
-                  <RiArrowDownLine
-                    className={cn(isLast && "text-ui-fg-muted!")}
-                  />
-                  Move down
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-ui-fg-error!"
-                  onClick={onDelete}
-                >
-                  <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error! focus:text-ui-fg-error!" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className="flex w-full flex-col border-t">
+        <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <VariationSelector
+              isRollout={isRollout}
+              label="Serve"
+              onChange={onVariationChange}
+              onRolloutSelect={() => onModeChange("rollout")}
+              value={effectiveVariationId}
+              variations={variations}
+            />
           </div>
-          <VariationSelector
-            onChange={onVariationChange}
-            value={selectedVariationId}
+        </div>
+        {isRollout && rollout && (
+          <RolloutEditor
+            label=""
+            onRolloutChange={onRolloutChange}
+            rollout={rollout}
             variations={variations}
           />
-        </div>
+        )}
       </div>
     </Card>
   );

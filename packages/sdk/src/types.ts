@@ -26,10 +26,23 @@ export interface SnapshotSegment {
   conditions: SnapshotRuleCondition[];
 }
 
+export interface SnapshotRolloutVariation {
+  variationKey: string;
+  weight: number; // 0-100000 for 0.001% precision
+}
+
+export interface SnapshotRollout {
+  variations: SnapshotRolloutVariation[];
+  bucketContextKind: string;
+  bucketAttributeKey: string;
+  seed?: string;
+}
+
 export interface SnapshotTarget {
   type: "rule" | "individual" | "segment";
-  variationKey: string;
   sortOrder: number;
+  variationKey?: string;
+  rollout?: SnapshotRollout;
   conditions?: SnapshotRuleCondition[];
   contextKind?: string;
   attributeKey?: string;
@@ -47,9 +60,10 @@ export interface SnapshotFlag {
   type: "boolean" | "string" | "number" | "json";
   enabled: boolean;
   variations: Record<string, SnapshotVariation>;
-  defaultVariationKey: string;
   offVariationKey: string;
   targets: SnapshotTarget[];
+  defaultVariationKey?: string;
+  defaultRollout?: SnapshotRollout;
 }
 
 export interface EnvironmentSnapshot {

@@ -23,7 +23,7 @@ import {
   TargetingStoreProvider,
   useTargetingStore,
 } from "./targeting-store";
-import type { ContextKind, TargetingOperator } from "./types";
+import type { TargetingOperator } from "./types";
 
 interface FlagTargetingProps {
   flag: RouterOutputs["featureFlags"]["getByKey"];
@@ -92,23 +92,26 @@ function FlagTargetingContent({
   const defaultVariationId = flag.variations[0]?.id ?? "";
 
   const existingTargets = useMemo((): LocalTarget[] => {
-    const contextIdToKind = new Map<string, ContextKind>();
-    for (const ctx of contexts) {
-      contextIdToKind.set(ctx.id, ctx.kind as ContextKind);
-    }
-
-    const attributeByKey = new Map<string, (typeof attributes)[number]>();
-    for (const attr of attributes) {
-      attributeByKey.set(attr.key, attr);
-    }
-
     return flagEnvironment.targets.map((target) => {
       const base: LocalTarget = {
         id: target.id,
         type: target.type,
         name: target.name,
-        variationId: target.variationId,
       };
+
+      if (target.variationId) {
+        base.variationId = target.variationId;
+      } else if (target.rollout && target.rollout.variations.length > 0) {
+        base.rollout = {
+          variations: target.rollout.variations.map((rv) => ({
+            variationId: rv.variationId,
+            weight: rv.weight,
+          })),
+          bucketContextKind: target.rollout.bucketContextKind,
+          bucketAttributeKey: target.rollout.bucketAttributeKey,
+          seed: target.rollout.seed ?? undefined,
+        };
+      }
 
       if (target.type === "rule" && target.rules && target.rules.length > 0) {
         base.conditions = target.rules.map((rule) => ({
@@ -127,18 +130,29 @@ function FlagTargetingContent({
 
       return base;
     });
-  }, [flagEnvironment.targets, attributes, contexts]);
+  }, [flagEnvironment.targets]);
 
   const initialize = useTargetingStore((s) => s.initialize);
   const targets = useTargetingStore((s) => s.targets);
   const addTarget = useTargetingStore((s) => s.addTarget);
-  const defaultVariationIdState = useTargetingStore(
-    (s) => s.defaultVariationIdState
-  );
-  const setDefaultVariation = useTargetingStore((s) => s.setDefaultVariation);
   const hasChanges = useTargetingStore((s) => s.hasChanges);
   const openReviewModal = useTargetingStore((s) => s.openReviewModal);
   const reset = useTargetingStore((s) => s.reset);
+
+  const existingDefaultRollout = useMemo(() => {
+    if (!flagEnvironment.defaultRollout) {
+      return null;
+    }
+    return {
+      variations: flagEnvironment.defaultRollout.variations.map((rv) => ({
+        variationId: rv.variationId,
+        weight: rv.weight,
+      })),
+      bucketContextKind: flagEnvironment.defaultRollout.bucketContextKind,
+      bucketAttributeKey: flagEnvironment.defaultRollout.bucketAttributeKey,
+      seed: flagEnvironment.defaultRollout.seed ?? undefined,
+    };
+  }, [flagEnvironment.defaultRollout]);
 
   useEffect(() => {
     initialize({
@@ -150,6 +164,7 @@ function FlagTargetingContent({
       projectSlug,
       defaultVariationId:
         flagEnvironment.defaultVariation?.id ?? defaultVariationId,
+      defaultRollout: existingDefaultRollout,
       flagId: flag.flag.id,
       environmentSlug,
       existingTargets,
@@ -166,6 +181,7 @@ function FlagTargetingContent({
     environmentSlug,
     flagEnvironment.defaultVariation?.id,
     defaultVariationId,
+    existingDefaultRollout,
     existingTargets,
   ]);
 
@@ -210,12 +226,8 @@ function FlagTargetingContent({
               <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
                 <TargetingList
                   footer={
-                    flagEnvironment.defaultVariation && (
-                      <DefaultVariation
-                        defaultVariationId={defaultVariationIdState}
-                        onDefaultVariationChange={setDefaultVariation}
-                      />
-                    )
+                    (flagEnvironment.defaultVariation ||
+                      flagEnvironment.defaultRollout) && <DefaultVariation />
                   }
                   onAddTarget={addTarget}
                 >
