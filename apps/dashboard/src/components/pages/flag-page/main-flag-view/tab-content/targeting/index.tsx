@@ -23,7 +23,7 @@ import {
   TargetingStoreProvider,
   useTargetingStore,
 } from "./targeting-store";
-import type { ContextKind, TargetingOperator } from "./types";
+import type { TargetingOperator } from "./types";
 
 interface FlagTargetingProps {
   flag: RouterOutputs["featureFlags"]["getByKey"];
@@ -89,19 +89,9 @@ function FlagTargetingContent({
     })
   );
 
-  const _defaultVariationId = flag.variations[0]?.id ?? "";
+  const defaultVariationId = flag.variations[0]?.id ?? "";
 
-  const _existingTargets = useMemo((): LocalTarget[] => {
-    const contextIdToKind = new Map<string, ContextKind>();
-    for (const ctx of contexts) {
-      contextIdToKind.set(ctx.id, ctx.kind as ContextKind);
-    }
-
-    const attributeByKey = new Map<string, (typeof attributes)[number]>();
-    for (const attr of attributes) {
-      attributeByKey.set(attr.key, attr);
-    }
-
+  const existingTargets = useMemo((): LocalTarget[] => {
     return flagEnvironment.targets.map((target) => {
       const base: LocalTarget = {
         id: target.id,
@@ -122,96 +112,80 @@ function FlagTargetingContent({
           seed: target.rollout.seed ?? undefined,
         };
       }
-      };
 
-    if (target.variationId) {
-      base.variationId = target.variationId;
-    } else if (target.rollout && target.rollout.variations.length > 0) {
-      base.rollout = {
-        variations: target.rollout.variations.map((rv) => ({
-          variationId: rv.variationId,
-          weight: rv.weight,
-        })),
-        bucketContextKind: target.rollout.bucketContextKind,
-        bucketAttributeKey: target.rollout.bucketAttributeKey,
-        seed: target.rollout.seed ?? undefined,
-      };
+      if (target.type === "rule" && target.rules && target.rules.length > 0) {
+        base.conditions = target.rules.map((rule) => ({
+          contextKind: rule.contextKind,
+          attributeKey: rule.attributeKey,
+          operator: rule.operator as TargetingOperator,
+          value: rule.value,
+        }));
+      } else if (target.type === "individual" && target.individual) {
+        base.contextKind = target.individual.contextKind;
+        base.attributeKey = target.individual.attributeKey;
+        base.attributeValue = target.individual.attributeValue;
+      } else if (target.type === "segment" && target.segment) {
+        base.segmentId = target.segment.segmentId;
+      }
+
+      return base;
+    });
+  }, [flagEnvironment.targets]);
+
+  const initialize = useTargetingStore((s) => s.initialize);
+  const targets = useTargetingStore((s) => s.targets);
+  const addTarget = useTargetingStore((s) => s.addTarget);
+  const hasChanges = useTargetingStore((s) => s.hasChanges);
+  const openReviewModal = useTargetingStore((s) => s.openReviewModal);
+  const reset = useTargetingStore((s) => s.reset);
+
+  const existingDefaultRollout = useMemo(() => {
+    if (!flagEnvironment.defaultRollout) {
+      return null;
     }
+    return {
+      variations: flagEnvironment.defaultRollout.variations.map((rv) => ({
+        variationId: rv.variationId,
+        weight: rv.weight,
+      })),
+      bucketContextKind: flagEnvironment.defaultRollout.bucketContextKind,
+      bucketAttributeKey: flagEnvironment.defaultRollout.bucketAttributeKey,
+      seed: flagEnvironment.defaultRollout.seed ?? undefined,
+    };
+  }, [flagEnvironment.defaultRollout]);
 
-    if (target.type === "rule" && target.rules && target.rules.length > 0) {
-      base.conditions = target.rules.map((rule) => ({
-        contextKind: rule.contextKind,
-        attributeKey: rule.attributeKey,
-        operator: rule.operator as TargetingOperator,
-        value: rule.value,
-      }));
-    } else if (target.type === "individual" && target.individual) {
-      base.contextKind = target.individual.contextKind;
-      base.attributeKey = target.individual.attributeKey;
-      base.attributeValue = target.individual.attributeValue;
-    } else if (target.type === "segment" && target.segment) {
-      base.segmentId = target.segment.segmentId;
-    }
-
-    return base;
-  });
-}
-, [flagEnvironment.targets, attributes, contexts])
-
-const initialize = useTargetingStore((s) => s.initialize);
-const targets = useTargetingStore((s) => s.targets);
-const addTarget = useTargetingStore((s) => s.addTarget);
-const hasChanges = useTargetingStore((s) => s.hasChanges);
-const openReviewModal = useTargetingStore((s) => s.openReviewModal);
-const reset = useTargetingStore((s) => s.reset);
-
-const existingDefaultRollout = useMemo(() => {
-  if (!flagEnvironment.defaultRollout) {
-    return null;
-  }
-  return {
-    variations: flagEnvironment.defaultRollout.variations.map((rv) => ({
-      variationId: rv.variationId,
-      weight: rv.weight,
-    })),
-    bucketContextKind: flagEnvironment.defaultRollout.bucketContextKind,
-    bucketAttributeKey: flagEnvironment.defaultRollout.bucketAttributeKey,
-    seed: flagEnvironment.defaultRollout.seed ?? undefined,
-  };
-}, [flagEnvironment.defaultRollout]);
-
-useEffect(() => {
-  initialize({
+  useEffect(() => {
+    initialize({
+      attributes,
+      contexts,
+      segments,
+      variations: flag.variations,
+      organizationSlug,
+      projectSlug,
+      defaultVariationId:
+        flagEnvironment.defaultVariation?.id ?? defaultVariationId,
+      defaultRollout: existingDefaultRollout,
+      flagId: flag.flag.id,
+      environmentSlug,
+      existingTargets,
+    });
+  }, [
+    initialize,
     attributes,
     contexts,
     segments,
-    variations: flag.variations,
+    flag.variations,
+    flag.flag.id,
     organizationSlug,
     projectSlug,
-    defaultVariationId:
-      flagEnvironment.defaultVariation?.id ?? defaultVariationId,
-    defaultRollout: existingDefaultRollout,
-    flagId: flag.flag.id,
     environmentSlug,
+    flagEnvironment.defaultVariation?.id,
+    defaultVariationId,
+    existingDefaultRollout,
     existingTargets,
-  });
-}, [
-  initialize,
-  attributes,
-  contexts,
-  segments,
-  flag.variations,
-  flag.flag.id,
-  organizationSlug,
-  projectSlug,
-  environmentSlug,
-  flagEnvironment.defaultVariation?.id,
-  defaultVariationId,
-  existingDefaultRollout,
-  existingTargets,
-]);
+  ]);
 
-return (
+  return (
     <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         <div className="flex flex-col gap-2 p-2 sm:flex-row sm:items-center sm:justify-between">
