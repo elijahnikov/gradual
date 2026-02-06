@@ -266,9 +266,12 @@ export const featureFlagTarget = pgTable(
     featureFlagEnvironmentId: uuid("feature_flag_environment_id")
       .notNull()
       .references(() => featureFlagEnvironment.id, { onDelete: "cascade" }),
-    variationId: uuid("variation_id")
-      .notNull()
-      .references(() => featureFlagVariation.id, { onDelete: "cascade" }),
+    variationId: uuid("variation_id").references(
+      () => featureFlagVariation.id,
+      {
+        onDelete: "set null",
+      }
+    ),
     type: targetTypeEnum("type").notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -348,6 +351,108 @@ export const featureFlagSegmentTarget = pgTable(
   (table) => [
     index("feature_flag_segment_target_target_idx").on(table.targetId),
     index("feature_flag_segment_target_segment_idx").on(table.segmentId),
+  ]
+);
+
+export const featureFlagTargetRollout = pgTable(
+  "feature_flag_target_rollout",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => featureFlagTarget.id, { onDelete: "cascade" })
+      .unique(),
+    bucketContextKind: varchar("bucket_context_kind", { length: 256 })
+      .notNull()
+      .default("user"),
+    bucketAttributeKey: varchar("bucket_attribute_key", { length: 256 })
+      .notNull()
+      .default("id"),
+    seed: varchar("seed", { length: 256 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("feature_flag_target_rollout_target_idx").on(table.targetId),
+  ]
+);
+
+export const featureFlagRolloutVariation = pgTable(
+  "feature_flag_rollout_variation",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    rolloutId: uuid("rollout_id")
+      .notNull()
+      .references(() => featureFlagTargetRollout.id, { onDelete: "cascade" }),
+    variationId: uuid("variation_id")
+      .notNull()
+      .references(() => featureFlagVariation.id, { onDelete: "cascade" }),
+    weight: integer("weight").notNull(), // 0-100000 for 0.001% precision
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("feature_flag_rollout_variation_rollout_idx").on(table.rolloutId),
+    index("feature_flag_rollout_variation_sort_idx").on(
+      table.rolloutId,
+      table.sortOrder
+    ),
+  ]
+);
+
+export const featureFlagDefaultRollout = pgTable(
+  "feature_flag_default_rollout",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    flagEnvironmentId: uuid("flag_environment_id")
+      .notNull()
+      .references(() => featureFlagEnvironment.id, { onDelete: "cascade" })
+      .unique(),
+    bucketContextKind: varchar("bucket_context_kind", { length: 256 })
+      .notNull()
+      .default("user"),
+    bucketAttributeKey: varchar("bucket_attribute_key", { length: 256 })
+      .notNull()
+      .default("id"),
+    seed: varchar("seed", { length: 256 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("feature_flag_default_rollout_env_idx").on(table.flagEnvironmentId),
+  ]
+);
+
+export const featureFlagDefaultRolloutVariation = pgTable(
+  "feature_flag_default_rollout_variation",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    defaultRolloutId: uuid("default_rollout_id")
+      .notNull()
+      .references(() => featureFlagDefaultRollout.id, { onDelete: "cascade" }),
+    variationId: uuid("variation_id")
+      .notNull()
+      .references(() => featureFlagVariation.id, { onDelete: "cascade" }),
+    weight: integer("weight").notNull(), // 0-100000 for 0.001% precision
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [
+    index("feature_flag_default_rollout_variation_rollout_idx").on(
+      table.defaultRolloutId
+    ),
+    index("feature_flag_default_rollout_variation_sort_idx").on(
+      table.defaultRolloutId,
+      table.sortOrder
+    ),
   ]
 );
 
@@ -846,6 +951,7 @@ export const featureFlagEnvironmentRelations = relations(
       references: [featureFlagVariation.id],
     }),
     targets: many(featureFlagTarget),
+    defaultRollout: one(featureFlagDefaultRollout),
   })
 );
 
@@ -863,6 +969,7 @@ export const featureFlagTargetRelations = relations(
     rules: many(featureFlagTargetingRule),
     individual: one(featureFlagIndividualTarget),
     segment: one(featureFlagSegmentTarget),
+    rollout: one(featureFlagTargetRollout),
   })
 );
 
@@ -896,6 +1003,56 @@ export const featureFlagSegmentTargetRelations = relations(
     segment: one(segment, {
       fields: [featureFlagSegmentTarget.segmentId],
       references: [segment.id],
+    }),
+  })
+);
+
+export const featureFlagTargetRolloutRelations = relations(
+  featureFlagTargetRollout,
+  ({ one, many }) => ({
+    target: one(featureFlagTarget, {
+      fields: [featureFlagTargetRollout.targetId],
+      references: [featureFlagTarget.id],
+    }),
+    variations: many(featureFlagRolloutVariation),
+  })
+);
+
+export const featureFlagRolloutVariationRelations = relations(
+  featureFlagRolloutVariation,
+  ({ one }) => ({
+    rollout: one(featureFlagTargetRollout, {
+      fields: [featureFlagRolloutVariation.rolloutId],
+      references: [featureFlagTargetRollout.id],
+    }),
+    variation: one(featureFlagVariation, {
+      fields: [featureFlagRolloutVariation.variationId],
+      references: [featureFlagVariation.id],
+    }),
+  })
+);
+
+export const featureFlagDefaultRolloutRelations = relations(
+  featureFlagDefaultRollout,
+  ({ one, many }) => ({
+    flagEnvironment: one(featureFlagEnvironment, {
+      fields: [featureFlagDefaultRollout.flagEnvironmentId],
+      references: [featureFlagEnvironment.id],
+    }),
+    variations: many(featureFlagDefaultRolloutVariation),
+  })
+);
+
+export const featureFlagDefaultRolloutVariationRelations = relations(
+  featureFlagDefaultRolloutVariation,
+  ({ one }) => ({
+    defaultRollout: one(featureFlagDefaultRollout, {
+      fields: [featureFlagDefaultRolloutVariation.defaultRolloutId],
+      references: [featureFlagDefaultRollout.id],
+    }),
+    variation: one(featureFlagVariation, {
+      fields: [featureFlagDefaultRolloutVariation.variationId],
+      references: [featureFlagVariation.id],
     }),
   })
 );

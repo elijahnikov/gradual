@@ -4,23 +4,28 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@gradual/ui/select";
 import { Text } from "@gradual/ui/text";
-import { useMemo } from "react";
+import { RiPercentLine } from "@remixicon/react";
+import { useCallback, useMemo } from "react";
+import { RolloutEditor } from "./rollout-editor";
+import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 
-interface DefaultVariationProps {
-  defaultVariationId: string;
-  onDefaultVariationChange: (variationId: string) => void;
-}
+const ROLLOUT_VALUE = "__rollout__";
 
-export default function DefaultVariation({
-  defaultVariationId,
-  onDefaultVariationChange,
-}: DefaultVariationProps) {
+export default function DefaultVariation() {
   const variations = useTargetingStore((s) => s.variations);
+  const defaultVariationIdState = useTargetingStore(
+    (s) => s.defaultVariationIdState
+  );
+  const defaultRollout = useTargetingStore((s) => s.defaultRollout);
+  const setDefaultVariation = useTargetingStore((s) => s.setDefaultVariation);
+  const setDefaultRollout = useTargetingStore((s) => s.setDefaultRollout);
+  const setDefaultMode = useTargetingStore((s) => s.setDefaultMode);
 
   const variationItems = useMemo(
     () =>
@@ -31,36 +36,86 @@ export default function DefaultVariation({
     [variations]
   );
 
+  const isRollout = !!defaultRollout;
+  const displayValue = isRollout ? ROLLOUT_VALUE : defaultVariationIdState;
+  const selectedVariation = variationItems.find(
+    (v) => v.value === defaultVariationIdState
+  );
+
+  const handleValueChange = useCallback(
+    (value: string) => {
+      if (value === ROLLOUT_VALUE) {
+        setDefaultMode("rollout");
+      } else {
+        setDefaultVariation(value);
+      }
+    },
+    [setDefaultMode, setDefaultVariation]
+  );
+
+  const handleRolloutChange = useCallback(
+    (rollout: LocalRollout) => {
+      setDefaultRollout(rollout);
+    },
+    [setDefaultRollout]
+  );
+
   return (
-    <Card className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-      <Badge size="lg" variant="outline">
-        Default
-      </Badge>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Text className="text-ui-fg-subtle" size="small">
-          If no rules match, serve
-        </Text>
-        <Select
-          items={variationItems}
-          onValueChange={(value) => {
-            if (value) {
-              onDefaultVariationChange(value);
-            }
-          }}
-          value={defaultVariationId}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {variationItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
+    <Card className="flex w-full max-w-3xl flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Badge size="lg" variant="outline">
+          Default
+        </Badge>
+        <div className="flex items-center gap-2">
+          <Text className="text-ui-fg-subtle" size="small">
+            If no rules match, serve
+          </Text>
+          <Select
+            onValueChange={(val) => {
+              if (val) {
+                handleValueChange(val);
+              }
+            }}
+            value={displayValue}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue>
+                {isRollout ? (
+                  <span className="flex items-center gap-1.5">
+                    <RiPercentLine className="size-3.5" />
+                    Rollout
+                  </span>
+                ) : (
+                  selectedVariation?.label
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              {variationItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+              <SelectSeparator className="-mx-2" />
+              <SelectItem value={ROLLOUT_VALUE}>
+                <span className="flex items-center gap-1.5">
+                  <RiPercentLine className="size-3.5" />
+                  Rollout
+                </span>
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {isRollout && defaultRollout && (
+        <RolloutEditor
+          label=""
+          onRolloutChange={handleRolloutChange}
+          rollout={defaultRollout}
+          variations={variations}
+        />
+      )}
     </Card>
   );
 }

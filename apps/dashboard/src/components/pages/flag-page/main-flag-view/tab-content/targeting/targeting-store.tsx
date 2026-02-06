@@ -10,11 +10,24 @@ import type {
   Variation,
 } from "./types";
 
+export interface LocalRolloutVariation {
+  variationId: string;
+  weight: number;
+}
+
+export interface LocalRollout {
+  variations: LocalRolloutVariation[];
+  bucketContextKind: string;
+  bucketAttributeKey: string;
+  seed?: string;
+}
+
 export interface LocalTarget {
   id: string;
   type: TargetType;
   name: string;
-  variationId: string;
+  variationId?: string;
+  rollout?: LocalRollout;
   conditions?: RuleCondition[];
   contextKind?: string;
   attributeKey?: string;
@@ -44,6 +57,8 @@ interface TargetingState {
   originalTargets: LocalTarget[];
   defaultVariationIdState: string;
   originalDefaultVariationId: string;
+  defaultRollout: LocalRollout | null;
+  originalDefaultRollout: LocalRollout | null;
 
   hasChanges: boolean;
   isReviewModalOpen: boolean;
@@ -58,6 +73,7 @@ interface TargetingActions {
     organizationSlug: string;
     projectSlug: string;
     defaultVariationId: string;
+    defaultRollout?: LocalRollout | null;
     flagId: string;
     environmentSlug: string;
     existingTargets?: LocalTarget[];
@@ -70,6 +86,8 @@ interface TargetingActions {
   deleteTarget: (id: string) => void;
   moveTarget: (id: string, direction: "up" | "down") => void;
   updateTargetVariation: (id: string, variationId: string) => void;
+  updateTargetRollout: (id: string, rollout: LocalRollout) => void;
+  setTargetMode: (id: string, mode: "single" | "rollout") => void;
   updateTargetConditions: (id: string, conditions: RuleCondition[]) => void;
   updateTargetIndividual: (
     id: string,
@@ -80,6 +98,8 @@ interface TargetingActions {
   updateTargetSegment: (id: string, segmentId: string) => void;
   updateTargetName: (id: string, name: string) => void;
   setDefaultVariation: (variationId: string) => void;
+  setDefaultRollout: (rollout: LocalRollout) => void;
+  setDefaultMode: (mode: "single" | "rollout") => void;
 
   openReviewModal: () => void;
   closeReviewModal: () => void;
@@ -108,6 +128,8 @@ export const createTargetingStore = () =>
     originalTargets: [],
     defaultVariationIdState: "",
     originalDefaultVariationId: "",
+    defaultRollout: null,
+    originalDefaultRollout: null,
     hasChanges: false,
     isReviewModalOpen: false,
 
@@ -135,6 +157,8 @@ export const createTargetingStore = () =>
         attributesByContextKind.set(contextKind, existing);
       }
 
+      const defaultRollout = config.defaultRollout ?? null;
+
       set({
         attributes: config.attributes,
         contexts: config.contexts,
@@ -145,6 +169,10 @@ export const createTargetingStore = () =>
         defaultVariationId: config.defaultVariationId,
         defaultVariationIdState: config.defaultVariationId,
         originalDefaultVariationId: config.defaultVariationId,
+        defaultRollout,
+        originalDefaultRollout: defaultRollout
+          ? JSON.parse(JSON.stringify(defaultRollout))
+          : null,
         flagId: config.flagId,
         environmentSlug: config.environmentSlug,
         attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
@@ -162,19 +190,29 @@ export const createTargetingStore = () =>
     },
 
     markSaved: () => {
-      const { targets, defaultVariationIdState } = get();
+      const { targets, defaultVariationIdState, defaultRollout } = get();
       set({
         originalTargets: JSON.parse(JSON.stringify(targets)),
         originalDefaultVariationId: defaultVariationIdState,
+        originalDefaultRollout: defaultRollout
+          ? JSON.parse(JSON.stringify(defaultRollout))
+          : null,
         hasChanges: false,
       });
     },
 
     reset: () => {
-      const { originalTargets, originalDefaultVariationId } = get();
+      const {
+        originalTargets,
+        originalDefaultVariationId,
+        originalDefaultRollout,
+      } = get();
       set({
         targets: JSON.parse(JSON.stringify(originalTargets)),
         defaultVariationIdState: originalDefaultVariationId,
+        defaultRollout: originalDefaultRollout
+          ? JSON.parse(JSON.stringify(originalDefaultRollout))
+          : null,
         hasChanges: false,
       });
     },
@@ -227,10 +265,62 @@ export const createTargetingStore = () =>
     updateTargetVariation: (id, variationId) => {
       set((state) => ({
         targets: state.targets.map((t) =>
-          t.id === id ? { ...t, variationId } : t
+          t.id === id ? { ...t, variationId, rollout: undefined } : t
         ),
         hasChanges: true,
       }));
+    },
+
+    updateTargetRollout: (id, rollout) => {
+      set((state) => ({
+        targets: state.targets.map((t) =>
+          t.id === id ? { ...t, rollout, variationId: undefined } : t
+        ),
+        hasChanges: true,
+      }));
+    },
+
+    setTargetMode: (id, mode) => {
+      const { variations, defaultVariationId } = get();
+      if (mode === "single") {
+        // Switch to single variation mode
+        const firstVariation = variations[0];
+        set((state) => ({
+          targets: state.targets.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  variationId: firstVariation?.id ?? defaultVariationId,
+                  rollout: undefined,
+                }
+              : t
+          ),
+          hasChanges: true,
+        }));
+      } else {
+        // Switch to rollout mode - create default 50/50 split
+        const v1 = variations[0];
+        const v2 = variations[1] ?? variations[0];
+        const rollout: LocalRollout = {
+          variations:
+            v1 && v2
+              ? [
+                  { variationId: v1.id, weight: 50_000 },
+                  { variationId: v2.id, weight: 50_000 },
+                ]
+              : v1
+                ? [{ variationId: v1.id, weight: 100_000 }]
+                : [],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+        };
+        set((state) => ({
+          targets: state.targets.map((t) =>
+            t.id === id ? { ...t, rollout, variationId: undefined } : t
+          ),
+          hasChanges: true,
+        }));
+      }
     },
 
     updateTargetConditions: (id, conditions) => {
@@ -268,7 +358,54 @@ export const createTargetingStore = () =>
     },
 
     setDefaultVariation: (variationId) => {
-      set({ defaultVariationIdState: variationId, hasChanges: true });
+      set({
+        defaultVariationIdState: variationId,
+        defaultRollout: null,
+        hasChanges: true,
+      });
+    },
+
+    setDefaultRollout: (rollout) => {
+      set({
+        defaultRollout: rollout,
+        defaultVariationIdState: "",
+        hasChanges: true,
+      });
+    },
+
+    setDefaultMode: (mode) => {
+      const { variations, defaultVariationId } = get();
+      if (mode === "single") {
+        // Switch to single variation mode
+        const firstVariation = variations[0];
+        set({
+          defaultVariationIdState: firstVariation?.id ?? defaultVariationId,
+          defaultRollout: null,
+          hasChanges: true,
+        });
+      } else {
+        // Switch to rollout mode - create default 50/50 split
+        const v1 = variations[0];
+        const v2 = variations[1] ?? variations[0];
+        const rollout: LocalRollout = {
+          variations:
+            v1 && v2
+              ? [
+                  { variationId: v1.id, weight: 50_000 },
+                  { variationId: v2.id, weight: 50_000 },
+                ]
+              : v1
+                ? [{ variationId: v1.id, weight: 100_000 }]
+                : [],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+        };
+        set({
+          defaultRollout: rollout,
+          defaultVariationIdState: "",
+          hasChanges: true,
+        });
+      }
     },
 
     openReviewModal: () => {

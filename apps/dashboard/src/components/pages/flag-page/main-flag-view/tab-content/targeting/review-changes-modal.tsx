@@ -236,8 +236,14 @@ function TargetSummary({
   variationsById: Map<string, { name: string }>;
   segmentsById: Map<string, { name: string }>;
 }) {
-  const variation = variationsById.get(target.variationId);
-  const originalVariation = originalTarget
+  const _variation = target.variationId
+    ? variationsById.get(target.variationId)
+    : undefined;
+  const _originalVariation = originalTarget?.variationId;
+  const variation = target.variationId
+    ? variationsById.get(target.variationId)
+    : undefined;
+  const originalVariation = originalTarget?.variationId
     ? variationsById.get(originalTarget.variationId)
     : undefined;
 
@@ -357,13 +363,33 @@ function TargetSummary({
         </Text>
       )}
 
-      <FieldChange
-        label="Serves"
-        newValue={variation?.name ?? "Unknown"}
-        oldValue={
-          variationChanged ? (originalVariation?.name ?? "Unknown") : undefined
-        }
-      />
+      {target.rollout ? (
+        <div className="flex flex-col gap-1">
+          <Text className="text-ui-fg-muted" size="xsmall">
+            Serves % rollout:
+          </Text>
+          <div className="flex flex-wrap gap-1">
+            {target.rollout.variations.map((rv) => {
+              const v = variationsById.get(rv.variationId);
+              return (
+                <Badge key={rv.variationId} size="sm" variant="outline">
+                  {v?.name ?? "Unknown"}: {(rv.weight / 1000).toFixed(1)}%
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <FieldChange
+          label="Serves"
+          newValue={variation?.name ?? "Unknown"}
+          oldValue={
+            variationChanged
+              ? (originalVariation?.name ?? "Unknown")
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
@@ -381,6 +407,10 @@ export function ReviewChangesModal() {
   );
   const originalDefaultVariationId = useTargetingStore(
     (s) => s.originalDefaultVariationId
+  );
+  const defaultRollout = useTargetingStore((s) => s.defaultRollout);
+  const originalDefaultRollout = useTargetingStore(
+    (s) => s.originalDefaultRollout
   );
   const variationsById = useTargetingStore((s) => s.variationsById);
   const segmentsById = useTargetingStore((s) => s.segmentsById);
@@ -417,13 +447,25 @@ export function ReviewChangesModal() {
     [originalTargets, targets]
   );
 
+  const _defaultModeChanged =
+    (defaultRollout !== null) !== (originalDefaultRollout !== null);
+  const defaultModeChanged =
+    (defaultRollout !== null) !== (originalDefaultRollout !== null);
   const defaultVariationChanged =
+    !(defaultRollout || originalDefaultRollout) &&
     defaultVariationIdState !== originalDefaultVariationId;
+  const defaultRolloutChanged =
+    defaultRollout !== null &&
+    originalDefaultRollout !== null &&
+    JSON.stringify(defaultRollout) !== JSON.stringify(originalDefaultRollout);
+  const defaultChanged =
+    defaultModeChanged || defaultVariationChanged || defaultRolloutChanged;
+
   const originalVariation = variationsById.get(originalDefaultVariationId);
   const newVariation = variationsById.get(defaultVariationIdState);
 
   const hasAnyChanges =
-    diffs.length > 0 || defaultVariationChanged || orderChanges.length > 0;
+    diffs.length > 0 || defaultChanged || orderChanges.length > 0;
 
   const diffCounts = useMemo(() => {
     const counts = { added: 0, removed: 0, modified: 0 };
@@ -434,9 +476,7 @@ export function ReviewChangesModal() {
   }, [diffs]);
 
   const totalChanges =
-    diffs.length +
-    (defaultVariationChanged ? 1 : 0) +
-    (orderChanges.length > 0 ? 1 : 0);
+    diffs.length + (defaultChanged ? 1 : 0) + (orderChanges.length > 0 ? 1 : 0);
 
   const handleSave = () => {
     saveMutation.mutate({
@@ -445,7 +485,8 @@ export function ReviewChangesModal() {
       organizationSlug,
       projectSlug,
       targets,
-      defaultVariationId: defaultVariationIdState,
+      defaultVariationId: defaultRollout ? undefined : defaultVariationIdState,
+      defaultRollout: defaultRollout ?? undefined,
     });
   };
 
@@ -479,27 +520,63 @@ export function ReviewChangesModal() {
           <div className="flex flex-col gap-4 py-4">
             {hasAnyChanges ? (
               <div className="flex flex-col gap-4">
-                {defaultVariationChanged && (
+                {defaultChanged && (
                   <>
                     <div className="flex flex-col gap-3">
                       <Text
                         className="font-mono text-ui-fg-muted uppercase tracking-wide"
                         size="xsmall"
                       >
-                        Default Variation
+                        Default {defaultRollout ? "Rollout" : "Variation"}
                       </Text>
                       <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
                         <div className="flex size-8 items-center justify-center rounded-full bg-warning/10">
                           <RiPencilLine className="size-4 text-warning-foreground" />
                         </div>
-                        <div className="flex flex-1 items-center gap-2">
-                          <Badge variant="outline">
-                            {originalVariation?.name ?? "None"}
-                          </Badge>
-                          <RiArrowRightLine className="size-4 text-ui-fg-muted" />
-                          <Badge variant="warning">
-                            {newVariation?.name ?? "None"}
-                          </Badge>
+                        <div className="flex flex-1 flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            {originalDefaultRollout ? (
+                              <Badge variant="outline">
+                                % Rollout (
+                                {originalDefaultRollout.variations.length}{" "}
+                                variations)
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">
+                                {originalVariation?.name ?? "None"}
+                              </Badge>
+                            )}
+                            <RiArrowRightLine className="size-4 text-ui-fg-muted" />
+                            {defaultRollout ? (
+                              <Badge variant="warning">
+                                % Rollout ({defaultRollout.variations.length}{" "}
+                                variations)
+                              </Badge>
+                            ) : (
+                              <Badge variant="warning">
+                                {newVariation?.name ?? "None"}
+                              </Badge>
+                            )}
+                          </div>
+                          {defaultRollout && (
+                            <div className="flex flex-wrap gap-1 text-ui-fg-muted text-xs">
+                              {defaultRollout.variations.map((rv) => {
+                                const variation = variationsById.get(
+                                  rv.variationId
+                                );
+                                return (
+                                  <Badge
+                                    key={rv.variationId}
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    {variation?.name ?? "Unknown"}:{" "}
+                                    {(rv.weight / 1000).toFixed(1)}%
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -643,7 +720,7 @@ export function ReviewChangesModal() {
                         {diffCounts.removed} removed
                       </Badge>
                     )}
-                    {defaultVariationChanged && (
+                    {defaultChanged && (
                       <Badge variant="outline">Default changed</Badge>
                     )}
                     {orderChanges.length > 0 && (

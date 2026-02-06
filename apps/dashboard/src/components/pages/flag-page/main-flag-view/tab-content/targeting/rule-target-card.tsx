@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { RuleConditionBuilder } from "./rule-condition-builder";
 import TargetingCard from "./targeting-card";
+import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 import type { RuleCondition } from "./types";
 
@@ -22,6 +23,8 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
   const updateTargetVariation = useTargetingStore(
     (s) => s.updateTargetVariation
   );
+  const updateTargetRollout = useTargetingStore((s) => s.updateTargetRollout);
+  const setTargetMode = useTargetingStore((s) => s.setTargetMode);
   const updateTargetConditions = useTargetingStore(
     (s) => s.updateTargetConditions
   );
@@ -40,6 +43,16 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
   const handleVariationChange = useCallback(
     (variationId: string) => updateTargetVariation(targetId, variationId),
     [updateTargetVariation, targetId]
+  );
+
+  const handleRolloutChange = useCallback(
+    (rollout: LocalRollout) => updateTargetRollout(targetId, rollout),
+    [updateTargetRollout, targetId]
+  );
+
+  const handleModeChange = useCallback(
+    (mode: "single" | "rollout") => setTargetMode(targetId, mode),
+    [setTargetMode, targetId]
   );
 
   const handleConditionsChange = useCallback(
@@ -85,12 +98,14 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
       isLast={targetIndex === targetsCount - 1}
       name={target.name}
       onDelete={handleDelete}
+      onModeChange={handleModeChange}
       onMoveDown={handleMoveDown}
       onMoveUp={handleMoveUp}
       onNameChange={handleNameChange}
+      onRolloutChange={handleRolloutChange}
       onVariationChange={handleVariationChange}
+      rollout={target.rollout}
       selectedVariationId={target.variationId}
-      targetId={targetId}
     >
       <RuleConditionBuilder
         conditions={conditions}

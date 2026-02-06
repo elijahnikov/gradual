@@ -184,17 +184,47 @@ const ruleConditionSchema = z.object({
   value: z.unknown(),
 });
 
-const targetSchema = z.object({
-  id: z.string(),
-  type: z.enum(["rule", "individual", "segment"]),
-  name: z.string(),
+const rolloutVariationSchema = z.object({
   variationId: z.uuid(),
-  conditions: z.array(ruleConditionSchema).optional(),
-  contextKind: z.string().optional(),
-  attributeKey: z.string().optional(),
-  attributeValue: z.string().optional(),
-  segmentId: z.uuid().optional(),
+  weight: z.number().int().min(0).max(100_000),
 });
+
+const rolloutConfigSchema = z
+  .object({
+    variations: z.array(rolloutVariationSchema).min(1),
+    bucketContextKind: z.string().default("user"),
+    bucketAttributeKey: z.string().default("id"),
+    seed: z.string().optional(),
+  })
+  .superRefine((rollout, ctx) => {
+    const totalWeight = rollout.variations.reduce(
+      (sum, v) => sum + v.weight,
+      0
+    );
+    if (totalWeight !== 100_000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Rollout weights must sum to 100000, got ${totalWeight}`,
+      });
+    }
+  });
+
+const targetSchema = z
+  .object({
+    id: z.string(),
+    type: z.enum(["rule", "individual", "segment"]),
+    name: z.string(),
+    variationId: z.uuid().optional(),
+    rollout: rolloutConfigSchema.optional(),
+    conditions: z.array(ruleConditionSchema).optional(),
+    contextKind: z.string().optional(),
+    attributeKey: z.string().optional(),
+    attributeValue: z.string().optional(),
+    segmentId: z.uuid().optional(),
+  })
+  .refine((t) => t.variationId || t.rollout, {
+    message: "Target must have either variationId or rollout configuration",
+  });
 
 export const saveTargetingRulesSchema = z.object({
   flagId: z.uuid(),
@@ -202,7 +232,8 @@ export const saveTargetingRulesSchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
   targets: z.array(targetSchema),
-  defaultVariationId: z.uuid(),
+  defaultVariationId: z.uuid().optional(),
+  defaultRollout: rolloutConfigSchema.optional(),
 });
 export type SaveTargetingRulesInput = z.infer<typeof saveTargetingRulesSchema>;
 

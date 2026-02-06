@@ -616,4 +616,468 @@ describe("evaluateFlag", () => {
       expect(evaluateFlag(flag, { device: { type: "mobile" } }, {})).toBe(true);
     });
   });
+
+  describe("rollout targeting", () => {
+    it("selects variation based on bucket value for target rollout", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        defaultVariationKey: "control",
+        offVariationKey: "control",
+        targets: [
+          {
+            type: "rule",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+            rollout: {
+              variations: [
+                { variationKey: "control", weight: 50_000 },
+                { variationKey: "variant", weight: 50_000 },
+              ],
+              bucketContextKind: "user",
+              bucketAttributeKey: "key",
+            },
+          },
+        ],
+      });
+
+      // Same user should always get the same result
+      const result1 = evaluateFlag(
+        flag,
+        { user: { key: "user-123", plan: "pro" } },
+        {}
+      );
+      const result2 = evaluateFlag(
+        flag,
+        { user: { key: "user-123", plan: "pro" } },
+        {}
+      );
+      expect(result1).toBe(result2);
+
+      // Different users may get different results, but should be deterministic
+      const result3 = evaluateFlag(
+        flag,
+        { user: { key: "user-456", plan: "pro" } },
+        {}
+      );
+      const result4 = evaluateFlag(
+        flag,
+        { user: { key: "user-456", plan: "pro" } },
+        {}
+      );
+      expect(result3).toBe(result4);
+
+      // Results should be one of the variations
+      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(result3);
+    });
+
+    it("uses single variationKey when rollout is not present", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        defaultVariationKey: "control",
+        offVariationKey: "control",
+        targets: [
+          {
+            type: "rule",
+            variationKey: "variant",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe("variant");
+    });
+
+    it("uses default rollout when no targets match", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 50_000 },
+            { variationKey: "variant", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+        },
+      });
+
+      // Same user should always get the same result
+      const result1 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
+      const result2 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
+      expect(result1).toBe(result2);
+
+      // Results should be one of the variations
+      expect(["control", "variant"]).toContain(result1);
+    });
+
+    it("respects different bucket attributes", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        defaultVariationKey: "control",
+        offVariationKey: "control",
+        targets: [
+          {
+            type: "rule",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+            rollout: {
+              variations: [
+                { variationKey: "control", weight: 50_000 },
+                { variationKey: "variant", weight: 50_000 },
+              ],
+              bucketContextKind: "company",
+              bucketAttributeKey: "id",
+            },
+          },
+        ],
+      });
+
+      const result1 = evaluateFlag(
+        flag,
+        { user: { key: "user-1", plan: "pro" }, company: { id: "company-1" } },
+        {}
+      );
+      const result2 = evaluateFlag(
+        flag,
+        { user: { key: "user-2", plan: "pro" }, company: { id: "company-1" } },
+        {}
+      );
+      expect(result1).toBe(result2);
+    });
+
+    it("seed affects bucket calculation deterministically", () => {
+      const flagWithSeed = createFlag({
+        key: "test-flag",
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 50_000 },
+            { variationKey: "variant", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+          seed: "my-seed",
+        },
+      });
+
+      const flagWithDifferentSeed = createFlag({
+        key: "test-flag",
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 50_000 },
+            { variationKey: "variant", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+          seed: "different-seed",
+        },
+      });
+
+      const result1 = evaluateFlag(
+        flagWithSeed,
+        { user: { key: "user-xyz" } },
+        {}
+      );
+      const result2 = evaluateFlag(
+        flagWithSeed,
+        { user: { key: "user-xyz" } },
+        {}
+      );
+      expect(result1).toBe(result2);
+
+      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(
+        evaluateFlag(flagWithDifferentSeed, { user: { key: "user-xyz" } }, {})
+      );
+    });
+
+    it("handles 100% to one variation", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [{ variationKey: "variant", weight: 100_000 }],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+        },
+      });
+
+      // Everyone should get the variant
+      expect(evaluateFlag(flag, { user: { key: "user-1" } }, {})).toBe(
+        "variant"
+      );
+      expect(evaluateFlag(flag, { user: { key: "user-2" } }, {})).toBe(
+        "variant"
+      );
+      expect(evaluateFlag(flag, { user: { key: "user-3" } }, {})).toBe(
+        "variant"
+      );
+    });
+
+    it("handles missing bucket attribute by using 'anonymous'", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 50_000 },
+            { variationKey: "variant", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+        },
+      });
+
+      const result1 = evaluateFlag(flag, { user: {} }, {});
+      const result2 = evaluateFlag(flag, {}, {});
+      expect(result1).toBe(result2);
+    });
+
+    it("distributes users to both variations with a 50/50 split", () => {
+      const flag = createFlag({
+        key: "distribution-test",
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 50_000 }, // 50%
+            { variationKey: "variant", weight: 50_000 }, // 50%
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+        },
+      });
+
+      const results = { control: 0, variant: 0 };
+      const numUsers = 100;
+
+      for (let i = 0; i < numUsers; i++) {
+        const result = evaluateFlag(
+          flag,
+          { user: { key: `user-${i}` } },
+          {}
+        ) as string;
+        if (result === "control" || result === "variant") {
+          results[result]++;
+        }
+      }
+
+      // Both variations should receive some users
+      expect(results.control).toBeGreaterThan(0);
+      expect(results.variant).toBeGreaterThan(0);
+      expect(results.control + results.variant).toBe(numUsers);
+    });
+
+    it("handles three-way split with valid distribution", () => {
+      const flag = createFlag({
+        key: "three-way-split",
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          "variant-a": { key: "variant-a", value: "variant-a" },
+          "variant-b": { key: "variant-b", value: "variant-b" },
+        },
+        offVariationKey: "control",
+        targets: [],
+        defaultRollout: {
+          variations: [
+            { variationKey: "control", weight: 33_334 },
+            { variationKey: "variant-a", weight: 33_333 },
+            { variationKey: "variant-b", weight: 33_333 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "key",
+        },
+      });
+
+      for (let i = 0; i < 20; i++) {
+        const result = evaluateFlag(flag, { user: { key: `user-${i}` } }, {});
+        expect(["control", "variant-a", "variant-b"]).toContain(result);
+      }
+
+      const result1 = evaluateFlag(
+        flag,
+        { user: { key: "consistent-user" } },
+        {}
+      );
+      const result2 = evaluateFlag(
+        flag,
+        { user: { key: "consistent-user" } },
+        {}
+      );
+      expect(result1).toBe(result2);
+    });
+
+    it("segment target with rollout", () => {
+      const segments: Record<string, SnapshotSegment> = {
+        "beta-users": {
+          key: "beta-users",
+          conditions: [
+            {
+              contextKind: "user",
+              attributeKey: "betaUser",
+              operator: "equals",
+              value: true,
+            },
+          ],
+        },
+      };
+
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        defaultVariationKey: "control",
+        offVariationKey: "control",
+        targets: [
+          {
+            type: "segment",
+            sortOrder: 0,
+            segmentKey: "beta-users",
+            rollout: {
+              variations: [
+                { variationKey: "control", weight: 50_000 },
+                { variationKey: "variant", weight: 50_000 },
+              ],
+              bucketContextKind: "user",
+              bucketAttributeKey: "key",
+            },
+          },
+        ],
+      });
+
+      // Beta users get rollout
+      const result1 = evaluateFlag(
+        flag,
+        { user: { key: "user-1", betaUser: true } },
+        segments
+      );
+      expect(["control", "variant"]).toContain(result1);
+
+      // Non-beta users get default
+      expect(
+        evaluateFlag(
+          flag,
+          { user: { key: "user-1", betaUser: false } },
+          segments
+        )
+      ).toBe("control");
+    });
+
+    it("individual target with rollout", () => {
+      const flag = createFlag({
+        type: "string",
+        variations: {
+          control: { key: "control", value: "control" },
+          variant: { key: "variant", value: "variant" },
+        },
+        defaultVariationKey: "control",
+        offVariationKey: "control",
+        targets: [
+          {
+            type: "individual",
+            sortOrder: 0,
+            contextKind: "user",
+            attributeKey: "email",
+            attributeValue: "beta@example.com",
+            rollout: {
+              variations: [
+                { variationKey: "control", weight: 50_000 },
+                { variationKey: "variant", weight: 50_000 },
+              ],
+              bucketContextKind: "user",
+              bucketAttributeKey: "key",
+            },
+          },
+        ],
+      });
+
+      // Targeted user gets rollout
+      const result1 = evaluateFlag(
+        flag,
+        { user: { key: "user-1", email: "beta@example.com" } },
+        {}
+      );
+      expect(["control", "variant"]).toContain(result1);
+
+      // Other users get default
+      expect(
+        evaluateFlag(
+          flag,
+          { user: { key: "user-1", email: "other@example.com" } },
+          {}
+        )
+      ).toBe("control");
+    });
+  });
 });
