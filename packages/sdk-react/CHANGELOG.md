@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.6.1
+
+### Patch Changes
+
+- [#38](https://github.com/elijahnikov/gradual/pull/38) [`683f16a`](https://github.com/elijahnikov/gradual/commit/683f16a3cc380fd3aa2d5a1da8d9b3644e34cc27) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding rollout support
+
+- Updated dependencies [[`683f16a`](https://github.com/elijahnikov/gradual/commit/683f16a3cc380fd3aa2d5a1da8d9b3644e34cc27)]:
+  - @gradual-so/sdk@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes
