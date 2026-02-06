@@ -1,3 +1,4 @@
+import { getVariationColorByIndex } from "@gradual/api/utils";
 import {
   type ChartConfig,
   ChartContainer,
@@ -8,15 +9,6 @@ import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { useMetricsStore } from "./metrics-store";
 import type { MetricsBucket, MetricsVariation } from "./types";
-
-const VARIATION_COLORS = [
-  "#32AA40", // Green
-  "#f59e0b", // Amber
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-  "#06b6d4", // Cyan
-  "#f97316", // Orange
-];
 
 interface MetricsChartProps {
   data: MetricsBucket[];
@@ -52,7 +44,7 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
       if (selectedVariationIds.has(v.id)) {
         config[v.name] = {
           label: v.name,
-          color: VARIATION_COLORS[i % VARIATION_COLORS.length],
+          color: v.color ?? getVariationColorByIndex(i),
         };
       }
     });
@@ -107,7 +99,9 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
               dataKey={variation.name}
               dot={false}
               key={variation.id}
-              stroke={VARIATION_COLORS[originalIndex % VARIATION_COLORS.length]}
+              stroke={
+                variation.color ?? getVariationColorByIndex(originalIndex)
+              }
               strokeWidth={2}
               type="monotone"
             />

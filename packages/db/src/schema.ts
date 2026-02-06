@@ -196,6 +196,7 @@ export const featureFlagVariation = pgTable(
     name: varchar("name", { length: 256 }).notNull(),
     value: jsonb("value").notNull(),
     description: text("description"),
+    color: varchar("color", { length: 7 }),
     isDefault: boolean("is_default").notNull().default(false),
     rolloutPercentage: doublePrecision("rollout_percentage")
       .notNull()

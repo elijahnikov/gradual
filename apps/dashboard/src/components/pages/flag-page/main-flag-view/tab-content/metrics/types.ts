@@ -8,6 +8,7 @@ export interface MetricsBucket {
 export interface MetricsVariation {
   id: string;
   name: string;
+  color?: string | null;
 }
 
 export interface MetricsEnvironment {

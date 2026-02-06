@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@gradual/api";
+import { getVariationColorByIndex } from "@gradual/api/utils";
 import { Button } from "@gradual/ui/button";
 import { toastManager } from "@gradual/ui/toast";
 import { RiAddLine } from "@remixicon/react";
@@ -68,6 +69,7 @@ export default function FlagVariations({
             name: newVariation.name,
             value: newVariation.value,
             description: newVariation.description ?? null,
+            color: newVariation.color ?? null,
             isDefault: false,
             rolloutPercentage: 0,
             sortOrder: previousVariations.length,
@@ -122,6 +124,7 @@ export default function FlagVariations({
       organizationSlug,
       name: `Variation ${variations.length + 1}`,
       value: defaultValue,
+      color: getVariationColorByIndex(variations.length),
     });
   };
 

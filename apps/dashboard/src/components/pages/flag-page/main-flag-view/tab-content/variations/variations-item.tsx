@@ -23,6 +23,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { JsonEditor } from "@/components/common/json-editor";
+import VariationColorPicker from "@/components/common/variation-color-picker";
 import { useTRPC } from "@/lib/trpc";
 
 type FlagType = "boolean" | "string" | "number" | "json";
@@ -94,6 +95,7 @@ export default function VariationsItem({
                     name: updatedVariation.name ?? v.name,
                     value: updatedVariation.value ?? v.value,
                     description: updatedVariation.description ?? v.description,
+                    color: updatedVariation.color ?? v.color,
                     updatedAt: new Date(),
                   }
                 : v
@@ -229,6 +231,19 @@ export default function VariationsItem({
     updateMutation,
   ]);
 
+  const handleColorChange = useCallback(
+    (color: string) => {
+      updateMutation.mutate({
+        variationId: variation.id,
+        flagId,
+        projectSlug,
+        organizationSlug,
+        color,
+      });
+    },
+    [variation.id, flagId, projectSlug, organizationSlug, updateMutation]
+  );
+
   const handleCancel = useCallback(() => {
     setEditedName(variation.name);
     setEditedValue(variation.value);
@@ -314,6 +329,10 @@ export default function VariationsItem({
       <div className="p-3 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <VariationColorPicker
+              onChange={handleColorChange}
+              value={variation.color}
+            />
             {isEditing ? (
               <Input
                 className="h-7 w-48"
