@@ -1,7 +1,9 @@
 import { evaluateFlag } from "./evaluator";
+import { EventBuffer } from "./event-buffer";
 import type {
   EnvironmentSnapshot,
   EvaluationContext,
+  EvaluationEvent,
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
@@ -37,6 +39,9 @@ export interface Gradual {
   /** Subscribe to snapshot updates from polling (returns unsubscribe function) */
   onUpdate(callback: () => void): () => void;
 
+  /** Flush pending evaluation events and stop the event buffer */
+  close(): void;
+
   /** Sync methods (throw if not ready) */
   sync: GradualSync;
 }
@@ -57,6 +62,10 @@ class GradualClient implements Gradual {
   private snapshot: EnvironmentSnapshot | null = null;
   private identifiedContext: EvaluationContext = {};
   private readonly updateListeners: Set<() => void> = new Set();
+  private eventBuffer: EventBuffer | null = null;
+  private readonly eventsEnabled: boolean;
+  private readonly eventsFlushIntervalMs: number;
+  private readonly eventsMaxBatchSize: number;
 
   readonly sync: GradualSync;
 
@@ -64,6 +73,9 @@ class GradualClient implements Gradual {
     this.apiKey = options.apiKey;
     this.environment = options.environment;
     this.baseUrl = options.baseUrl ?? DEFAULT_BASE_URL;
+    this.eventsEnabled = options.events?.enabled ?? true;
+    this.eventsFlushIntervalMs = options.events?.flushIntervalMs ?? 30_000;
+    this.eventsMaxBatchSize = options.events?.maxBatchSize ?? 100;
     this.initPromise = this.init();
 
     this.sync = {
@@ -131,6 +143,20 @@ class GradualClient implements Gradual {
     }
 
     this.snapshot = (await snapshotResponse.json()) as EnvironmentSnapshot;
+
+    if (this.eventsEnabled && this.snapshot.meta) {
+      this.eventBuffer = new EventBuffer({
+        baseUrl: this.baseUrl,
+        apiKey: this.apiKey,
+        meta: {
+          projectId: this.snapshot.meta.projectId,
+          organizationId: this.snapshot.meta.organizationId,
+          environmentId: this.snapshot.meta.environmentId,
+        },
+        flushIntervalMs: this.eventsFlushIntervalMs,
+        maxBatchSize: this.eventsMaxBatchSize,
+      });
+    }
   }
 
   private ensureReady(): EnvironmentSnapshot {
@@ -166,9 +192,44 @@ class GradualClient implements Gradual {
     }
     const flag = snapshot.flags[key];
     if (!flag) {
+      this.trackEvent(key, undefined, undefined, "FLAG_NOT_FOUND", context);
       return undefined;
     }
-    return evaluateFlag(flag, context, snapshot.segments ?? {});
+    const result = evaluateFlag(flag, context, snapshot.segments ?? {});
+    this.trackEvent(
+      key,
+      result.variationKey,
+      result.value,
+      result.reason,
+      context
+    );
+    return result.value;
+  }
+
+  private trackEvent(
+    flagKey: string,
+    variationKey: string | undefined,
+    value: unknown,
+    reason: EvaluationEvent["reason"],
+    context: EvaluationContext
+  ): void {
+    if (!this.eventBuffer) {
+      return;
+    }
+    const contextKinds = Object.keys(context);
+    const contextKeys: Record<string, string[]> = {};
+    for (const kind of contextKinds) {
+      contextKeys[kind] = Object.keys(context[kind] ?? {});
+    }
+    this.eventBuffer.push({
+      flagKey,
+      variationKey,
+      value,
+      reason,
+      contextKinds,
+      contextKeys,
+      timestamp: Date.now(),
+    });
   }
 
   async ready(): Promise<void> {
@@ -236,6 +297,13 @@ class GradualClient implements Gradual {
   onUpdate(callback: () => void): () => void {
     this.updateListeners.add(callback);
     return () => this.updateListeners.delete(callback);
+  }
+
+  close(): void {
+    if (this.eventBuffer) {
+      this.eventBuffer.destroy();
+      this.eventBuffer = null;
+    }
   }
 }
 

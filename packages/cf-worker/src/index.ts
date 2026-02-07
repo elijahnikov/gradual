@@ -4,6 +4,28 @@ interface SnapshotJobMessage {
   environmentSlug: string;
 }
 
+interface EvaluationEvent {
+  flagKey: string;
+  variationKey: string | undefined;
+  value: unknown;
+  reason: string;
+  contextKinds: string[];
+  contextKeys: Record<string, string[]>;
+  timestamp: number;
+}
+
+interface EvaluationQueueMessage {
+  meta: {
+    projectId: string;
+    organizationId: string;
+    environmentId: string;
+    sdkVersion: string;
+    sdkKey: string;
+    userAgent: string;
+  };
+  events: EvaluationEvent[];
+}
+
 interface ApiKeyMetadata {
   orgId: string;
   projectId: string;
@@ -13,6 +35,7 @@ interface Env {
   GRADUAL_API_KEY: KVNamespace;
   GRADUAL_SNAPSHOT: KVNamespace;
   SNAPSHOT_QUEUE: Queue<SnapshotJobMessage>;
+  EVALUATION_QUEUE: Queue<EvaluationQueueMessage>;
   CLOUDFLARE_WORKERS_ADMIN_KEY: string;
   API_INTERNAL_URL: string;
 }
@@ -370,6 +393,123 @@ async function adminRevokeApiKey(
   }
 }
 
+async function sdkIngestEvaluations(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return Response.json(
+      { error: "Missing Authorization header" },
+      { status: 401 }
+    );
+  }
+
+  const apiKey = authHeader.slice(7);
+  const metadata = await getApiKeyMetadata(apiKey, env);
+  if (!metadata) {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  }
+
+  try {
+    const body = (await request.json()) as {
+      meta?: {
+        projectId?: string;
+        organizationId?: string;
+        environmentId?: string;
+        sdkVersion?: string;
+      };
+      events?: EvaluationEvent[];
+    };
+
+    if (
+      !(body.events && Array.isArray(body.events)) ||
+      body.events.length === 0
+    ) {
+      return Response.json(
+        { error: "Missing or empty events array" },
+        { status: 400 }
+      );
+    }
+
+    if (body.events.length > 500) {
+      return Response.json(
+        { error: "Too many events (max 500)" },
+        { status: 400 }
+      );
+    }
+
+    const sdkKeyPrefix = apiKey.length > 12 ? apiKey.slice(0, 12) : apiKey;
+    const userAgent = request.headers.get("User-Agent") ?? "";
+
+    const message: EvaluationQueueMessage = {
+      meta: {
+        projectId: body.meta?.projectId ?? metadata.projectId,
+        organizationId: body.meta?.organizationId ?? metadata.orgId,
+        environmentId: body.meta?.environmentId ?? "",
+        sdkVersion: body.meta?.sdkVersion ?? "unknown",
+        sdkKey: sdkKeyPrefix,
+        userAgent,
+      },
+      events: body.events,
+    };
+
+    await env.EVALUATION_QUEUE.send(message);
+    return new Response(null, { status: 202 });
+  } catch (err) {
+    console.error("sdkIngestEvaluations error:", err);
+    return Response.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+async function processEvaluationQueue(
+  batch: MessageBatch<unknown>,
+  env: Env
+): Promise<void> {
+  const messages = batch.messages as Message<EvaluationQueueMessage>[];
+
+  const batches: EvaluationQueueMessage[] = [];
+  for (const msg of messages) {
+    batches.push(msg.body);
+  }
+
+  try {
+    const apiUrl = `${env.API_INTERNAL_URL}/api/trpc/evaluations.ingest`;
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        json: {
+          workerSecret: env.CLOUDFLARE_WORKERS_ADMIN_KEY,
+          batches,
+        },
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("processEvaluationQueue API error:", errorText);
+      for (const msg of messages) {
+        msg.retry();
+      }
+      return;
+    }
+
+    for (const msg of messages) {
+      msg.ack();
+    }
+  } catch (err) {
+    console.error("processEvaluationQueue error:", err);
+    for (const msg of messages) {
+      msg.retry();
+    }
+  }
+}
+
 async function processSnapshotQueue(
   batch: MessageBatch<unknown>,
   env: Env
@@ -421,7 +561,9 @@ export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const { pathname } = new URL(request.url);
     const isSDKRoute =
-      pathname === "/api/v1/sdk/init" || pathname === "/api/v1/sdk/snapshot";
+      pathname === "/api/v1/sdk/init" ||
+      pathname === "/api/v1/sdk/snapshot" ||
+      pathname === "/api/v1/sdk/evaluations";
 
     if (isSDKRoute && request.method === "OPTIONS") {
       return new Response(null, {
@@ -443,6 +585,9 @@ export default {
         break;
       case "/api/v1/sdk/snapshot":
         response = await sdkGetSnapshot(request, env);
+        break;
+      case "/api/v1/sdk/evaluations":
+        response = await sdkIngestEvaluations(request, env);
         break;
       case "/api/v1/snapshot":
         return adminGetSnapshot(request, env);
@@ -467,6 +612,9 @@ export default {
   },
 
   queue(batch, env): Promise<void> {
+    if (batch.queue === "evaluation-queue") {
+      return processEvaluationQueue(batch, env);
+    }
     return processSnapshotQueue(batch, env);
   },
 } satisfies ExportedHandler<Env>;

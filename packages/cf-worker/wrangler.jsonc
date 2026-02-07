@@ -22,6 +22,10 @@
       {
         "binding": "SNAPSHOT_QUEUE",
         "queue": "snapshot-queue"
+      },
+      {
+        "binding": "EVALUATION_QUEUE",
+        "queue": "evaluation-queue"
       }
     ],
     "consumers": [
@@ -29,6 +33,12 @@
         "queue": "snapshot-queue",
         "max_batch_size": 10,
         "max_retries": 3
+      },
+      {
+        "queue": "evaluation-queue",
+        "max_batch_size": 50,
+        "max_retries": 3,
+        "max_batch_timeout": 30
       }
     ]
   }

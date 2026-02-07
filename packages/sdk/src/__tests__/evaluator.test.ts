@@ -22,7 +22,10 @@ describe("evaluateFlag", () => {
   describe("disabled flags", () => {
     it("returns off variation when flag is disabled", () => {
       const flag = createFlag({ enabled: false });
-      expect(evaluateFlag(flag, {}, {})).toBe(false);
+      const result = evaluateFlag(flag, {}, {});
+      expect(result.value).toBe(false);
+      expect(result.reason).toBe("FLAG_DISABLED");
+      expect(result.variationKey).toBe("off");
     });
 
     it("returns off variation regardless of targets", () => {
@@ -44,14 +47,19 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(false);
+      const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
+      expect(result.value).toBe(false);
+      expect(result.reason).toBe("FLAG_DISABLED");
     });
   });
 
   describe("enabled flags with no targets", () => {
     it("returns default variation", () => {
       const flag = createFlag({ enabled: true });
-      expect(evaluateFlag(flag, {}, {})).toBe(true);
+      const result = evaluateFlag(flag, {}, {});
+      expect(result.value).toBe(true);
+      expect(result.reason).toBe("DEFAULT_VARIATION");
+      expect(result.variationKey).toBe("on");
     });
 
     it("returns string default variation", () => {
@@ -64,7 +72,7 @@ describe("evaluateFlag", () => {
         defaultVariationKey: "control",
         offVariationKey: "control",
       });
-      expect(evaluateFlag(flag, {}, {})).toBe("control");
+      expect(evaluateFlag(flag, {}, {}).value).toBe("control");
     });
 
     it("returns number default variation", () => {
@@ -77,7 +85,7 @@ describe("evaluateFlag", () => {
         defaultVariationKey: "low",
         offVariationKey: "low",
       });
-      expect(evaluateFlag(flag, {}, {})).toBe(10);
+      expect(evaluateFlag(flag, {}, {}).value).toBe(10);
     });
   });
 
@@ -95,9 +103,10 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { userId: "user-123" } }, {})).toBe(
-        false
-      );
+      const result = evaluateFlag(flag, { user: { userId: "user-123" } }, {});
+      expect(result.value).toBe(false);
+      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.variationKey).toBe("off");
     });
 
     it("does not match different user", () => {
@@ -113,9 +122,9 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { userId: "user-456" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { user: { userId: "user-456" } }, {}).value
+      ).toBe(true);
     });
 
     it("does not match when context kind is missing", () => {
@@ -131,9 +140,9 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { device: { userId: "user-123" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { device: { userId: "user-123" } }, {}).value
+      ).toBe(true);
     });
   });
 
@@ -156,8 +165,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: { plan: "free" } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {}).value).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { user: { plan: "free" } }, {}).value).toBe(
+        true
+      );
     });
 
     it("matches not_equals operator", () => {
@@ -178,8 +191,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { plan: "free" } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { plan: "free" } }, {}).value).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {}).value).toBe(
+        true
+      );
     });
 
     it("matches contains operator on strings", () => {
@@ -201,11 +218,11 @@ describe("evaluateFlag", () => {
         ],
       });
       expect(
-        evaluateFlag(flag, { user: { email: "eli@gradual.so" } }, {})
+        evaluateFlag(flag, { user: { email: "eli@gradual.so" } }, {}).value
       ).toBe(false);
-      expect(evaluateFlag(flag, { user: { email: "eli@other.com" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { user: { email: "eli@other.com" } }, {}).value
+      ).toBe(true);
     });
 
     it("matches starts_with operator", () => {
@@ -226,12 +243,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { location: { country: "US-CA" } }, {})).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { location: { country: "UK-LDN" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { location: { country: "US-CA" } }, {}).value
+      ).toBe(false);
+      expect(
+        evaluateFlag(flag, { location: { country: "UK-LDN" } }, {}).value
+      ).toBe(true);
     });
 
     it("matches ends_with operator", () => {
@@ -252,12 +269,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { email: "eli@test.com" } }, {})).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { user: { email: "eli@test.io" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { user: { email: "eli@test.com" } }, {}).value
+      ).toBe(false);
+      expect(
+        evaluateFlag(flag, { user: { email: "eli@test.io" } }, {}).value
+      ).toBe(true);
     });
 
     it("matches greater_than operator", () => {
@@ -278,9 +295,9 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { age: 25 } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: { age: 18 } }, {})).toBe(true);
-      expect(evaluateFlag(flag, { user: { age: 10 } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { age: 25 } }, {}).value).toBe(false);
+      expect(evaluateFlag(flag, { user: { age: 18 } }, {}).value).toBe(true);
+      expect(evaluateFlag(flag, { user: { age: 10 } }, {}).value).toBe(true);
     });
 
     it("matches less_than operator", () => {
@@ -301,8 +318,8 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { score: 30 } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: { score: 50 } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { score: 30 } }, {}).value).toBe(false);
+      expect(evaluateFlag(flag, { user: { score: 50 } }, {}).value).toBe(true);
     });
 
     it("matches in operator", () => {
@@ -323,12 +340,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { location: { country: "US" } }, {})).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { location: { country: "DE" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { location: { country: "US" } }, {}).value
+      ).toBe(false);
+      expect(
+        evaluateFlag(flag, { location: { country: "DE" } }, {}).value
+      ).toBe(true);
     });
 
     it("matches not_in operator", () => {
@@ -349,12 +366,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { location: { country: "US" } }, {})).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { location: { country: "CN" } }, {})).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { location: { country: "US" } }, {}).value
+      ).toBe(false);
+      expect(
+        evaluateFlag(flag, { location: { country: "CN" } }, {}).value
+      ).toBe(true);
     });
 
     it("matches exists operator", () => {
@@ -375,8 +392,10 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: { betaUser: true } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: {} }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: { betaUser: true } }, {}).value).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { user: {} }, {}).value).toBe(true);
     });
 
     it("matches not_exists operator", () => {
@@ -397,8 +416,10 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { user: {} }, {})).toBe(false);
-      expect(evaluateFlag(flag, { user: { banned: true } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { user: {} }, {}).value).toBe(false);
+      expect(evaluateFlag(flag, { user: { banned: true } }, {}).value).toBe(
+        true
+      );
     });
 
     it("requires all conditions to match (AND logic)", () => {
@@ -430,21 +451,21 @@ describe("evaluateFlag", () => {
           flag,
           { user: { plan: "pro" }, location: { country: "US" } },
           {}
-        )
+        ).value
       ).toBe(false);
       expect(
         evaluateFlag(
           flag,
           { user: { plan: "pro" }, location: { country: "UK" } },
           {}
-        )
+        ).value
       ).toBe(true);
       expect(
         evaluateFlag(
           flag,
           { user: { plan: "free" }, location: { country: "US" } },
           {}
-        )
+        ).value
       ).toBe(true);
     });
 
@@ -466,8 +487,12 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { company: { size: 500 } }, {})).toBe(false);
-      expect(evaluateFlag(flag, { company: { size: 50 } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { company: { size: 500 } }, {}).value).toBe(
+        false
+      );
+      expect(evaluateFlag(flag, { company: { size: 50 } }, {}).value).toBe(
+        true
+      );
     });
   });
 
@@ -498,12 +523,12 @@ describe("evaluateFlag", () => {
         ],
       });
 
-      expect(evaluateFlag(flag, { user: { betaUser: true } }, segments)).toBe(
-        false
-      );
-      expect(evaluateFlag(flag, { user: { betaUser: false } }, segments)).toBe(
-        true
-      );
+      expect(
+        evaluateFlag(flag, { user: { betaUser: true } }, segments).value
+      ).toBe(false);
+      expect(
+        evaluateFlag(flag, { user: { betaUser: false } }, segments).value
+      ).toBe(true);
     });
 
     it("falls through when segment not found", () => {
@@ -517,7 +542,7 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, {}, {})).toBe(true);
+      expect(evaluateFlag(flag, {}, {}).value).toBe(true);
     });
   });
 
@@ -559,14 +584,17 @@ describe("evaluateFlag", () => {
 
       expect(
         evaluateFlag(flag, { user: { userId: "user-1", plan: "pro" } }, {})
+          .value
       ).toBe("variant-a");
 
       expect(
         evaluateFlag(flag, { user: { userId: "user-2", plan: "pro" } }, {})
+          .value
       ).toBe("variant-b");
 
       expect(
         evaluateFlag(flag, { user: { userId: "user-2", plan: "free" } }, {})
+          .value
       ).toBe("control");
     });
   });
@@ -577,7 +605,7 @@ describe("evaluateFlag", () => {
         variations: {},
         defaultVariationKey: "nonexistent",
       });
-      expect(evaluateFlag(flag, {}, {})).toBeUndefined();
+      expect(evaluateFlag(flag, {}, {}).value).toBeUndefined();
     });
 
     it("handles json flag type", () => {
@@ -589,7 +617,7 @@ describe("evaluateFlag", () => {
         defaultVariationKey: "config",
         offVariationKey: "config",
       });
-      expect(evaluateFlag(flag, {}, {})).toEqual({
+      expect(evaluateFlag(flag, {}, {}).value).toEqual({
         theme: "dark",
         limit: 100,
       });
@@ -613,7 +641,9 @@ describe("evaluateFlag", () => {
           },
         ],
       });
-      expect(evaluateFlag(flag, { device: { type: "mobile" } }, {})).toBe(true);
+      expect(evaluateFlag(flag, { device: { type: "mobile" } }, {}).value).toBe(
+        true
+      );
     });
   });
 
@@ -662,7 +692,8 @@ describe("evaluateFlag", () => {
         { user: { key: "user-123", plan: "pro" } },
         {}
       );
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
+      expect(result1.reason).toBe("TARGET_MATCH");
 
       // Different users may get different results, but should be deterministic
       const result3 = evaluateFlag(
@@ -675,11 +706,11 @@ describe("evaluateFlag", () => {
         { user: { key: "user-456", plan: "pro" } },
         {}
       );
-      expect(result3).toBe(result4);
+      expect(result3.value).toBe(result4.value);
 
       // Results should be one of the variations
-      expect(["control", "variant"]).toContain(result1);
-      expect(["control", "variant"]).toContain(result3);
+      expect(["control", "variant"]).toContain(result1.value);
+      expect(["control", "variant"]).toContain(result3.value);
     });
 
     it("uses single variationKey when rollout is not present", () => {
@@ -708,7 +739,9 @@ describe("evaluateFlag", () => {
         ],
       });
 
-      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {})).toBe("variant");
+      expect(evaluateFlag(flag, { user: { plan: "pro" } }, {}).value).toBe(
+        "variant"
+      );
     });
 
     it("uses default rollout when no targets match", () => {
@@ -733,10 +766,11 @@ describe("evaluateFlag", () => {
       // Same user should always get the same result
       const result1 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
       const result2 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
+      expect(result1.reason).toBe("DEFAULT_ROLLOUT");
 
       // Results should be one of the variations
-      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(result1.value);
     });
 
     it("respects different bucket attributes", () => {
@@ -782,7 +816,7 @@ describe("evaluateFlag", () => {
         { user: { key: "user-2", plan: "pro" }, company: { id: "company-1" } },
         {}
       );
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
     });
 
     it("seed affects bucket calculation deterministically", () => {
@@ -836,11 +870,12 @@ describe("evaluateFlag", () => {
         { user: { key: "user-xyz" } },
         {}
       );
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
 
-      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(result1.value);
       expect(["control", "variant"]).toContain(
         evaluateFlag(flagWithDifferentSeed, { user: { key: "user-xyz" } }, {})
+          .value
       );
     });
 
@@ -861,13 +896,13 @@ describe("evaluateFlag", () => {
       });
 
       // Everyone should get the variant
-      expect(evaluateFlag(flag, { user: { key: "user-1" } }, {})).toBe(
+      expect(evaluateFlag(flag, { user: { key: "user-1" } }, {}).value).toBe(
         "variant"
       );
-      expect(evaluateFlag(flag, { user: { key: "user-2" } }, {})).toBe(
+      expect(evaluateFlag(flag, { user: { key: "user-2" } }, {}).value).toBe(
         "variant"
       );
-      expect(evaluateFlag(flag, { user: { key: "user-3" } }, {})).toBe(
+      expect(evaluateFlag(flag, { user: { key: "user-3" } }, {}).value).toBe(
         "variant"
       );
     });
@@ -893,7 +928,7 @@ describe("evaluateFlag", () => {
 
       const result1 = evaluateFlag(flag, { user: {} }, {});
       const result2 = evaluateFlag(flag, {}, {});
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
     });
 
     it("distributes users to both variations with a 50/50 split", () => {
@@ -920,11 +955,8 @@ describe("evaluateFlag", () => {
       const numUsers = 100;
 
       for (let i = 0; i < numUsers; i++) {
-        const result = evaluateFlag(
-          flag,
-          { user: { key: `user-${i}` } },
-          {}
-        ) as string;
+        const result = evaluateFlag(flag, { user: { key: `user-${i}` } }, {})
+          .value as string;
         if (result === "control" || result === "variant") {
           results[result]++;
         }
@@ -960,7 +992,7 @@ describe("evaluateFlag", () => {
 
       for (let i = 0; i < 20; i++) {
         const result = evaluateFlag(flag, { user: { key: `user-${i}` } }, {});
-        expect(["control", "variant-a", "variant-b"]).toContain(result);
+        expect(["control", "variant-a", "variant-b"]).toContain(result.value);
       }
 
       const result1 = evaluateFlag(
@@ -973,7 +1005,7 @@ describe("evaluateFlag", () => {
         { user: { key: "consistent-user" } },
         {}
       );
-      expect(result1).toBe(result2);
+      expect(result1.value).toBe(result2.value);
     });
 
     it("segment target with rollout", () => {
@@ -1022,7 +1054,7 @@ describe("evaluateFlag", () => {
         { user: { key: "user-1", betaUser: true } },
         segments
       );
-      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(result1.value);
 
       // Non-beta users get default
       expect(
@@ -1030,7 +1062,7 @@ describe("evaluateFlag", () => {
           flag,
           { user: { key: "user-1", betaUser: false } },
           segments
-        )
+        ).value
       ).toBe("control");
     });
 
@@ -1068,7 +1100,7 @@ describe("evaluateFlag", () => {
         { user: { key: "user-1", email: "beta@example.com" } },
         {}
       );
-      expect(["control", "variant"]).toContain(result1);
+      expect(["control", "variant"]).toContain(result1.value);
 
       // Other users get default
       expect(
@@ -1076,7 +1108,7 @@ describe("evaluateFlag", () => {
           flag,
           { user: { key: "user-1", email: "other@example.com" } },
           {}
-        )
+        ).value
       ).toBe("control");
     });
   });

@@ -93,6 +93,7 @@ export interface GradualOptions {
   environment: string;
   baseUrl?: string;
   polling?: PollingOptions;
+  events?: EventsOptions;
 }
 
 export interface FlagOptions<T> {
@@ -102,4 +103,44 @@ export interface FlagOptions<T> {
 
 export interface IsEnabledOptions {
   context?: EvaluationContext;
+}
+
+export type EvaluationReason =
+  | "FLAG_DISABLED"
+  | "TARGET_MATCH"
+  | "DEFAULT_ROLLOUT"
+  | "DEFAULT_VARIATION"
+  | "FLAG_NOT_FOUND"
+  | "ERROR";
+
+export interface EvaluationResult {
+  value: unknown;
+  variationKey: string | undefined;
+  reason: EvaluationReason;
+}
+
+export interface EvaluationEvent {
+  flagKey: string;
+  variationKey: string | undefined;
+  value: unknown;
+  reason: EvaluationReason;
+  contextKinds: string[];
+  contextKeys: Record<string, string[]>;
+  timestamp: number;
+}
+
+export interface EvaluationBatchPayload {
+  meta: {
+    projectId: string;
+    organizationId: string;
+    environmentId: string;
+    sdkVersion: string;
+  };
+  events: EvaluationEvent[];
+}
+
+export interface EventsOptions {
+  enabled?: boolean;
+  flushIntervalMs?: number;
+  maxBatchSize?: number;
 }

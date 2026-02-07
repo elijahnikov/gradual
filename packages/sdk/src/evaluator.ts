@@ -1,5 +1,6 @@
 import type {
   EvaluationContext,
+  EvaluationResult,
   SnapshotFlag,
   SnapshotRollout,
   SnapshotRuleCondition,
@@ -194,19 +195,38 @@ function evaluateTarget(
   }
 }
 
+interface ResolvedVariation {
+  variation: SnapshotVariation;
+  variationKey: string;
+}
+
 function resolveTargetVariation(
   target: SnapshotTarget,
   flagKey: string,
   context: EvaluationContext,
   variations: Record<string, SnapshotVariation>
-): SnapshotVariation | undefined {
+): ResolvedVariation | undefined {
   if (target.rollout) {
     const bucketValue = getBucketValue(flagKey, context, target.rollout);
-    return selectVariationFromRollout(target.rollout, bucketValue, variations);
+    const variation = selectVariationFromRollout(
+      target.rollout,
+      bucketValue,
+      variations
+    );
+    if (variation) {
+      const key = Object.keys(variations).find(
+        (k) => variations[k] === variation
+      );
+      return key ? { variation, variationKey: key } : undefined;
+    }
+    return undefined;
   }
 
   if (target.variationKey) {
-    return variations[target.variationKey];
+    const variation = variations[target.variationKey];
+    return variation
+      ? { variation, variationKey: target.variationKey }
+      : undefined;
   }
 
   return undefined;
@@ -215,18 +235,28 @@ function resolveTargetVariation(
 function resolveDefaultVariation(
   flag: SnapshotFlag,
   context: EvaluationContext
-): SnapshotVariation | undefined {
+): ResolvedVariation | undefined {
   if (flag.defaultRollout) {
     const bucketValue = getBucketValue(flag.key, context, flag.defaultRollout);
-    return selectVariationFromRollout(
+    const variation = selectVariationFromRollout(
       flag.defaultRollout,
       bucketValue,
       flag.variations
     );
+    if (variation) {
+      const key = Object.keys(flag.variations).find(
+        (k) => flag.variations[k] === variation
+      );
+      return key ? { variation, variationKey: key } : undefined;
+    }
+    return undefined;
   }
 
   if (flag.defaultVariationKey) {
-    return flag.variations[flag.defaultVariationKey];
+    const variation = flag.variations[flag.defaultVariationKey];
+    return variation
+      ? { variation, variationKey: flag.defaultVariationKey }
+      : undefined;
   }
 
   return undefined;
@@ -236,10 +266,14 @@ export function evaluateFlag(
   flag: SnapshotFlag,
   context: EvaluationContext,
   segments: Record<string, SnapshotSegment>
-): unknown {
+): EvaluationResult {
   if (!flag.enabled) {
     const offVariation = flag.variations[flag.offVariationKey];
-    return offVariation?.value;
+    return {
+      value: offVariation?.value,
+      variationKey: flag.offVariationKey,
+      reason: "FLAG_DISABLED",
+    };
   }
 
   const sortedTargets = [...flag.targets].sort(
@@ -248,18 +282,34 @@ export function evaluateFlag(
 
   for (const target of sortedTargets) {
     if (evaluateTarget(target, context, segments)) {
-      const variation = resolveTargetVariation(
+      const resolved = resolveTargetVariation(
         target,
         flag.key,
         context,
         flag.variations
       );
-      if (variation) {
-        return variation.value;
+      if (resolved) {
+        return {
+          value: resolved.variation.value,
+          variationKey: resolved.variationKey,
+          reason: "TARGET_MATCH",
+        };
       }
     }
   }
 
-  const defaultVariation = resolveDefaultVariation(flag, context);
-  return defaultVariation?.value;
+  const resolved = resolveDefaultVariation(flag, context);
+  if (resolved) {
+    return {
+      value: resolved.variation.value,
+      variationKey: resolved.variationKey,
+      reason: flag.defaultRollout ? "DEFAULT_ROLLOUT" : "DEFAULT_VARIATION",
+    };
+  }
+
+  return {
+    value: undefined,
+    variationKey: undefined,
+    reason: "DEFAULT_VARIATION",
+  };
 }
