@@ -96,7 +96,7 @@ const Input = ({
           )}
         >
           <button
-            className="h-fit w-fit rounded-sm text-ui-fg-muted outline-none transition-all hover:text-ui-fg-base focus-visible:text-ui-fg-base focus-visible:shadow-borders-interactive-w-focus active:text-ui-fg-base [&_svg]:size-4"
+            className="h-fit w-fit rounded-sm text-ui-fg-muted outline-none transition-all hover:text-ui-fg-base focus-visible:text-ui-fg-base focus-visible:shadow-borders-interactive-with-focus active:text-ui-fg-base [&_svg]:size-4"
             onClick={() => {
               setTypeState(typeState === "password" ? "text" : "password");
             }}

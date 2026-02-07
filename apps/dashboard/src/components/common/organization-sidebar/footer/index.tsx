@@ -11,12 +11,14 @@ export default function MainSidebarFooter() {
     <TooltipProvider>
       <SidebarFooter className="mt-auto pb-2">
         <div className="flex flex-col items-center gap-y-2">
-          <SidebarLinkItem
-            external
-            icon={RiQuestionFill}
-            title="Documentation"
-            url="https://gradual.so/docs"
-          />
+          <div className="relative left-0">
+            <SidebarLinkItem
+              external
+              icon={RiQuestionFill}
+              title="Documentation"
+              url="https://gradual.so/docs"
+            />
+          </div>
           <Card className="relative flex w-max flex-col gap-1.5 rounded-full bg-ui-bg-base p-1">
             <div className="flex flex-col items-center gap-2">
               <Suspense fallback={<UserMenuSkeleton />}>
