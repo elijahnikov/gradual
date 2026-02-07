@@ -2,7 +2,12 @@ export { createGradual, type Gradual, type GradualSync } from "./client";
 export { evaluateFlag } from "./evaluator";
 export type {
   EnvironmentSnapshot,
+  EvaluationBatchPayload,
   EvaluationContext,
+  EvaluationEvent,
+  EvaluationReason,
+  EvaluationResult,
+  EventsOptions,
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
