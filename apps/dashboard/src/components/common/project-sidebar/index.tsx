@@ -116,23 +116,22 @@ function NavigationItem({
 }: NavigationItemProps) {
   const Icon = icon;
   return (
-    <Link onClick={onClick} preload={preload} search={{}} to={url}>
-      <Button
-        className={cn(
-          "group/menu flex h-8 w-full items-center justify-start self-start text-left font-sans text-[13px]",
-          isActive
-            ? "text-ui-fg-base"
-            : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
-        )}
-        size="small"
-        variant={isActive ? "secondary" : "ghost"}
-      >
-        <Icon className={cn("h-4 w-4")} />
-        <Text size="small" weight="plus">
-          {title}
-        </Text>
-      </Button>
-    </Link>
+    <Button
+      className={cn(
+        "group/menu flex h-8 w-full items-center justify-start self-start text-left font-sans text-[13px] focus-visible:bg-transparent! focus-visible:shadow-borders-interactive-with-active!",
+        isActive
+          ? "text-ui-fg-base"
+          : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
+      )}
+      render={<Link onClick={onClick} preload={preload} search={{}} to={url} />}
+      size="small"
+      variant={isActive ? "secondary" : "ghost"}
+    >
+      <Icon className="h-4 w-4" />
+      <Text size="small" weight="plus">
+        {title}
+      </Text>
+    </Button>
   );
 }
 

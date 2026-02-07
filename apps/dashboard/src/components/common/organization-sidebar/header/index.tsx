@@ -14,14 +14,16 @@ export default function MainSidebarHeader() {
         <Suspense fallback={<OrganizationDropdownSkeleton />}>
           <OrganizationDropdown />
         </Suspense>
-        <TooltipProvider>
-          <SidebarLinkItem icon={RiHomeSmileFill} title="Overview" url="/" />
-          <SidebarLinkItem
-            icon={RiSettings5Fill}
-            title="Organization settings"
-            url="/"
-          />
-        </TooltipProvider>
+        <div className="relative left-0">
+          <TooltipProvider>
+            <SidebarLinkItem icon={RiHomeSmileFill} title="Overview" url="/" />
+            <SidebarLinkItem
+              icon={RiSettings5Fill}
+              title="Organization settings"
+              url="/"
+            />
+          </TooltipProvider>
+        </div>
       </div>
     </SidebarHeader>
   );

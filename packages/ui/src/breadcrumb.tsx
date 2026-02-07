@@ -37,7 +37,10 @@ function BreadcrumbLink({
   ...props
 }: useRender.ComponentProps<"a">) {
   const defaultProps = {
-    className: cn("transition-colors hover:text-foreground", className),
+    className: cn(
+      "rounded-sm outline-none transition-colors hover:text-foreground focus-visible:shadow-borders-focus",
+      className
+    ),
     "data-slot": "breadcrumb-link",
   };
 

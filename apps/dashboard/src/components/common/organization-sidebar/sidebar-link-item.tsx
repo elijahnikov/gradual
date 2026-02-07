@@ -23,48 +23,65 @@ function SidebarLinkItem({
 
   const organizationParams = useParams({ strict: false });
 
-  const innerContent = (
-    <Tooltip>
-      <TooltipTrigger>
-        <Button
-          className={cn(
-            "group/menu flex h-8 items-center justify-start self-start rounded-full text-left font-sans text-[13px]",
-            isActive
-              ? "text-ui-fg-base"
-              : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
-          )}
-          key={title}
-          size="small"
-          variant={isActive ? "secondary" : "ghost"}
-        >
-          <Icon className={cn("size-4")} />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="right">{title}</TooltipContent>
-    </Tooltip>
+  const buttonClassName = cn(
+    "group/menu flex h-8 items-center justify-start self-start rounded-full text-left font-sans text-[13px] focus-visible:bg-transparent! focus-visible:shadow-borders-interactive-with-active!",
+    isActive
+      ? "text-ui-fg-base"
+      : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
   );
+
+  const buttonVariant = isActive ? "secondary" : "ghost";
 
   if (external) {
     return (
-      <a href={url} rel="noopener noreferrer" target="_blank">
-        {innerContent}
-      </a>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              className={buttonClassName}
+              render={
+                // biome-ignore lint/a11y/useAnchorContent: content provided by TooltipTrigger children
+                <a href={url} rel="noopener noreferrer" target="_blank" />
+              }
+              size="small"
+              variant={buttonVariant}
+            />
+          }
+        >
+          <Icon className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent side="right">{title}</TooltipContent>
+      </Tooltip>
     );
   }
 
   return (
-    <Link
-      params={{
-        organizationSlug: organizationParams?.organizationSlug,
-        projectSlug: organizationParams?.projectSlug,
-      }}
-      preload="intent"
-      preloadDelay={100}
-      search={{}}
-      to={url}
-    >
-      {innerContent}
-    </Link>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            className={buttonClassName}
+            render={
+              <Link
+                params={{
+                  organizationSlug: organizationParams?.organizationSlug,
+                  projectSlug: organizationParams?.projectSlug,
+                }}
+                preload="intent"
+                preloadDelay={100}
+                search={{}}
+                to={url}
+              />
+            }
+            size="small"
+            variant={buttonVariant}
+          />
+        }
+      >
+        <Icon className="size-4" />
+      </TooltipTrigger>
+      <TooltipContent side="right">{title}</TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -48,7 +48,7 @@ function Slider({
           />
           {Array.from({ length: _values.length }, (_, index) => (
             <SliderPrimitive.Thumb
-              className="block size-4 shrink-0 select-none rounded-full border-2 border-ui-button-neutral bg-ui-bg-base shadow-borders-base outline-none transition-colors hover:bg-ui-bg-base-hover focus-visible:ring-2 focus-visible:ring-ui-fg-interactive focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-dragging:scale-110"
+              className="block size-4 shrink-0 select-none rounded-full border-2 border-ui-button-neutral bg-ui-bg-base shadow-borders-base outline-none transition-colors hover:bg-ui-bg-base-hover focus-visible:shadow-borders-focus disabled:pointer-events-none disabled:opacity-50 data-dragging:scale-110"
               data-slot="slider-thumb"
               index={index}
               key={String(index)}
