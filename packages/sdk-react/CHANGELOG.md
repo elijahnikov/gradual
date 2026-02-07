@@ -1,5 +1,16 @@
 # @gradual-so/sdk-react
 
+## 0.7.0
+
+### Minor Changes
+
+- [#42](https://github.com/elijahnikov/gradual/pull/42) [`51afad7`](https://github.com/elijahnikov/gradual/commit/51afad763ec681bd425238ee7dcba2659bd4e775) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding evaluation ingest
+
+### Patch Changes
+
+- Updated dependencies [[`51afad7`](https://github.com/elijahnikov/gradual/commit/51afad763ec681bd425238ee7dcba2659bd4e775)]:
+  - @gradual-so/sdk@0.7.0
+
 ## 0.6.1
 
 ### Patch Changes
