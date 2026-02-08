@@ -1,6 +1,7 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Badge } from "@gradual/ui/badge";
 import { Card } from "@gradual/ui/card";
+import { Skeleton } from "@gradual/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -16,14 +17,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useSubscription } from "@trpc/tanstack-react-query";
 import dayjs from "dayjs";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { useTRPC } from "@/lib/trpc";
 
 type Flag = RouterOutputs["featureFlags"]["getByKey"]["flag"];
@@ -58,10 +62,7 @@ const reasonVariants: Record<
 };
 
 function formatDuration(us: number): string {
-  if (us >= 1000) {
-    return `${(us / 1000).toFixed(1)}ms`;
-  }
-  return `${us}us`;
+  return `${(us / 1000).toFixed(2)}ms`;
 }
 
 const columnHelper = createColumnHelper<EventItem>();
@@ -205,6 +206,8 @@ export default function FlagEvents({
   );
 }
 
+const PAGE_SIZE = 50;
+
 function FlagEventsContent({
   flag,
   organizationSlug,
@@ -212,23 +215,82 @@ function FlagEventsContent({
   environmentId,
 }: FlagEventsProps & { environmentId: string }) {
   const trpc = useTRPC();
+  const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
+  const seenIdsRef = useRef(new Set<string>());
+  const liveIdsRef = useRef(new Set<string>());
 
-  const { data } = useSuspenseQuery(
-    trpc.featureFlags.getEvents.queryOptions({
-      flagId: flag.id,
-      organizationSlug,
-      projectSlug,
-      environmentId,
-    })
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSuspenseInfiniteQuery(
+      trpc.featureFlags.getEvents.infiniteQueryOptions(
+        {
+          flagId: flag.id,
+          organizationSlug,
+          projectSlug,
+          environmentId,
+          limit: PAGE_SIZE,
+        },
+        {
+          getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        }
+      )
+    );
+
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px",
+  });
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const allHistorical = useMemo(
+    () => data.pages.flatMap((page) => page.items),
+    [data.pages]
   );
 
+  const onData = useCallback((event: EventItem) => {
+    if (seenIdsRef.current.has(event.id)) {
+      return;
+    }
+    seenIdsRef.current.add(event.id);
+    liveIdsRef.current.add(event.id);
+    setLiveEvents((prev) => [event, ...prev]);
+  }, []);
+
+  useSubscription(
+    trpc.featureFlags.watchEvents.subscriptionOptions(
+      {
+        flagId: flag.id,
+        organizationSlug,
+        projectSlug,
+        environmentId,
+      },
+      {
+        enabled: true,
+        onData,
+      }
+    )
+  );
+
+  const mergedEvents = useMemo(() => {
+    const historicalIds = new Set(allHistorical.map((item) => item.id));
+    const uniqueLive = liveEvents.filter(
+      (event) => !historicalIds.has(event.id)
+    );
+    return [...uniqueLive, ...allHistorical];
+  }, [liveEvents, allHistorical]);
+
   const table = useReactTable({
-    data: data.items,
+    data: mergedEvents,
     columns,
+    getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (data.items.length === 0) {
+  if (mergedEvents.length === 0) {
     return (
       <div className="flex w-full flex-1 flex-col p-2">
         <Card className="flex h-full w-full flex-1 flex-col items-center justify-center p-8">
@@ -240,45 +302,61 @@ function FlagEventsContent({
 
   return (
     <TooltipProvider>
-      <div className="flex w-full flex-1 flex-col p-2">
-        <Card className="flex-1 overflow-hidden p-0">
-          <div className="max-h-[calc(100vh-12rem)] overflow-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        <span className="text-xs">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </span>
-                      </TableHead>
-                    ))}
-                  </TableRow>
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-ui-bg-subtle">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    <span className="text-xs">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </span>
+                  </TableHead>
                 ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => {
+              const isLive = liveIdsRef.current.has(row.original.id);
+              return (
+                <TableRow
+                  key={row.id}
+                  onAnimationEnd={() => {
+                    liveIdsRef.current.delete(row.original.id);
+                  }}
+                  style={
+                    isLive
+                      ? {
+                          animation: "row-flash 1.5s ease-out",
+                        }
+                      : undefined
+                  }
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        {hasNextPage && (
+          <div className="flex justify-center py-4" ref={loadMoreRef}>
+            {isFetchingNextPage && <Skeleton className="h-8 w-32" />}
           </div>
-        </Card>
+        )}
       </div>
     </TooltipProvider>
   );

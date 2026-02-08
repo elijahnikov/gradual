@@ -367,3 +367,12 @@
     }
   }
 }
+
+@keyframes row-flash {
+  0% {
+    background-color: --alpha(var(--color-blue-500) / 15%);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

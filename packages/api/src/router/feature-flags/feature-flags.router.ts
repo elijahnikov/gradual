@@ -71,4 +71,8 @@ export const featureFlagsRouter = {
   getEvents: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.getEventsSchema)
     .query((opts) => services.getEvents({ ...opts })),
+
+  watchEvents: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.watchEventsSchema)
+    .subscription((opts) => services.watchEvents({ ...opts })),
 } satisfies TRPCRouterRecord;
