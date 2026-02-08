@@ -24,10 +24,6 @@ const doc = g.document as
       removeEventListener?: (event: string, handler: () => void) => void;
     }
   | undefined;
-const nav = g.navigator as
-  | { sendBeacon?: (url: string, data: Blob) => boolean }
-  | undefined;
-
 export class EventBuffer {
   private readonly events: EvaluationEvent[] = [];
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -85,35 +81,28 @@ export class EventBuffer {
   }
 
   /**
-   * Flush using sendBeacon for reliable delivery during page unload.
-   * Falls back to regular flush if sendBeacon is unavailable.
+   * Flush with keepalive flag for reliable delivery during page unload.
+   * keepalive fetch survives page navigation like sendBeacon but supports headers.
    */
   private flushBeacon(): void {
     if (this.events.length === 0) {
       return;
     }
 
-    if (!nav?.sendBeacon) {
-      this.flush();
-      return;
-    }
-
     const batch = this.events.splice(0, this.options.maxBatchSize);
     const payload = this.buildPayload(batch);
-    const blob = new Blob([JSON.stringify(payload)], {
-      type: "application/json",
+
+    fetch(`${this.options.baseUrl}/sdk/evaluations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.options.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // Fire-and-forget
     });
-
-    const sent = nav.sendBeacon(
-      `${this.options.baseUrl}/sdk/evaluations?key=${this.options.apiKey}`,
-      blob
-    );
-
-    if (!sent) {
-      // sendBeacon failed (e.g. payload too large), put events back
-      this.events.unshift(...batch);
-      this.flush();
-    }
   }
 
   destroy(): void {
