@@ -1,5 +1,17 @@
 # @gradual-so/sdk
 
+## 0.7.3
+
+### Patch Changes
+
+- [#47](https://github.com/elijahnikov/gradual/pull/47) [`e6eafa2`](https://github.com/elijahnikov/gradual/commit/e6eafa2a2dfb61c12f7bf0d4e39179ab72817a1c) Thanks [@elijahnikov](https://github.com/elijahnikov)! - fixing duplicate evaluation ingests
+
+## 0.7.2
+
+### Patch Changes
+
+- [`dfa39ee`](https://github.com/elijahnikov/gradual/commit/dfa39ee592a3df93472b2c22099b8fc3b6345cfb) Thanks [@elijahnikov](https://github.com/elijahnikov)! - chore: improving duration tracking
+
 ## 0.7.1
 
 ### Patch Changes

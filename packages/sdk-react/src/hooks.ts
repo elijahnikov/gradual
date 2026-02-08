@@ -1,5 +1,5 @@
-import type { EvaluationContext, Gradual } from "@gradual-so/sdk";
-import { useContext, useMemo } from "react";
+import type { EvalDetail, EvaluationContext, Gradual } from "@gradual-so/sdk";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { GradualContext } from "./context";
 
 export interface UseFlagOptions<T> {
@@ -104,17 +104,37 @@ export function useFlag<T>(
   options: UseFlagOptions<T>
 ): T | FlagDetail<T> {
   const { gradual, isReady, version } = useGradualContext();
+  const trackedRef = useRef<string | null>(null);
 
+  // Pure evaluation in useMemo — no side effects
   // biome-ignore lint/correctness/useExhaustiveDependencies: version triggers re-evaluation on snapshot update
-  const value = useMemo(() => {
+  const evalResult = useMemo((): EvalDetail | null => {
     if (!isReady) {
-      return options.fallback;
+      return null;
     }
-    return gradual.sync.get(key, {
-      fallback: options.fallback,
-      context: options.context,
-    });
-  }, [gradual, isReady, key, options.fallback, options.context, version]);
+    return gradual.sync.evaluate(key, { context: options.context });
+  }, [gradual, isReady, key, options.context, version]);
+
+  const value =
+    evalResult?.value !== undefined && evalResult?.value !== null
+      ? (evalResult.value as T)
+      : options.fallback;
+
+  // Track evaluation as a side effect — runs once per distinct evaluation
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only track when evalResult changes
+  useEffect(() => {
+    if (!evalResult) {
+      return;
+    }
+
+    const trackKey = `${key}:${evalResult.variationKey}:${evalResult.reason}`;
+    if (trackedRef.current === trackKey) {
+      return;
+    }
+    trackedRef.current = trackKey;
+
+    gradual.sync.track(key, evalResult, options.context);
+  }, [gradual, key, evalResult]);
 
   if (options.detail) {
     return {
