@@ -19,6 +19,7 @@ import { RuleTargetCard } from "./rule-target-card";
 import { SegmentTargetCard } from "./segment-target-card";
 import { TargetingList } from "./targeting-list";
 import {
+  getValidationErrors,
   type LocalTarget,
   TargetingStoreProvider,
   useTargetingStore,
@@ -139,6 +140,12 @@ function FlagTargetingContent({
   const openReviewModal = useTargetingStore((s) => s.openReviewModal);
   const reset = useTargetingStore((s) => s.reset);
 
+  const validationErrors = useMemo(
+    () => getValidationErrors(targets),
+    [targets]
+  );
+  const hasValidationErrors = validationErrors.size > 0;
+
   const existingDefaultRollout = useMemo(() => {
     if (!flagEnvironment.defaultRollout) {
       return null;
@@ -188,7 +195,7 @@ function FlagTargetingContent({
   return (
     <div className="flex w-full flex-1 flex-col px-2">
       <div className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-1 flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -209,15 +216,28 @@ function FlagTargetingContent({
                 <TooltipContent>Reset changes</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button
-              className="w-full sm:w-auto"
-              disabled={!hasChanges}
-              onClick={openReviewModal}
-              size="small"
-              variant="gradual"
-            >
-              Review and save
-            </Button>
+            <TooltipProvider delay={100}>
+              <Tooltip>
+                <TooltipTrigger
+                  render={<span className="inline-flex cursor-not-allowed" />}
+                >
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={!hasChanges || hasValidationErrors}
+                    onClick={openReviewModal}
+                    size="small"
+                    variant="default"
+                  >
+                    Review and save
+                  </Button>
+                </TooltipTrigger>
+                {hasChanges && hasValidationErrors && (
+                  <TooltipContent>
+                    {[...validationErrors.values()].flat()[0]}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         <Card className="mb-2 flex h-full w-full flex-1 flex-col rounded-md bg-ui-bg-subtle p-1 sm:p-2">
@@ -232,7 +252,11 @@ function FlagTargetingContent({
                   onAddTarget={addTarget}
                 >
                   {targets.map((target) => (
-                    <TargetCard key={target.id} target={target} />
+                    <TargetCard
+                      hasError={validationErrors.has(target.id)}
+                      key={target.id}
+                      target={target}
+                    />
                   ))}
                 </TargetingList>
               </div>
@@ -253,14 +277,20 @@ function FlagTargetingContent({
   );
 }
 
-function TargetCard({ target }: { target: LocalTarget }) {
+function TargetCard({
+  target,
+  hasError,
+}: {
+  target: LocalTarget;
+  hasError: boolean;
+}) {
   switch (target.type) {
     case "rule":
-      return <RuleTargetCard targetId={target.id} />;
+      return <RuleTargetCard hasError={hasError} targetId={target.id} />;
     case "individual":
-      return <IndividualTargetCard targetId={target.id} />;
+      return <IndividualTargetCard hasError={hasError} targetId={target.id} />;
     case "segment":
-      return <SegmentTargetCard targetId={target.id} />;
+      return <SegmentTargetCard hasError={hasError} targetId={target.id} />;
     default:
       return null;
   }

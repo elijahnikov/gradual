@@ -21,7 +21,7 @@ import type z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
 
 interface MemberItem {
-  value: string | null;
+  value: string;
   label: string;
   avatar: string | undefined;
 }
@@ -54,7 +54,11 @@ export default function Assignee({
 
   const memberItems = useMemo(() => {
     const items: MemberItem[] = [
-      { value: null, label: "No maintainer", avatar: "no-maintainer" },
+      {
+        value: "no-maintainer",
+        label: "No maintainer",
+        avatar: "no-maintainer",
+      },
     ];
 
     if (!members?.length) {
@@ -72,7 +76,7 @@ export default function Assignee({
 
   const selectedItem = useMemo(() => {
     if (!maintainerId) {
-      return null;
+      return memberItems.find((item) => item.value === "no-maintainer") ?? null;
     }
     return memberItems.find((item) => item.value === maintainerId) ?? null;
   }, [maintainerId, memberItems]);
@@ -82,13 +86,15 @@ export default function Assignee({
       autoHighlight
       items={memberItems}
       onValueChange={(value) => {
+        if (!value) {
+          return;
+        }
         form.setValue(
           "maintainerId",
-          value === null ? undefined : (value ?? undefined),
-          {
-            shouldValidate: true,
-          }
+          value === "no-maintainer" ? "no-maitainer" : value,
+          { shouldValidate: true, shouldDirty: true }
         );
+        setSearchTerm("");
       }}
       value={selectedItem?.value ?? null}
     >

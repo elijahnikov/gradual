@@ -24,6 +24,7 @@ interface DeleteFlagDialogProps {
   };
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onDeleted?: () => void;
 }
 
 export default function DeleteFlagDialog({
@@ -31,6 +32,7 @@ export default function DeleteFlagDialog({
   flag,
   open,
   onOpenChange,
+  onDeleted,
 }: DeleteFlagDialogProps) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -59,6 +61,7 @@ export default function DeleteFlagDialog({
         type: "success",
       });
       onOpenChange?.(false);
+      onDeleted?.();
     } catch (error) {
       console.error(error);
       toastManager.add({

@@ -10,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@gradual/ui/table";
-import { Text } from "@gradual/ui/text";
 import {
   Tooltip,
   TooltipContent,
@@ -29,6 +28,7 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { useTRPC } from "@/lib/trpc";
+import EmptyEventsList from "./empty-state";
 
 type Flag = RouterOutputs["featureFlags"]["getByKey"]["flag"];
 type EventItem = RouterOutputs["featureFlags"]["getEvents"]["items"][number];
@@ -74,6 +74,12 @@ const columns = [
       const row = info.row.original;
       return (
         <div className="flex items-center gap-1.5">
+          {row.variationColor && (
+            <span
+              className="size-2.5 shrink-0 rounded-[4px]"
+              style={{ backgroundColor: row.variationColor }}
+            />
+          )}
           <span className="truncate font-mono text-xs">
             {info.getValue() ?? "-"}
           </span>
@@ -291,13 +297,7 @@ function FlagEventsContent({
   });
 
   if (mergedEvents.length === 0) {
-    return (
-      <div className="flex w-full flex-1 flex-col p-2">
-        <Card className="flex h-full w-full flex-1 flex-col items-center justify-center p-8">
-          <Text className="text-ui-fg-muted">No evaluation events yet</Text>
-        </Card>
-      </div>
-    );
+    return <EmptyEventsList />;
   }
 
   return (

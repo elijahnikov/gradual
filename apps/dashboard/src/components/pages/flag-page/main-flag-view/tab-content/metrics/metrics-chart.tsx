@@ -98,6 +98,7 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
             <Line
               dataKey={variation.name}
               dot={false}
+              isAnimationActive={false}
               key={variation.id}
               stroke={
                 variation.color ?? getVariationColorByIndex(originalIndex)

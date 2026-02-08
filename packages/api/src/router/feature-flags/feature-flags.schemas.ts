@@ -41,7 +41,7 @@ export const createCompleteFeatureFlagSchema = createInsertSchema(featureFlag)
     maintainerId: true,
   })
   .extend({
-    maintainerId: z.string().optional(),
+    maintainerId: z.string().nullable(),
     projectSlug: z.string(),
     organizationSlug: z.string(),
     name: z.string().min(1, "Name is required"),
@@ -244,8 +244,17 @@ export const updateFeatureFlagSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   maintainerId: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
 });
 export type UpdateFeatureFlagInput = z.infer<typeof updateFeatureFlagSchema>;
+
+export const archiveFlagSchema = z.object({
+  flagId: z.uuid(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+  archive: z.boolean(),
+});
+export type ArchiveFlagInput = z.infer<typeof archiveFlagSchema>;
 
 export const getVariationsSchema = z.object({
   flagId: z.uuid(),

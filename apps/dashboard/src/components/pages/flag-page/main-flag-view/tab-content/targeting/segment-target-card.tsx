@@ -7,9 +7,13 @@ import { useTargetingStore } from "./targeting-store";
 
 interface SegmentTargetCardProps {
   targetId: string;
+  hasError?: boolean;
 }
 
-export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
+export function SegmentTargetCard({
+  targetId,
+  hasError,
+}: SegmentTargetCardProps) {
   const target = useTargetingStore((s) =>
     s.targets.find((t) => t.id === targetId)
   );
@@ -84,6 +88,7 @@ export function SegmentTargetCard({ targetId }: SegmentTargetCardProps) {
 
   return (
     <TargetingCard
+      hasError={hasError}
       isFirst={targetIndex === 0}
       isLast={targetIndex === targetsCount - 1}
       name={target.name}

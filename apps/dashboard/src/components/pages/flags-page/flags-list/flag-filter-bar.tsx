@@ -154,7 +154,7 @@ export default function FlagFilterBar({
   const hasAvailableEnvs = availableEnvironments.length > 0;
 
   return (
-    <div className="sticky top-9 z-10 flex items-center justify-between border-b bg-ui-bg-base px-2 py-1.5">
+    <div className="sticky top-9 z-10 flex items-center justify-between border-b bg-ui-bg-subtle px-2 py-1.5">
       <div className="flex items-center gap-2">
         <div className="relative">
           <RiSearchLine className="absolute top-1.5 left-2 z-10 size-4 shrink-0 text-ui-fg-muted" />

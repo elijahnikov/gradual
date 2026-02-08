@@ -71,7 +71,7 @@ export function VariationSelector({
               <span className="flex items-center gap-1.5">
                 {selectedVariation?.color && (
                   <span
-                    className="size-2.5 shrink-0 rounded-full"
+                    className="size-3 shrink-0 rounded-[4px]"
                     style={{ backgroundColor: selectedVariation.color }}
                   />
                 )}
@@ -86,7 +86,7 @@ export function VariationSelector({
               <span className="flex items-center gap-1.5">
                 {item.color && (
                   <span
-                    className="size-2.5 shrink-0 rounded-full"
+                    className="size-3 shrink-0 rounded-[4px]"
                     style={{ backgroundColor: item.color }}
                   />
                 )}
