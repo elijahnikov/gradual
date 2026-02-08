@@ -102,12 +102,28 @@ export interface Gradual {
   sync: GradualSync;
 }
 
+export interface EvalDetail {
+  value: unknown;
+  variationKey: string | undefined;
+  reason: EvaluationResult["reason"];
+  matchedTargetName?: string;
+  errorDetail?: string;
+  evaluationDurationUs?: number;
+  flagConfigVersion?: number;
+}
+
 export interface GradualSync {
   /** Sync version of isEnabled (throws if not ready) */
   isEnabled(key: string, options?: IsEnabledOptions): boolean;
 
   /** Sync version of get (throws if not ready) */
   get<T>(key: string, options: FlagOptions<T>): T;
+
+  /** Evaluate a flag without tracking. Use with track() for React-safe evaluation. */
+  evaluate(key: string, options?: { context?: EvaluationContext }): EvalDetail;
+
+  /** Manually track an evaluation that was produced by evaluate(). */
+  track(key: string, detail: EvalDetail, context?: EvaluationContext): void;
 }
 
 class GradualClient implements Gradual {
@@ -137,6 +153,8 @@ class GradualClient implements Gradual {
     this.sync = {
       isEnabled: this.isEnabledSync.bind(this),
       get: this.getSync.bind(this),
+      evaluate: this.evaluateSync.bind(this),
+      track: this.trackSync.bind(this),
     };
 
     const pollingEnabled = options.polling?.enabled ?? true;
@@ -367,6 +385,76 @@ class GradualClient implements Gradual {
     return value !== undefined && value !== null
       ? (value as T)
       : options.fallback;
+  }
+
+  private evaluateSync(
+    key: string,
+    options?: { context?: EvaluationContext }
+  ): EvalDetail {
+    const snapshot = this.ensureReady();
+    const context = this.mergeContext(options);
+
+    if (!snapshot.flags) {
+      return {
+        value: undefined,
+        variationKey: undefined,
+        reason: "FLAG_NOT_FOUND",
+        flagConfigVersion: snapshot.version,
+      };
+    }
+
+    const flag = snapshot.flags[key];
+    if (!flag) {
+      return {
+        value: undefined,
+        variationKey: undefined,
+        reason: "FLAG_NOT_FOUND",
+        flagConfigVersion: snapshot.version,
+      };
+    }
+
+    const startTime = nowNs();
+
+    let result: EvaluationResult;
+    try {
+      result = evaluateFlag(flag, context, snapshot.segments ?? {});
+    } catch (err) {
+      const errorDetail = err instanceof Error ? err.message : String(err);
+      result = {
+        value: undefined,
+        variationKey: undefined,
+        reason: "ERROR",
+        errorDetail,
+      };
+    }
+
+    return {
+      value: result.value,
+      variationKey: result.variationKey,
+      reason: result.reason,
+      matchedTargetName: result.matchedTargetName,
+      errorDetail: result.errorDetail,
+      evaluationDurationUs: elapsedUs(startTime),
+      flagConfigVersion: snapshot.version,
+    };
+  }
+
+  private trackSync(
+    key: string,
+    detail: EvalDetail,
+    context?: EvaluationContext
+  ): void {
+    this.trackEvent({
+      flagKey: key,
+      variationKey: detail.variationKey,
+      value: detail.value,
+      reason: detail.reason,
+      context: this.mergeContext({ context }),
+      matchedTargetName: detail.matchedTargetName,
+      flagConfigVersion: detail.flagConfigVersion,
+      errorDetail: detail.errorDetail,
+      evaluationDurationUs: detail.evaluationDurationUs,
+    });
   }
 
   identify(context: EvaluationContext): void {
