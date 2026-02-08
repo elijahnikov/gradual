@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.7.5
+
+### Patch Changes
+
+- [`7f28b16`](https://github.com/elijahnikov/gradual/commit/7f28b162c2152078ec7227466e09c97ac6f3bc78) Thanks [@elijahnikov](https://github.com/elijahnikov)! - fixing sending evals
+
 ## 0.7.4
 
 ### Patch Changes
