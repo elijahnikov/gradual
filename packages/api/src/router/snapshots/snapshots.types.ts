@@ -41,6 +41,7 @@ export interface SnapshotRollout {
 export interface SnapshotTarget {
   type: "rule" | "individual" | "segment";
   sortOrder: number;
+  name?: string;
   variationKey?: string;
   rollout?: SnapshotRollout;
   conditions?: SnapshotRuleCondition[];

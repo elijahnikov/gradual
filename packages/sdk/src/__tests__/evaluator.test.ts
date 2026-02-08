@@ -1112,4 +1112,86 @@ describe("evaluateFlag", () => {
       ).toBe("control");
     });
   });
+
+  describe("matchedTargetName", () => {
+    it("includes target name when target matches", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "rule",
+            variationKey: "on",
+            sortOrder: 0,
+            name: "Beta Users Rule",
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+          },
+        ],
+      });
+      const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
+      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.matchedTargetName).toBe("Beta Users Rule");
+    });
+
+    it("does not include target name when no target matches", () => {
+      const flag = createFlag({ enabled: true, targets: [] });
+      const result = evaluateFlag(flag, {}, {});
+      expect(result.reason).toBe("DEFAULT_VARIATION");
+      expect(result.matchedTargetName).toBeUndefined();
+    });
+
+    it("does not include target name when flag is disabled", () => {
+      const flag = createFlag({ enabled: false });
+      const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
+      expect(result.reason).toBe("FLAG_DISABLED");
+      expect(result.matchedTargetName).toBeUndefined();
+    });
+
+    it("includes target name for individual targets", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "individual",
+            variationKey: "on",
+            sortOrder: 0,
+            name: "VIP User",
+            contextKind: "user",
+            attributeKey: "id",
+            attributeValue: "user-123",
+          },
+        ],
+      });
+      const result = evaluateFlag(flag, { user: { id: "user-123" } }, {});
+      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.matchedTargetName).toBe("VIP User");
+    });
+
+    it("returns undefined target name when target has no name", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "rule",
+            variationKey: "on",
+            sortOrder: 0,
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+          },
+        ],
+      });
+      const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
+      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.matchedTargetName).toBeUndefined();
+    });
+  });
 });

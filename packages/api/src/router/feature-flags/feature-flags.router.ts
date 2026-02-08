@@ -67,4 +67,8 @@ export const featureFlagsRouter = {
   getMetricsEvaluations: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.getMetricsEvaluationsSchema)
     .query((opts) => services.getMetricsEvaluations({ ...opts })),
+
+  getEvents: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getEventsSchema)
+    .query((opts) => services.getEvents({ ...opts })),
 } satisfies TRPCRouterRecord;

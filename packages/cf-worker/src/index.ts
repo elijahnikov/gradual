@@ -12,6 +12,11 @@ interface EvaluationEvent {
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
+  matchedTargetName?: string;
+  flagConfigVersion?: number;
+  errorDetail?: string;
+  evaluationDurationUs?: number;
+  isAnonymous?: boolean;
 }
 
 interface EvaluationQueueMessage {
@@ -22,6 +27,7 @@ interface EvaluationQueueMessage {
     sdkVersion: string;
     sdkKey: string;
     userAgent: string;
+    sdkPlatform?: string;
   };
   events: EvaluationEvent[];
 }
@@ -422,6 +428,7 @@ async function sdkIngestEvaluations(
         organizationId?: string;
         environmentId?: string;
         sdkVersion?: string;
+        sdkPlatform?: string;
       };
       events?: EvaluationEvent[];
     };
@@ -454,6 +461,7 @@ async function sdkIngestEvaluations(
         sdkVersion: body.meta?.sdkVersion ?? "unknown",
         sdkKey: sdkKeyPrefix,
         userAgent,
+        sdkPlatform: body.meta?.sdkPlatform,
       },
       events: body.events,
     };

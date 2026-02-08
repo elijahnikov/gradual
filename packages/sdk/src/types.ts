@@ -41,6 +41,7 @@ export interface SnapshotRollout {
 export interface SnapshotTarget {
   type: "rule" | "individual" | "segment";
   sortOrder: number;
+  name?: string;
   variationKey?: string;
   rollout?: SnapshotRollout;
   conditions?: SnapshotRuleCondition[];
@@ -117,6 +118,8 @@ export interface EvaluationResult {
   value: unknown;
   variationKey: string | undefined;
   reason: EvaluationReason;
+  matchedTargetName?: string;
+  errorDetail?: string;
 }
 
 export interface EvaluationEvent {
@@ -127,6 +130,11 @@ export interface EvaluationEvent {
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
+  matchedTargetName?: string;
+  flagConfigVersion?: number;
+  errorDetail?: string;
+  evaluationDurationUs?: number;
+  isAnonymous: boolean;
 }
 
 export interface EvaluationBatchPayload {
@@ -135,6 +143,7 @@ export interface EvaluationBatchPayload {
     organizationId: string;
     environmentId: string;
     sdkVersion: string;
+    sdkPlatform?: string;
   };
   events: EvaluationEvent[];
 }

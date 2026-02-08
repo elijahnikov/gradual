@@ -281,6 +281,7 @@ export async function buildEnvironmentSnapshot({
       const snapshotTarget: SnapshotTarget = {
         type: t.target.type as "rule" | "individual" | "segment",
         sortOrder: t.target.sortOrder,
+        name: t.target.name,
       };
 
       if (t.rollout && t.rollout.variations.length > 0) {
