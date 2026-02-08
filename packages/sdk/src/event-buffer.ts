@@ -1,6 +1,7 @@
 import type { EvaluationBatchPayload, EvaluationEvent } from "./types";
 
-export const SDK_VERSION = "0.6.1";
+declare const __SDK_VERSION__: string;
+export const SDK_VERSION = __SDK_VERSION__;
 
 interface EventBufferOptions {
   baseUrl: string;
