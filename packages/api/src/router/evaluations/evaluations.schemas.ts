@@ -8,6 +8,11 @@ const evaluationEventSchema = z.object({
   contextKinds: z.array(z.string()),
   contextKeys: z.record(z.string(), z.array(z.string())),
   timestamp: z.number(),
+  matchedTargetName: z.string().optional(),
+  flagConfigVersion: z.number().optional(),
+  errorDetail: z.string().optional(),
+  evaluationDurationUs: z.number().optional(),
+  isAnonymous: z.boolean().optional(),
 });
 
 const evaluationBatchSchema = z.object({
@@ -18,6 +23,7 @@ const evaluationBatchSchema = z.object({
     sdkVersion: z.string(),
     sdkKey: z.string(),
     userAgent: z.string().optional(),
+    sdkPlatform: z.string().optional(),
   }),
   events: z.array(evaluationEventSchema),
 });

@@ -82,6 +82,12 @@ export async function ingestEvaluations({
       reason: string;
       sdkKey: string;
       sdkVersion: string;
+      matchedTargetName: string | null;
+      flagConfigVersion: number | null;
+      sdkPlatform: string | null;
+      errorDetail: string | null;
+      evaluationDurationUs: number | null;
+      isAnonymous: boolean | null;
       createdAt: Date;
     }> = [];
 
@@ -106,6 +112,12 @@ export async function ingestEvaluations({
         reason: event.reason,
         sdkKey: meta.sdkKey,
         sdkVersion: meta.sdkVersion,
+        matchedTargetName: event.matchedTargetName ?? null,
+        flagConfigVersion: event.flagConfigVersion ?? null,
+        sdkPlatform: meta.sdkPlatform ?? null,
+        errorDetail: event.errorDetail ?? null,
+        evaluationDurationUs: event.evaluationDurationUs ?? null,
+        isAnonymous: event.isAnonymous ?? null,
         createdAt: new Date(event.timestamp),
       });
     }

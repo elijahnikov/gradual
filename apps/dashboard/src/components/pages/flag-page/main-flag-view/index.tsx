@@ -66,8 +66,19 @@ export default function MainFlagView({
           />
         );
       }
-      case "events":
-        return <FlagEvents />;
+      case "events": {
+        const selectedEnvForEvents = flag.environments.find(
+          (e) => e.environment.slug === environment
+        );
+        return (
+          <FlagEvents
+            environmentId={selectedEnvForEvents?.environment.id}
+            flag={flag.flag}
+            organizationSlug={organizationSlug}
+            projectSlug={projectSlug}
+          />
+        );
+      }
       case "settings":
         return <FlagSettings />;
       default:

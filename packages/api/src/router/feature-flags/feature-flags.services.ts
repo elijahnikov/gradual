@@ -39,6 +39,7 @@ import type {
   CreateCompleteFeatureFlagInput,
   DeleteFlagsInput,
   DeleteVariationInput,
+  GetEventsInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
   GetFeatureFlagsByProjectAndOrganizationInput,
@@ -1596,5 +1597,108 @@ export const getMetricsEvaluations = async ({
     granularity: effectiveGranularity,
     startDate,
     endDate,
+  };
+};
+
+export const getEvents = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetEventsInput;
+}) => {
+  const { flagId, projectSlug, environmentId, limit, cursor } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq: e, isNull, and: a }) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId, organizationId }, { eq: e, and: a }) =>
+      a(
+        e(id, flagId),
+        e(projectId, foundProject.id),
+        e(organizationId, ctx.organization.id)
+      ),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const conditions = [
+    eq(featureFlagEvaluation.featureFlagId, flagId),
+    eq(featureFlagEvaluation.environmentId, environmentId),
+  ];
+
+  if (cursor) {
+    conditions.push(lt(featureFlagEvaluation.id, cursor));
+  }
+
+  const evaluations = await ctx.db
+    .select({
+      id: featureFlagEvaluation.id,
+      variationId: featureFlagEvaluation.variationId,
+      value: featureFlagEvaluation.value,
+      reason: featureFlagEvaluation.reason,
+      sdkVersion: featureFlagEvaluation.sdkVersion,
+      userAgent: featureFlagEvaluation.userAgent,
+      createdAt: featureFlagEvaluation.createdAt,
+      matchedTargetName: featureFlagEvaluation.matchedTargetName,
+      flagConfigVersion: featureFlagEvaluation.flagConfigVersion,
+      sdkPlatform: featureFlagEvaluation.sdkPlatform,
+      errorDetail: featureFlagEvaluation.errorDetail,
+      evaluationDurationUs: featureFlagEvaluation.evaluationDurationUs,
+      isAnonymous: featureFlagEvaluation.isAnonymous,
+    })
+    .from(featureFlagEvaluation)
+    .where(and(...conditions))
+    .orderBy(desc(featureFlagEvaluation.createdAt))
+    .limit(limit + 1);
+
+  const hasMore = evaluations.length > limit;
+  const items = hasMore ? evaluations.slice(0, limit) : evaluations;
+  const nextCursor = hasMore ? items.at(-1)?.id : undefined;
+
+  const variationIds = [
+    ...new Set(items.map((e) => e.variationId).filter(Boolean)),
+  ] as string[];
+
+  let variationMap = new Map<string, string>();
+  if (variationIds.length > 0) {
+    const variations = await ctx.db
+      .select({
+        id: featureFlagVariation.id,
+        name: featureFlagVariation.name,
+      })
+      .from(featureFlagVariation)
+      .where(inArray(featureFlagVariation.id, variationIds));
+
+    variationMap = new Map(variations.map((v) => [v.id, v.name]));
+  }
+
+  return {
+    items: items.map((e) => ({
+      ...e,
+      variationName: e.variationId
+        ? (variationMap.get(e.variationId) ?? null)
+        : null,
+    })),
+    nextCursor,
   };
 };

@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   doublePrecision,
   index,
@@ -655,6 +656,12 @@ export const featureFlagEvaluation = pgTable(
     reason: text("reason"),
     sdkKey: text("sdk_key"),
     sdkVersion: text("sdk_version"),
+    matchedTargetName: text("matched_target_name"),
+    flagConfigVersion: bigint("flag_config_version", { mode: "number" }),
+    sdkPlatform: text("sdk_platform"),
+    errorDetail: text("error_detail"),
+    evaluationDurationUs: integer("evaluation_duration_us"),
+    isAnonymous: boolean("is_anonymous"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

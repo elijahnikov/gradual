@@ -293,6 +293,7 @@ export function evaluateFlag(
           value: resolved.variation.value,
           variationKey: resolved.variationKey,
           reason: "TARGET_MATCH",
+          matchedTargetName: target.name,
         };
       }
     }

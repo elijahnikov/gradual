@@ -3,13 +3,43 @@ import { EventBuffer } from "./event-buffer";
 import type {
   EnvironmentSnapshot,
   EvaluationContext,
-  EvaluationEvent,
+  EvaluationResult,
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://worker.gradual.so/api/v1";
+
+type SdkPlatform = "browser" | "node" | "react-native" | "edge" | "unknown";
+
+function detectPlatform(): SdkPlatform {
+  try {
+    const g = globalThis as Record<string, unknown>;
+    const nav = g.navigator as
+      | { product?: string; userAgent?: string }
+      | undefined;
+    if (nav && nav.product === "ReactNative") {
+      return "react-native";
+    }
+    const win = g.window as { document?: unknown } | undefined;
+    if (win && typeof win.document !== "undefined") {
+      return "browser";
+    }
+    const proc = g.process as { versions?: { node?: string } } | undefined;
+    if (proc?.versions?.node) {
+      return "node";
+    }
+    if (typeof globalThis !== "undefined") {
+      return "edge";
+    }
+  } catch {
+    // Ignore detection errors
+  }
+  return "unknown";
+}
+
+const SDK_PLATFORM = detectPlatform();
 
 export interface Gradual {
   /** Wait for the SDK to be ready (snapshot fetched) */
@@ -152,6 +182,7 @@ class GradualClient implements Gradual {
           projectId: this.snapshot.meta.projectId,
           organizationId: this.snapshot.meta.organizationId,
           environmentId: this.snapshot.meta.environmentId,
+          sdkPlatform: SDK_PLATFORM,
         },
         flushIntervalMs: this.eventsFlushIntervalMs,
         maxBatchSize: this.eventsMaxBatchSize,
@@ -192,43 +223,93 @@ class GradualClient implements Gradual {
     }
     const flag = snapshot.flags[key];
     if (!flag) {
-      this.trackEvent(key, undefined, undefined, "FLAG_NOT_FOUND", context);
+      this.trackEvent({
+        flagKey: key,
+        variationKey: undefined,
+        value: undefined,
+        reason: "FLAG_NOT_FOUND",
+        context,
+        flagConfigVersion: snapshot.version,
+      });
       return undefined;
     }
-    const result = evaluateFlag(flag, context, snapshot.segments ?? {});
-    this.trackEvent(
-      key,
-      result.variationKey,
-      result.value,
-      result.reason,
-      context
-    );
+
+    const usePerformance = typeof performance !== "undefined";
+    const startTime = usePerformance ? performance.now() : Date.now();
+
+    let result: EvaluationResult;
+    try {
+      result = evaluateFlag(flag, context, snapshot.segments ?? {});
+    } catch (err) {
+      const errorDetail = err instanceof Error ? err.message : String(err);
+      result = {
+        value: undefined,
+        variationKey: undefined,
+        reason: "ERROR",
+        errorDetail,
+      };
+    }
+
+    const endTime = usePerformance ? performance.now() : Date.now();
+    const evaluationDurationUs = usePerformance
+      ? Math.round((endTime - startTime) * 1000)
+      : Math.round((endTime - startTime) * 1000);
+
+    this.trackEvent({
+      flagKey: key,
+      variationKey: result.variationKey,
+      value: result.value,
+      reason: result.reason,
+      context,
+      matchedTargetName: result.matchedTargetName,
+      flagConfigVersion: snapshot.version,
+      errorDetail: result.errorDetail,
+      evaluationDurationUs,
+    });
+
     return result.value;
   }
 
-  private trackEvent(
-    flagKey: string,
-    variationKey: string | undefined,
-    value: unknown,
-    reason: EvaluationEvent["reason"],
-    context: EvaluationContext
-  ): void {
+  private trackEvent(params: {
+    flagKey: string;
+    variationKey: string | undefined;
+    value: unknown;
+    reason: EvaluationResult["reason"];
+    context: EvaluationContext;
+    matchedTargetName?: string;
+    flagConfigVersion?: number;
+    errorDetail?: string;
+    evaluationDurationUs?: number;
+  }): void {
     if (!this.eventBuffer) {
       return;
     }
+    const { context } = params;
     const contextKinds = Object.keys(context);
     const contextKeys: Record<string, string[]> = {};
     for (const kind of contextKinds) {
       contextKeys[kind] = Object.keys(context[kind] ?? {});
     }
+
+    const isAnonymous =
+      contextKinds.length === 0 ||
+      contextKinds.every(
+        (kind) => Object.keys(context[kind] ?? {}).length === 0
+      );
+
     this.eventBuffer.push({
-      flagKey,
-      variationKey,
-      value,
-      reason,
+      flagKey: params.flagKey,
+      variationKey: params.variationKey,
+      value: params.value,
+      reason: params.reason,
       contextKinds,
       contextKeys,
       timestamp: Date.now(),
+      matchedTargetName: params.matchedTargetName,
+      flagConfigVersion: params.flagConfigVersion,
+      errorDetail: params.errorDetail,
+      evaluationDurationUs: params.evaluationDurationUs,
+      isAnonymous,
     });
   }
 

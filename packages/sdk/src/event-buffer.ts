@@ -9,6 +9,7 @@ interface EventBufferOptions {
     projectId: string;
     organizationId: string;
     environmentId: string;
+    sdkPlatform?: string;
   };
   flushIntervalMs: number;
   maxBatchSize: number;
