@@ -1,5 +1,6 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Badge } from "@gradual/ui/badge";
+import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import {
   Table,
@@ -23,7 +24,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useSubscription } from "@trpc/tanstack-react-query";
 import dayjs from "dayjs";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 
 type Flag = RouterOutputs["featureFlags"]["getByKey"]["flag"];
@@ -212,7 +215,10 @@ function FlagEventsContent({
   environmentId,
 }: FlagEventsProps & { environmentId: string }) {
   const trpc = useTRPC();
-
+  const [isLive, setIsLive] = useState(true);
+  const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
+  const seenIdsRef = useRef(new Set<string>());
+  console.log({ flag, environmentId });
   const { data } = useSuspenseQuery(
     trpc.featureFlags.getEvents.queryOptions({
       flagId: flag.id,
@@ -222,13 +228,45 @@ function FlagEventsContent({
     })
   );
 
+  const onData = useCallback((event: EventItem) => {
+    if (seenIdsRef.current.has(event.id)) {
+      return;
+    }
+    seenIdsRef.current.add(event.id);
+    setLiveEvents((prev) => [event, ...prev]);
+  }, []);
+
+  useSubscription(
+    trpc.featureFlags.watchEvents.subscriptionOptions(
+      {
+        flagId: flag.id,
+        organizationSlug,
+        projectSlug,
+        environmentId,
+      },
+      {
+        enabled: isLive,
+        onData,
+      }
+    )
+  );
+
+  const mergedEvents = useMemo(() => {
+    const historicalIds = new Set(data.items.map((item) => item.id));
+    const uniqueLive = liveEvents.filter(
+      (event) => !historicalIds.has(event.id)
+    );
+    return [...uniqueLive, ...data.items];
+  }, [liveEvents, data.items]);
+  console.log({ mergedEvents });
+
   const table = useReactTable({
-    data: data.items,
+    data: mergedEvents,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (data.items.length === 0) {
+  if (mergedEvents.length === 0) {
     return (
       <div className="flex w-full flex-1 flex-col p-2">
         <Card className="flex h-full w-full flex-1 flex-col items-center justify-center p-8">
@@ -240,11 +278,34 @@ function FlagEventsContent({
 
   return (
     <TooltipProvider>
-      <div className="flex w-full flex-1 flex-col p-2">
-        <Card className="flex-1 overflow-hidden p-0">
-          <div className="max-h-[calc(100vh-12rem)] overflow-auto">
+      <div className="flex w-full flex-1 flex-col">
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <div className="flex items-center gap-2">
+            {liveEvents.length > 0 && (
+              <Badge size="sm" variant="info">
+                {liveEvents.length} new
+              </Badge>
+            )}
+          </div>
+          <Button
+            onClick={() => setIsLive((prev) => !prev)}
+            size="small"
+            variant="secondary"
+          >
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${
+                  isLive ? "animate-pulse bg-green-500" : "bg-ui-fg-muted"
+                }`}
+              />
+              {isLive ? "Live" : "Paused"}
+            </span>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-hidden p-0">
+          <div className="max-h-[calc(100vh-15rem)] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-ui-bg-subtle">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
@@ -278,7 +339,7 @@ function FlagEventsContent({
               </TableBody>
             </Table>
           </div>
-        </Card>
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -10,6 +10,7 @@ import {
 import { TRPCError } from "@trpc/server";
 
 import type { PublicTRPCContext } from "../../trpc";
+import { ee } from "./evaluations.emitter";
 import type { IngestEvaluationsInput } from "./evaluations.schemas";
 
 export async function ingestEvaluations({
@@ -124,8 +125,37 @@ export async function ingestEvaluations({
 
     // 4. Bulk insert evaluations
     if (evaluationValues.length > 0) {
-      await ctx.db.insert(featureFlagEvaluation).values(evaluationValues);
-      totalIngested += evaluationValues.length;
+      const inserted = await ctx.db
+        .insert(featureFlagEvaluation)
+        .values(evaluationValues)
+        .returning({
+          id: featureFlagEvaluation.id,
+          featureFlagId: featureFlagEvaluation.featureFlagId,
+          environmentId: featureFlagEvaluation.environmentId,
+          variationId: featureFlagEvaluation.variationId,
+          value: featureFlagEvaluation.value,
+          reason: featureFlagEvaluation.reason,
+          sdkVersion: featureFlagEvaluation.sdkVersion,
+          userAgent: featureFlagEvaluation.userAgent,
+          createdAt: featureFlagEvaluation.createdAt,
+          matchedTargetName: featureFlagEvaluation.matchedTargetName,
+          flagConfigVersion: featureFlagEvaluation.flagConfigVersion,
+          sdkPlatform: featureFlagEvaluation.sdkPlatform,
+          errorDetail: featureFlagEvaluation.errorDetail,
+          evaluationDurationUs: featureFlagEvaluation.evaluationDurationUs,
+          isAnonymous: featureFlagEvaluation.isAnonymous,
+        });
+
+      for (const row of inserted) {
+        ee.emit("add", {
+          ...row,
+          reason: row.reason ?? "DEFAULT_VARIATION",
+          sdkVersion: row.sdkVersion ?? "",
+          createdAt: row.createdAt ?? new Date(),
+        });
+      }
+
+      totalIngested += inserted.length;
     }
 
     // 5. Context and attribute discovery
