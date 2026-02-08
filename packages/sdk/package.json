@@ -1,6 +1,6 @@
 {
   "name": "@gradual-so/sdk",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Gradual feature flag SDK for TypeScript and JavaScript",
   "type": "module",
   "main": "./dist/index.cjs",
