@@ -113,6 +113,8 @@ function TabContentSkeleton({ tab }: { tab: FlagTab }) {
       return <VariationsTabSkeleton />;
     case "metrics":
       return <MetricsTabSkeleton />;
+    case "events":
+      return <EventsTabSkeleton />;
     default:
       return <GenericTabSkeleton />;
   }
@@ -240,6 +242,43 @@ function MetricsTabSkeleton() {
           <Skeleton className="h-full w-full rounded-md" />
         </div>
       </Card>
+    </div>
+  );
+}
+
+function EventsTabSkeleton() {
+  const columnWidths = [
+    "w-20",
+    "w-14",
+    "w-16",
+    "w-14",
+    "w-16",
+    "w-16",
+    "w-12",
+    "w-24",
+  ];
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex border-b bg-ui-bg-subtle">
+        {columnWidths.map((w, i) => (
+          <div className="flex-1 px-3 py-2" key={i}>
+            <Skeleton className={`h-3 ${w}`} />
+          </div>
+        ))}
+      </div>
+      {/* Rows — fills remaining space */}
+      <div className="flex flex-1 flex-col">
+        {Array.from({ length: 30 }).map((_, rowIdx) => (
+          <div className="flex border-b" key={rowIdx}>
+            {columnWidths.map((w, colIdx) => (
+              <div className="flex-1 px-3 py-2.5" key={colIdx}>
+                <Skeleton className={`h-3.5 ${w}`} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
