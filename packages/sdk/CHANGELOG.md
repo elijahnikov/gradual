@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.7.4
+
+### Patch Changes
+
+- [`7fd1de5`](https://github.com/elijahnikov/gradual/commit/7fd1de5ad86eece5a9a4d35fd889c90aaf76f2d2) Thanks [@elijahnikov](https://github.com/elijahnikov)! - inject package version to be consistent
+
 ## 0.7.3
 
 ### Patch Changes
