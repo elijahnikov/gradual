@@ -41,6 +41,32 @@ function detectPlatform(): SdkPlatform {
 
 const SDK_PLATFORM = detectPlatform();
 
+const proc = (globalThis as Record<string, unknown>).process as
+  | { hrtime?: { bigint?: () => bigint } }
+  | undefined;
+const hasHrtime = typeof proc?.hrtime?.bigint === "function";
+
+function nowNs(): bigint | number {
+  if (hasHrtime) {
+    // biome-ignore lint/style/noNonNullAssertion: guarded by hasHrtime check
+    return proc!.hrtime!.bigint!();
+  }
+  if (typeof performance !== "undefined") {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function elapsedUs(start: bigint | number): number {
+  const end = nowNs();
+  if (typeof start === "bigint" && typeof end === "bigint") {
+    // hrtime bigint: nanoseconds → microseconds
+    return Number((end - start) / 1000n);
+  }
+  // performance.now() ms or Date.now() ms → microseconds
+  return Math.round(((end as number) - (start as number)) * 1000);
+}
+
 export interface Gradual {
   /** Wait for the SDK to be ready (snapshot fetched) */
   ready(): Promise<void>;
@@ -234,8 +260,7 @@ class GradualClient implements Gradual {
       return undefined;
     }
 
-    const usePerformance = typeof performance !== "undefined";
-    const startTime = usePerformance ? performance.now() : Date.now();
+    const startTime = nowNs();
 
     let result: EvaluationResult;
     try {
@@ -250,10 +275,7 @@ class GradualClient implements Gradual {
       };
     }
 
-    const endTime = usePerformance ? performance.now() : Date.now();
-    const evaluationDurationUs = usePerformance
-      ? Math.round((endTime - startTime) * 1000)
-      : Math.round((endTime - startTime) * 1000);
+    const evaluationDurationUs = elapsedUs(startTime);
 
     this.trackEvent({
       flagKey: key,

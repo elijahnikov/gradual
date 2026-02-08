@@ -408,14 +408,20 @@ async function sdkIngestEvaluations(
   }
 
   const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  const url = new URL(request.url);
+  const queryKey = url.searchParams.get("key");
+
+  const apiKey = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : queryKey;
+
+  if (!apiKey) {
     return Response.json(
-      { error: "Missing Authorization header" },
+      { error: "Missing Authorization header or key parameter" },
       { status: 401 }
     );
   }
 
-  const apiKey = authHeader.slice(7);
   const metadata = await getApiKeyMetadata(apiKey, env);
   if (!metadata) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });

@@ -40,6 +40,7 @@
         "@tanstack/react-router-devtools": "catalog:tanstack",
         "@tanstack/react-router-ssr-query": "catalog:tanstack",
         "@tanstack/react-start": "catalog:tanstack",
+        "@tanstack/react-table": "^8.21.3",
         "@trpc/client": "catalog:trpc",
         "@trpc/server": "catalog:trpc",
         "@trpc/tanstack-react-query": "catalog:trpc",
@@ -188,7 +189,7 @@
     },
     "packages/sdk": {
       "name": "@gradual-so/sdk",
-      "version": "0.3.0",
+      "version": "0.7.1",
       "devDependencies": {
         "tsup": "^8.5.1",
         "typescript": "catalog:",
@@ -197,9 +198,9 @@
     },
     "packages/sdk-react": {
       "name": "@gradual-so/sdk-react",
-      "version": "0.3.0",
+      "version": "0.7.1",
       "dependencies": {
-        "@gradual-so/sdk": "^0.3.0",
+        "@gradual-so/sdk": "^0.6.1",
       },
       "devDependencies": {
         "@types/react": "catalog:react",
@@ -3798,6 +3799,8 @@
     "@expo/xcpretty/find-up": ["find-up@5.0.0", "", { "dependencies": { "locate-path": "^6.0.0", "path-exists": "^4.0.0" } }, "sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng=="],
 
     "@expo/xcpretty/js-yaml": ["js-yaml@4.1.0", "", { "dependencies": { "argparse": "^2.0.1" }, "bin": { "js-yaml": "bin/js-yaml.js" } }, "sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA=="],
+
+    "@gradual-so/sdk-react/@gradual-so/sdk": ["@gradual-so/sdk@0.6.1", "", {}, "sha512-ZHh7VXghS1zmFKdsSoWP6cSlWswglxpqCiO7erSv1sv9+zRr7EIiwpepvZ+MSIvH9IyYmLTsYRY5+cgbOqkvlw=="],
 
     "@gradual/ui/recharts": ["recharts@2.15.4", "", { "dependencies": { "clsx": "^2.0.0", "eventemitter3": "^4.0.1", "lodash": "^4.17.21", "react-is": "^18.3.1", "react-smooth": "^4.0.4", "recharts-scale": "^0.4.4", "tiny-invariant": "^1.3.1", "victory-vendor": "^36.6.8" }, "peerDependencies": { "react": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw=="],
 
