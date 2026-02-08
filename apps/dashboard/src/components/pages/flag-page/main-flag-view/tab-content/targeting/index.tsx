@@ -186,9 +186,9 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
-      <Card className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="flex flex-col gap-2 p-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex w-full flex-1 flex-col px-2">
+      <div className="flex h-full w-full flex-1 flex-col p-0">
+        <div className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -220,7 +220,7 @@ function FlagTargetingContent({
             </Button>
           </div>
         </div>
-        <div className="flex h-full w-full flex-1 flex-col rounded-md border-t bg-ui-bg-base p-1 sm:p-2">
+        <Card className="mb-2 flex h-full w-full flex-1 flex-col rounded-md bg-ui-bg-subtle p-1 sm:p-2">
           <div className="flex h-full w-full flex-1 flex-col rounded-md border bg-ui-bg-base p-1 sm:p-2">
             <div className="relative flex h-full min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
               <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
@@ -246,8 +246,8 @@ function FlagTargetingContent({
               />
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
       <ReviewChangesModal />
     </div>
   );

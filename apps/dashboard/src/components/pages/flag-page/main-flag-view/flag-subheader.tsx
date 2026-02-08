@@ -50,7 +50,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
   );
 
   return (
-    <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center justify-between border-b bg-ui-bg-base py-2 pr-2 pl-1">
+    <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center justify-between border-b bg-ui-bg-subtle py-2 pr-2 pl-1">
       <div className="flex items-center gap-x-2">
         <Tabs onValueChange={handleTabChange} value={tab}>
           <TabsList className="h-8 shadow-elevation-card-rest">

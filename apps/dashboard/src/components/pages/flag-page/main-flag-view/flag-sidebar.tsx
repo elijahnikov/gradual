@@ -217,7 +217,7 @@ export default function FlagSidebar({
   };
 
   return (
-    <div className="flex h-full w-64 min-w-64 flex-col border-l bg-ui-bg-base">
+    <div className="flex h-full w-64 min-w-64 flex-col border-l bg-ui-bg-subtle">
       {/* Title & Description */}
       <div className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
