@@ -295,6 +295,14 @@ export const getEventsSchema = z.object({
 });
 export type GetEventsInput = z.infer<typeof getEventsSchema>;
 
+export const watchEventsSchema = z.object({
+  flagId: z.uuid(),
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  environmentId: z.uuid(),
+});
+export type WatchEventsInput = z.infer<typeof watchEventsSchema>;
+
 export const getMetricsEvaluationsSchema = z.object({
   flagId: z.uuid(),
   organizationSlug: z.string(),

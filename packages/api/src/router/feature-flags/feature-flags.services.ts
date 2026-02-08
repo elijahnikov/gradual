@@ -33,6 +33,7 @@ import {
 import { TRPCError } from "@trpc/server";
 
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
+import { ee } from "../evaluations/evaluations.emitter";
 import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
   AddVariationInput,
@@ -51,6 +52,7 @@ import type {
   SeedEvaluationsInput,
   UpdateFeatureFlagInput,
   UpdateVariationInput,
+  WatchEventsInput,
 } from "./feature-flags.schemas";
 import {
   transformEvaluationsToHourlyData,
@@ -1702,3 +1704,106 @@ export const getEvents = async ({
     nextCursor,
   };
 };
+
+export interface WatchEventItem {
+  id: string;
+  variationId: string | null;
+  value: unknown;
+  reason: string | null;
+  sdkVersion: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+  matchedTargetName: string | null;
+  flagConfigVersion: number | null;
+  sdkPlatform: string | null;
+  errorDetail: string | null;
+  evaluationDurationUs: number | null;
+  isAnonymous: boolean | null;
+  variationName: string | null;
+}
+
+export async function* watchEvents({
+  ctx,
+  input,
+  signal,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: WatchEventsInput;
+  signal: AbortSignal | undefined;
+}) {
+  const { flagId, projectSlug, environmentId } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq: e, isNull, and: a }) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const foundFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId, organizationId }, { eq: e, and: a }) =>
+      a(
+        e(id, flagId),
+        e(projectId, foundProject.id),
+        e(organizationId, ctx.organization.id)
+      ),
+  });
+
+  if (!foundFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  // Pre-load variations for this flag so we can resolve names without per-event queries
+  const flagVariations = await ctx.db
+    .select({
+      id: featureFlagVariation.id,
+      name: featureFlagVariation.name,
+    })
+    .from(featureFlagVariation)
+    .where(eq(featureFlagVariation.featureFlagId, flagId));
+
+  const variationMap = new Map(flagVariations.map((v) => [v.id, v.name]));
+
+  // Subscribe to the event emitter — events are pushed instantly when evaluations are ingested
+  const iterable = ee.toIterable("add", { signal });
+
+  for await (const [event] of iterable) {
+    // Filter to only events for this flag + environment
+    if (
+      event.featureFlagId !== flagId ||
+      event.environmentId !== environmentId
+    ) {
+      continue;
+    }
+
+    const item: WatchEventItem = {
+      id: event.id,
+      variationId: event.variationId,
+      value: event.value,
+      reason: event.reason,
+      sdkVersion: event.sdkVersion,
+      userAgent: event.userAgent,
+      createdAt: event.createdAt,
+      matchedTargetName: event.matchedTargetName,
+      flagConfigVersion: event.flagConfigVersion,
+      sdkPlatform: event.sdkPlatform,
+      errorDetail: event.errorDetail,
+      evaluationDurationUs: event.evaluationDurationUs,
+      isAnonymous: event.isAnonymous,
+      variationName: event.variationId
+        ? (variationMap.get(event.variationId) ?? null)
+        : null,
+    };
+
+    yield item;
+  }
+}
