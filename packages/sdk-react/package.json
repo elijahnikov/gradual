@@ -1,6 +1,6 @@
 {
   "name": "@gradual-so/sdk-react",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Gradual feature flag SDK for React",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -47,7 +47,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@gradual-so/sdk": "^0.7.2"
+    "@gradual-so/sdk": "^0.7.3"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
