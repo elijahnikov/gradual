@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.7.1
+
+### Patch Changes
+
+- [#44](https://github.com/elijahnikov/gradual/pull/44) [`c17900f`](https://github.com/elijahnikov/gradual/commit/c17900fe40e822122e7f9b5998452df7f54a643f) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Collecting more data in ingest
+
+- Updated dependencies [[`c17900f`](https://github.com/elijahnikov/gradual/commit/c17900fe40e822122e7f9b5998452df7f54a643f)]:
+  - @gradual-so/sdk@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
