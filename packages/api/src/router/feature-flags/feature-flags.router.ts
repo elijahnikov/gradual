@@ -48,6 +48,10 @@ export const featureFlagsRouter = {
     .input(schemas.updateFeatureFlagSchema)
     .mutation((opts) => services.updateFeatureFlag({ ...opts })),
 
+  archiveFlag: protectedOrganizationProcedure({ flags: ["update"] })
+    .input(schemas.archiveFlagSchema)
+    .mutation((opts) => services.archiveFlag({ ...opts })),
+
   getVariations: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.getVariationsSchema)
     .query((opts) => services.getVariations({ ...opts })),

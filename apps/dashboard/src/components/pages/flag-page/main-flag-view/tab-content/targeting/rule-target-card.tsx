@@ -7,9 +7,10 @@ import type { RuleCondition } from "./types";
 
 interface RuleTargetCardProps {
   targetId: string;
+  hasError?: boolean;
 }
 
-export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
+export function RuleTargetCard({ targetId, hasError }: RuleTargetCardProps) {
   const target = useTargetingStore((s) =>
     s.targets.find((t) => t.id === targetId)
   );
@@ -94,6 +95,7 @@ export function RuleTargetCard({ targetId }: RuleTargetCardProps) {
 
   return (
     <TargetingCard
+      hasError={hasError}
       isFirst={targetIndex === 0}
       isLast={targetIndex === targetsCount - 1}
       name={target.name}

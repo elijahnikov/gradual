@@ -118,8 +118,8 @@ export default function FlagListItem({ flag }: { flag: FlagListItemData }) {
                 <AvatarFallback>{maintainer?.name?.charAt(0)}</AvatarFallback>
               </Avatar>
             ) : (
-              <Card className="flex size-8 items-center justify-center rounded-full">
-                <RiUserSmileLine className="size-5 shrink-0 text-ui-fg-muted/50" />
+              <Card className="flex size-6! shrink-0 items-center justify-center rounded-full p-0">
+                <RiUserSmileLine className="size-4 shrink-0 text-ui-fg-muted/50" />
               </Card>
             )}
           </div>

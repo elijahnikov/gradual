@@ -417,6 +417,62 @@ export const createTargetingStore = () =>
     },
   }));
 
+export function getValidationErrors(
+  targets: LocalTarget[]
+): Map<string, string[]> {
+  const errors = new Map<string, string[]>();
+
+  for (const target of targets) {
+    const targetErrors: string[] = [];
+
+    if (!(target.variationId || target.rollout)) {
+      targetErrors.push("A variation or rollout must be selected");
+    }
+
+    if (target.type === "rule") {
+      if (!target.conditions || target.conditions.length === 0) {
+        targetErrors.push("At least one condition is required");
+      } else {
+        for (const condition of target.conditions) {
+          if (
+            condition.operator !== "exists" &&
+            condition.operator !== "not_exists"
+          ) {
+            const val = condition.value;
+            if (
+              val === undefined ||
+              val === null ||
+              String(val).trim() === ""
+            ) {
+              targetErrors.push("All condition values must be filled in");
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (target.type === "individual") {
+      if (!(target.contextKind && target.attributeKey)) {
+        targetErrors.push("Context and attribute must be selected");
+      }
+      if (!target.attributeValue?.trim()) {
+        targetErrors.push("Attribute value is required");
+      }
+    }
+
+    if (target.type === "segment" && !target.segmentId) {
+      targetErrors.push("A segment must be selected");
+    }
+
+    if (targetErrors.length > 0) {
+      errors.set(target.id, targetErrors);
+    }
+  }
+
+  return errors;
+}
+
 type TargetingStoreApi = ReturnType<typeof createTargetingStore>;
 
 const TargetingStoreContext = createContext<TargetingStoreApi | null>(null);

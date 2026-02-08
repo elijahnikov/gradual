@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@gradual/ui/select";
+import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { RiPercentLine } from "@remixicon/react";
 import { useCallback, useMemo } from "react";
@@ -62,8 +63,8 @@ export default function DefaultVariation() {
   );
 
   return (
-    <Card className="flex w-full max-w-3xl flex-col gap-3 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="flex w-full max-w-3xl flex-col gap-3 p-0">
+      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <Badge size="lg" variant="outline">
           Default
         </Badge>
@@ -126,12 +127,15 @@ export default function DefaultVariation() {
       </div>
 
       {isRollout && defaultRollout && (
-        <RolloutEditor
-          label=""
-          onRolloutChange={handleRolloutChange}
-          rollout={defaultRollout}
-          variations={variations}
-        />
+        <>
+          <Separator className="-mt-2.5" />
+          <RolloutEditor
+            label=""
+            onRolloutChange={handleRolloutChange}
+            rollout={defaultRollout}
+            variations={variations}
+          />
+        </>
       )}
     </Card>
   );

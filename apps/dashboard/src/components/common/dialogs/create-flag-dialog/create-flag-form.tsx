@@ -220,7 +220,11 @@ export default function CreateFlagForm({
     data: z.infer<typeof createCompleteFeatureFlagSchema>
   ) => {
     try {
-      await createFlag(data);
+      await createFlag({
+        ...data,
+        maintainerId:
+          data.maintainerId === "no-maintainer" ? null : data.maintainerId,
+      });
       toastManager.add({
         type: "success",
         title: "Feature flag created successfully",

@@ -34,6 +34,7 @@ interface TargetingCardProps {
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
+  hasError?: boolean;
   children: ReactNode;
 }
 
@@ -50,6 +51,7 @@ export default function TargetingCard({
   onMoveDown,
   isFirst,
   isLast,
+  hasError,
   children,
 }: TargetingCardProps) {
   const variations = useTargetingStore((s) => s.variations);
@@ -60,7 +62,12 @@ export default function TargetingCard({
     selectedVariationId ?? defaultVariationId ?? variations[0]?.id ?? "";
 
   return (
-    <Card className="flex w-full max-w-3xl flex-col p-0">
+    <Card
+      className={cn(
+        "flex w-full max-w-3xl flex-col p-0",
+        hasError && "border-destructive/50"
+      )}
+    >
       <div className="flex flex-col gap-3 p-3 sm:p-4">
         <div className="flex items-center gap-2">
           <Input

@@ -37,6 +37,7 @@ import { ee } from "../evaluations/evaluations.emitter";
 import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
   AddVariationInput,
+  ArchiveFlagInput,
   CreateCompleteFeatureFlagInput,
   DeleteFlagsInput,
   DeleteVariationInput,
@@ -1079,7 +1080,7 @@ export const updateFeatureFlag = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: UpdateFeatureFlagInput;
 }) => {
-  const { flagId, projectSlug, name, description, maintainerId } = input;
+  const { flagId, projectSlug, name, description, maintainerId, tags } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
     where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
@@ -1122,12 +1123,67 @@ export const updateFeatureFlag = async ({
   if (maintainerId !== undefined) {
     updateData.maintainerId = maintainerId;
   }
+  if (tags !== undefined) {
+    updateData.tags = tags;
+  }
 
   const [updatedFlag] = await ctx.db
     .update(featureFlag)
     .set(updateData)
     .where(eq(featureFlag.id, flagId))
     .returning();
+
+  return updatedFlag;
+};
+
+export const archiveFlag = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: ArchiveFlagInput;
+}) => {
+  const { flagId, projectSlug, archive } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and }) =>
+      and(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const existingFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id, projectId }, { eq, and }) =>
+      and(eq(id, flagId), eq(projectId, foundProject.id)),
+  });
+
+  if (!existingFlag) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Feature flag not found",
+    });
+  }
+
+  const [updatedFlag] = await ctx.db
+    .update(featureFlag)
+    .set({
+      status: archive ? "archived" : "active",
+      archivedAt: archive ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(featureFlag.id, flagId))
+    .returning();
+
+  queueSnapshotsForAllEnvironments(ctx, foundProject.id);
 
   return updatedFlag;
 };
@@ -1681,26 +1737,31 @@ export const getEvents = async ({
     ...new Set(items.map((e) => e.variationId).filter(Boolean)),
   ] as string[];
 
-  let variationMap = new Map<string, string>();
+  let variationMap = new Map<string, { name: string; color: string | null }>();
   if (variationIds.length > 0) {
     const variations = await ctx.db
       .select({
         id: featureFlagVariation.id,
         name: featureFlagVariation.name,
+        color: featureFlagVariation.color,
       })
       .from(featureFlagVariation)
       .where(inArray(featureFlagVariation.id, variationIds));
 
-    variationMap = new Map(variations.map((v) => [v.id, v.name]));
+    variationMap = new Map(
+      variations.map((v) => [v.id, { name: v.name, color: v.color }])
+    );
   }
 
   return {
-    items: items.map((e) => ({
-      ...e,
-      variationName: e.variationId
-        ? (variationMap.get(e.variationId) ?? null)
-        : null,
-    })),
+    items: items.map((e) => {
+      const variation = e.variationId ? variationMap.get(e.variationId) : null;
+      return {
+        ...e,
+        variationName: variation?.name ?? null,
+        variationColor: variation?.color ?? null,
+      };
+    }),
     nextCursor,
   };
 };
@@ -1720,6 +1781,7 @@ export interface WatchEventItem {
   evaluationDurationUs: number | null;
   isAnonymous: boolean | null;
   variationName: string | null;
+  variationColor: string | null;
 }
 
 export async function* watchEvents({
@@ -1767,11 +1829,14 @@ export async function* watchEvents({
     .select({
       id: featureFlagVariation.id,
       name: featureFlagVariation.name,
+      color: featureFlagVariation.color,
     })
     .from(featureFlagVariation)
     .where(eq(featureFlagVariation.featureFlagId, flagId));
 
-  const variationMap = new Map(flagVariations.map((v) => [v.id, v.name]));
+  const variationMap = new Map(
+    flagVariations.map((v) => [v.id, { name: v.name, color: v.color }])
+  );
 
   // Subscribe to the event emitter — events are pushed instantly when evaluations are ingested
   const iterable = ee.toIterable("add", { signal });
@@ -1800,7 +1865,10 @@ export async function* watchEvents({
       evaluationDurationUs: event.evaluationDurationUs,
       isAnonymous: event.isAnonymous,
       variationName: event.variationId
-        ? (variationMap.get(event.variationId) ?? null)
+        ? (variationMap.get(event.variationId)?.name ?? null)
+        : null,
+      variationColor: event.variationId
+        ? (variationMap.get(event.variationId)?.color ?? null)
         : null,
     };
 

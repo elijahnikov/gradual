@@ -80,7 +80,13 @@ export default function MainFlagView({
         );
       }
       case "settings":
-        return <FlagSettings />;
+        return (
+          <FlagSettings
+            flag={flag}
+            organizationSlug={organizationSlug}
+            projectSlug={projectSlug}
+          />
+        );
       default:
         return null;
     }

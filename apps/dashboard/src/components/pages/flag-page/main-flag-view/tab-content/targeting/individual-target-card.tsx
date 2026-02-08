@@ -10,9 +10,13 @@ import type { ContextKind } from "./types";
 
 interface IndividualTargetCardProps {
   targetId: string;
+  hasError?: boolean;
 }
 
-export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
+export function IndividualTargetCard({
+  targetId,
+  hasError,
+}: IndividualTargetCardProps) {
   const target = useTargetingStore((s) =>
     s.targets.find((t) => t.id === targetId)
   );
@@ -94,6 +98,7 @@ export function IndividualTargetCard({ targetId }: IndividualTargetCardProps) {
 
   return (
     <TargetingCard
+      hasError={hasError}
       isFirst={targetIndex === 0}
       isLast={targetIndex === targetsCount - 1}
       name={target.name}

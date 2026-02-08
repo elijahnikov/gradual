@@ -54,7 +54,7 @@ function PercentInput({
 
   return (
     <Input
-      className="h-7 w-20"
+      className="h-7 w-20 font-mono"
       max="100"
       min="0"
       onBlur={() => {
@@ -376,69 +376,69 @@ export function RolloutEditor({
           const color = variation?.color ?? getVariationColorByIndex(index);
 
           return (
-            <>
+            <div
+              className="flex items-center gap-2 px-3 sm:px-4"
+              key={rv.variationId}
+            >
               <div
-                className="flex items-center gap-2 px-3 sm:px-4"
-                key={rv.variationId}
-              >
-                <div
-                  className="h-3 w-3 shrink-0 rounded-[4px]"
-                  style={{ backgroundColor: color }}
+                className="h-3 w-3 shrink-0 rounded-[4px]"
+                style={{ backgroundColor: color }}
+              />
+              <Text className="min-w-20 shrink-0" size="small">
+                {variation?.name ?? "Unknown"}
+              </Text>
+              <div className="flex items-center gap-2">
+                <PercentInput
+                  onChange={(weight) =>
+                    handleWeightChange(rv.variationId, weight)
+                  }
+                  value={rv.weight}
                 />
-                <Text className="min-w-20 shrink-0" size="small">
-                  {variation?.name ?? "Unknown"}
+                <Text className="text-ui-fg-muted" size="small">
+                  %
                 </Text>
-                <div className="flex items-center gap-2">
-                  <PercentInput
-                    onChange={(weight) =>
-                      handleWeightChange(rv.variationId, weight)
-                    }
-                    value={rv.weight}
-                  />
-                  <Text className="text-ui-fg-muted" size="small">
-                    %
-                  </Text>
-                </div>
-                {rollout.variations.length > 1 && (
-                  <Button
-                    className="ml-auto h-7 w-7 min-w-7 p-0"
-                    onClick={() => handleRemoveVariation(rv.variationId)}
-                    size="small"
-                    variant="ghost"
-                  >
-                    <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error" />
-                  </Button>
-                )}
               </div>
-              <Separator />
-            </>
+              {rollout.variations.length > 1 && (
+                <Button
+                  className="ml-auto h-7 w-7 min-w-7 p-0"
+                  onClick={() => handleRemoveVariation(rv.variationId)}
+                  size="small"
+                  variant="ghost"
+                >
+                  <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error" />
+                </Button>
+              )}
+            </div>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4">
-        {availableVariations.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {availableVariations.map((v) => (
-              <Button
-                key={v.id}
-                onClick={() => handleAddVariation(v.id)}
-                size="xsmall"
-                variant="outline"
-              >
-                <RiAddLine className="size-3" />
-                {v.color && (
-                  <div
-                    className="mr-1 h-3 w-3 shrink-0 rounded-[4px]"
-                    style={{ backgroundColor: v.color }}
-                  />
-                )}
-                {v.name}
-              </Button>
-            ))}
+      {availableVariations.length > 0 && (
+        <>
+          <Separator />
+          <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {availableVariations.map((v) => (
+                <Button
+                  key={v.id}
+                  onClick={() => handleAddVariation(v.id)}
+                  size="xsmall"
+                  variant="outline"
+                >
+                  <RiAddLine className="size-3" />
+                  {v.color && (
+                    <div
+                      className="mr-1 h-3 w-3 shrink-0 rounded-[4px]"
+                      style={{ backgroundColor: v.color }}
+                    />
+                  )}
+                  {v.name}
+                </Button>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {!isValid && rollout.variations.length > 0 && (
         <Text className="text-ui-fg-error" size="small">
