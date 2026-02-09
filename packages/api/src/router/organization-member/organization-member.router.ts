@@ -27,4 +27,8 @@ export const organizationMemberRouter = {
     .mutation((opts) => {
       return services.updateMemberRole({ ...opts });
     }),
+
+  getCurrentMember: protectedOrganizationProcedure({ members: ["read"] })
+    .input(schemas.getCurrentMemberSchema)
+    .query(({ ctx }) => ctx.organizationMember),
 } satisfies TRPCRouterRecord;

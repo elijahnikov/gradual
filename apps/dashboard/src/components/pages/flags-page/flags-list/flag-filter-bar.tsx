@@ -24,6 +24,7 @@ import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
 import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
 import { flagsSearchParams, type SortBy } from "./flags-search-params";
@@ -44,6 +45,7 @@ export default function FlagFilterBar({
   projectSlug,
 }: FlagFilterBarProps) {
   const trpc = useTRPC();
+  const { canCreateEnvironments } = usePermissions();
   const [{ sortBy, sortOrder, search }, setQueryStates] =
     useQueryStates(flagsSearchParams);
 
@@ -278,7 +280,10 @@ export default function FlagFilterBar({
                 Maximum of 3 environments
               </div>
             )}
-            <DropdownMenuItem onClick={() => setCreateEnvDialogOpen(true)}>
+            <DropdownMenuItem
+              disabled={!canCreateEnvironments}
+              onClick={() => setCreateEnvDialogOpen(true)}
+            >
               <RiAddLine className="size-4 shrink-0 text-ui-fg-muted" />
               Create new environment
             </DropdownMenuItem>

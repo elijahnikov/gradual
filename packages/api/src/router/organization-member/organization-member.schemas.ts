@@ -41,3 +41,8 @@ export const updateMemberRoleSchema = createSelectSchema(member).pick({
   role: true,
   userId: true,
 });
+
+export type GetCurrentMemberInput = z.infer<typeof getCurrentMemberSchema>;
+export const getCurrentMemberSchema = z.object({
+  organizationSlug: z.string(),
+});

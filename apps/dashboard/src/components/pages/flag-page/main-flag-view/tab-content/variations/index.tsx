@@ -9,6 +9,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import VariationsItem from "./variations-item";
 
@@ -26,6 +27,7 @@ export default function FlagVariations({
   organizationSlug,
   projectSlug,
 }: FlagVariationsProps) {
+  const { canUpdateFlags } = usePermissions();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const newVariationRef = useRef<HTMLDivElement>(null);
@@ -133,7 +135,7 @@ export default function FlagVariations({
       {flagType !== "boolean" && (
         <div className="mb-3 flex justify-end">
           <Button
-            disabled={addMutation.isPending}
+            disabled={addMutation.isPending || !canUpdateFlags}
             onClick={handleAddVariation}
             size="small"
             variant="outline"
@@ -153,6 +155,7 @@ export default function FlagVariations({
                 flagType={flagType}
                 organizationSlug={organizationSlug}
                 projectSlug={projectSlug}
+                readOnly={!canUpdateFlags}
                 variation={variation}
                 variationCount={variations.length}
               />

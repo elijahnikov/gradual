@@ -6,11 +6,13 @@ export default function EditableDescription({
   updateCallback,
   loading = false,
   placeholder = "Add a description...",
+  readOnly = false,
 }: {
   description: string | null;
   updateCallback: (description: string | null) => void;
   loading?: boolean;
   placeholder?: string;
+  readOnly?: boolean;
 }) {
   const [value, setValue] = useState(description ?? "");
   const lastSavedValue = useRef(description ?? "");
@@ -50,7 +52,7 @@ export default function EditableDescription({
         "field-sizing-content w-full resize-none bg-transparent font-medium text-sm text-ui-fg-muted leading-5.5 placeholder:text-ui-fg-muted/50 focus:outline-none",
         loading && "animate-pulse"
       )}
-      disabled={loading}
+      disabled={loading || readOnly}
       onBlur={handleSave}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}

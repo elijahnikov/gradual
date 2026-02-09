@@ -66,10 +66,12 @@ export default function EditableTitle({
   title,
   updateCallback,
   loading = false,
+  readOnly = false,
 }: {
   title: string;
   updateCallback: (title: string) => void;
   loading?: boolean;
+  readOnly?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
@@ -178,12 +180,15 @@ export default function EditableTitle({
   }, [handleSave]);
 
   const handleClick = useCallback(() => {
+    if (readOnly) {
+      return;
+    }
     if (headingRef.current) {
       headingWidthRef.current =
         headingRef.current.getBoundingClientRect().width;
     }
     setIsEditing(true);
-  }, []);
+  }, [readOnly]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -244,7 +249,10 @@ export default function EditableTitle({
   return (
     <div className="w-full" ref={containerRef}>
       <Heading
-        className="wrap-break-word cursor-text select-none"
+        className={cn(
+          "wrap-break-word select-none",
+          !readOnly && "cursor-text"
+        )}
         onClick={handleClick}
         ref={headingRef}
       >

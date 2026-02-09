@@ -3,6 +3,7 @@ import { ContextMenu } from "@gradual/ui/context-menu";
 import { RiArrowRightUpLine, RiDeleteBinLine } from "@remixicon/react";
 import { Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import DeleteFlagDialog from "../dialogs/delete-flag-dialog";
 
 export default function FlagContextMenu({
@@ -15,6 +16,7 @@ export default function FlagContextMenu({
   const { organizationSlug, projectSlug } = useParams({
     from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
   });
+  const { canDeleteFlags } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   return (
@@ -42,6 +44,7 @@ export default function FlagContextMenu({
           </ContextMenu.Item>
           <ContextMenu.Item
             className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+            disabled={!canDeleteFlags}
             onClick={(e) => {
               e.preventDefault();
               setDeleteDialogOpen(true);
