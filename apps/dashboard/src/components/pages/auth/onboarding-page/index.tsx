@@ -6,25 +6,32 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo } from "react";
+import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import {
   type OnboardingStep,
   useOnboardingStore,
 } from "@/lib/stores/onboarding-store";
 import { useTRPC } from "@/lib/trpc";
 import { CurrentStepHeader } from "./current-step-header";
-import { PageHeader } from "./page-header";
-import { StepBreadcrumb } from "./step-breadcrumb";
+import { DashboardPreview } from "./preview";
+import { StepFooter } from "./step-breadcrumb";
 import { CreateOrgStep } from "./steps/create-org-step";
 import { GettingStartedStep } from "./steps/getting-started-step";
 import { InstallSDKStep } from "./steps/install-sdk-step";
 import { PlanSelectionStep } from "./steps/plan-selection-step";
+
 export interface OnboardingStepEntry {
   step: OnboardingStep;
   title: string;
   description: string;
   component: React.ReactNode;
   skippable: boolean;
+  formId?: string;
+  onSkip: () => void;
+  onContinue?: () => void;
+  continueLabel?: string;
 }
 
 export default function OnboardingPageComponent() {
@@ -37,11 +44,6 @@ export default function OnboardingPageComponent() {
     gcTime: 0,
     staleTime: 0,
   });
-  const { data: session } = useSuspenseQuery({
-    ...trpc.auth.getSession.queryOptions(),
-    gcTime: 0,
-    staleTime: 0,
-  });
 
   const {
     currentStep,
@@ -51,6 +53,8 @@ export default function OnboardingPageComponent() {
     setOrganizationSlug,
     organizationSlug,
   } = useOnboardingStore();
+
+  const resetPreview = useOnboardingPreviewStore((s) => s.reset);
 
   const { mutateAsync: updateUser, isPending: isUpdatingUser } = useMutation(
     trpc.auth.updateUser.mutationOptions({
@@ -65,6 +69,9 @@ export default function OnboardingPageComponent() {
 
   const handleStepComplete = useCallback(
     async (step: OnboardingStep, skipToNext = true) => {
+      useOnboardingPreviewStore.getState().setStepIsSubmitting(true);
+      useOnboardingPreviewStore.getState().setStepCanContinue(false);
+
       const nextStep = (step + 1) as OnboardingStep;
 
       if (step < 3) {
@@ -94,9 +101,13 @@ export default function OnboardingPageComponent() {
   );
 
   const handleFinish = useCallback(async () => {
+    useOnboardingPreviewStore.getState().setStepIsSubmitting(true);
+    useOnboardingPreviewStore.getState().setStepCanContinue(false);
+
     await updateUser({
       hasOnboarded: true,
     });
+    resetPreview();
 
     if (organizationSlug) {
       navigate({
@@ -106,7 +117,7 @@ export default function OnboardingPageComponent() {
     } else {
       navigate({ to: "/" });
     }
-  }, [updateUser, organizationSlug, navigate]);
+  }, [updateUser, organizationSlug, navigate, resetPreview]);
 
   const steps: OnboardingStepEntry[] = useMemo(
     () => [
@@ -119,55 +130,51 @@ export default function OnboardingPageComponent() {
           <GettingStartedStep
             isLoading={isUpdatingUser}
             onComplete={() => handleStepComplete(0)}
-            onSkip={() => handleSkip(0)}
           />
         ),
         skippable: true,
+        formId: "onboarding-step-0",
+        onSkip: () => handleSkip(0),
       },
       {
         step: 1,
         title: "Create your organization",
         description:
-          "Set up your organization, create your first project invite your teammates.",
+          "Set up your organization, create your first project and invite your teammates.",
         component: (
           <CreateOrgStep
             isLoading={isUpdatingUser}
-            onComplete={(organizationId, projectId, organizationSlug) => {
+            onComplete={(organizationId, projectId, orgSlug) => {
               setCreatedOrganizationId(organizationId);
               setCreatedProjectId(projectId);
-              setOrganizationSlug(organizationSlug);
+              setOrganizationSlug(orgSlug);
               handleStepComplete(1);
             }}
           />
         ),
         skippable: false,
+        formId: "onboarding-step-1",
+        onSkip: () => handleSkip(1),
       },
       {
         step: 2,
         title: "Install SDK",
         description: "Get started with our SDK",
-        component: (
-          <InstallSDKStep
-            isLoading={isUpdatingUser}
-            onComplete={() => handleStepComplete(2)}
-            onSkip={() => handleSkip(2)}
-          />
-        ),
+        component: <InstallSDKStep />,
         skippable: true,
+        onSkip: () => handleSkip(2),
+        onContinue: () => handleStepComplete(2),
       },
       {
         step: 3,
         title: "Choose Your Plan",
         description:
           "Choose the plan that best fits your needs. You can always upgrade or downgrade later.",
-        component: (
-          <PlanSelectionStep
-            isLoadingProp={isUpdatingUser}
-            onComplete={handleFinish}
-            onSkip={handleFinish}
-          />
-        ),
+        component: <PlanSelectionStep isLoadingProp={isUpdatingUser} />,
         skippable: true,
+        onSkip: handleFinish,
+        onContinue: handleFinish,
+        continueLabel: "Finish",
       },
     ],
     [
@@ -197,26 +204,75 @@ export default function OnboardingPageComponent() {
   );
 
   return (
-    <div className="flex min-h-screen min-w-screen items-center justify-center bg-ui-bg-subtle">
-      <PageHeader
-        email={session?.user?.email}
-        image={session?.user?.image ?? undefined}
-      />
-      <div className="flex flex-col">
-        <div className="">
-          {currentStepEntry && (
-            <div className="flex h-full min-w-[400px] flex-col gap-8">
-              <CurrentStepHeader
-                description={currentStepEntry.description}
-                title={currentStepEntry.title}
-              />
-              <div className="h-[70vh] max-h-[70vh]">
-                {currentStepEntry.component}
-              </div>
-            </div>
-          )}
+    <div className="flex h-screen w-screen">
+      <div className="flex w-full flex-col bg-ui-bg-subtle lg:w-1/2">
+        {currentStepEntry && (
+          <CurrentStepHeader
+            currentStep={currentStep}
+            description={currentStepEntry.description}
+            title={currentStepEntry.title}
+          />
+        )}
+
+        <div className="flex flex-1 flex-col items-center justify-center px-8">
+          <div className="flex w-full max-w-[640px] flex-col">
+            {currentStepEntry && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: 40, filter: "blur(4px)" }}
+                  initial={{ opacity: 0, x: -40, filter: "blur(4px)" }}
+                  key={currentStep}
+                  transition={{
+                    duration: 0.5,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  <div className="min-h-[400px]">
+                    {currentStepEntry.component}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </div>
         </div>
-        <StepBreadcrumb currentStep={currentStep} totalSteps={steps.length} />
+
+        {currentStepEntry && (
+          <StepFooter
+            continueLabel={currentStepEntry.continueLabel}
+            currentStep={currentStep}
+            formId={currentStepEntry.formId}
+            onContinue={currentStepEntry.onContinue}
+            onSkip={currentStepEntry.onSkip}
+            skippable={currentStepEntry.skippable}
+            totalSteps={steps.length}
+          />
+        )}
+      </div>
+
+      <div className="relative hidden overflow-hidden border-l bg-ui-bg-base lg:flex lg:w-1/2">
+        <div
+          className="absolute inset-0 z-0 opacity-50 dark:hidden"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.35) 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div
+          className="absolute inset-0 z-0 hidden opacity-50 dark:block"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+
+        <div className="z-10 h-full w-full p-8">
+          <DashboardPreview currentStep={currentStep} />
+        </div>
+
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-lg bg-linear-to-l from-ui-bg-base to-transparent" />
       </div>
     </div>
   );

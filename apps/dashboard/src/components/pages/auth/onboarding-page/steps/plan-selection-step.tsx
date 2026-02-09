@@ -4,19 +4,17 @@ import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import { Heading } from "@gradual/ui/heading";
-import { LoadingButton } from "@gradual/ui/loading-button";
 import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { RiCheckLine } from "@remixicon/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { authClient } from "@/auth/client";
+import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 import { useTRPC } from "@/lib/trpc";
 
 interface PlanSelectionStepProps {
-  onComplete: () => void;
-  onSkip: () => void;
   isLoadingProp?: boolean;
 }
 
@@ -27,7 +25,7 @@ const PLANS = [
     description: "Perfect for getting started",
     features: [
       "One project",
-      "Unlimted feature flags",
+      "Unlimited feature flags",
       "Up to two environments",
       "100k evaluations per month",
       "Basic analytics",
@@ -47,7 +45,6 @@ const PLANS = [
       "1 million evaluations per month",
       "Advanced analytics",
       "Priority support",
-      "Team collaboration",
     ],
     price: "$15",
     productId: "4e1c7974-4814-4d97-a117-aa72aad58771",
@@ -71,20 +68,31 @@ const PLANS = [
 ];
 
 export function PlanSelectionStep({
-  onComplete,
-  onSkip,
   isLoadingProp = false,
 }: PlanSelectionStepProps) {
   const trpc = useTRPC();
   const { createdOrganizationId } = useOnboardingStore();
+  const previewStore = useOnboardingPreviewStore;
   const { data: subscriptions } = useQuery({
     ...trpc.auth.listSubscriptionsByOrganizationId.queryOptions({
       organizationId: createdOrganizationId ?? "",
     }),
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: <>
+  const hasSubscription = (subscriptions as any)?.result?.items?.length > 0;
+
+  // Report step action state to footer
+  useEffect(() => {
+    previewStore
+      .getState()
+      .setStepCanContinue(!isLoadingProp && hasSubscription);
+    previewStore.getState().setStepIsSubmitting(isLoadingProp);
+  }, [isLoadingProp, hasSubscription, previewStore]);
+
   const handleSelectPlan = useCallback(
-    async (productId: string) => {
+    async (productId: string, planName: string) => {
+      previewStore.getState().setSelectedPlan(planName);
       try {
         await authClient.checkout({
           products: [productId],
@@ -94,13 +102,12 @@ export function PlanSelectionStep({
         console.error("Error initiating checkout:", error);
       }
     },
-    [createdOrganizationId]
+    [createdOrganizationId, previewStore]
   );
 
   return (
-    <div className="space-y-6">
-      {/** biome-ignore lint/suspicious/noExplicitAny: <> */}
-      {(subscriptions as any)?.result?.items?.length > 0 ? (
+    <div className="flex flex-col space-y-6">
+      {hasSubscription ? (
         <div className="mt-24 flex flex-col items-center justify-center gap-2">
           <RiCheckLine className="size-8 text-green-500" />
           <Heading>You have successfully chosen a plan</Heading>
@@ -112,20 +119,22 @@ export function PlanSelectionStep({
         <div className="grid gap-4 md:grid-cols-3">
           {PLANS.map((plan, index) => (
             <Card
-              className={cn("min-w-[300px] px-4 py-3 transition-all")}
+              className={cn(
+                "min-w-[200px] bg-ui-bg-base px-4 py-3 transition-all"
+              )}
               key={plan.slug}
             >
-              <Heading level={"h1"}>{plan.name}</Heading>
-              <Text className="text-ui-fg-subtle" weight="plus">
+              <Heading level="h1">{plan.name}</Heading>
+              <Text className="text-ui-fg-subtle text-xs" weight="plus">
                 {plan.description}
               </Text>
               <Text className="mt-2">
-                <span className="font-semibold text-4xl">{plan.price}</span>
+                <span className="font-semibold text-3xl">{plan.price}</span>
                 <span className="text-ui-fg-subtle">/month</span>
               </Text>
               <Button
                 className="mt-4 mb-2 w-full"
-                onClick={() => handleSelectPlan(plan.productId)}
+                onClick={() => handleSelectPlan(plan.productId, plan.name)}
                 variant={index === 0 ? "outline" : "gradual"}
               >
                 Select Plan
@@ -135,7 +144,7 @@ export function PlanSelectionStep({
                 {plan.features.map((feature) => (
                   <li className="flex items-center gap-2" key={feature}>
                     <RiCheckLine className="size-4 text-green-500" />
-                    <Text className="text-ui-fg-subtle" weight="plus">
+                    <Text className="text-ui-fg-subtle text-xs" weight="plus">
                       {feature}
                     </Text>
                   </li>
@@ -145,36 +154,6 @@ export function PlanSelectionStep({
           ))}
         </div>
       )}
-
-      <div className="absolute bottom-16 left-0 mt-auto flex w-1/2 translate-x-1/2 items-center justify-center gap-2 pt-4">
-        <div className="flex w-[400px] gap-2">
-          <Button
-            className="whitespace-nowrap"
-            disabled={isLoadingProp}
-            onClick={onSkip}
-            type="button"
-            variant="outline"
-          >
-            Skip
-          </Button>
-
-          <LoadingButton
-            className="w-full text-[13px]"
-            disabled={
-              isLoadingProp ||
-              !subscriptions ||
-              // biome-ignore lint/suspicious/noExplicitAny: <>
-              (subscriptions as any)?.result?.items?.length === 0
-            }
-            loading={isLoadingProp}
-            onClick={onComplete}
-            type="button"
-            variant="gradual"
-          >
-            Finish
-          </LoadingButton>
-        </div>
-      </div>
     </div>
   );
 }

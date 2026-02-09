@@ -19,8 +19,7 @@ export function PageHeader({ email, image }: PageHeaderProps) {
   };
 
   return (
-    <header className="absolute top-0 flex h-12 w-full items-center justify-between px-2">
-      <div />
+    <header className="flex h-12 w-full shrink-0 items-center justify-end px-4">
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
           <Avatar className="size-6 shadow-borders-base">
