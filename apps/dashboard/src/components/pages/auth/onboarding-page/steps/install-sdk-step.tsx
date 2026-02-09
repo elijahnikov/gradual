@@ -7,33 +7,37 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@gradual/ui/tabs";
 import { Text } from "@gradual/ui/text";
 import { RiEyeLine, RiEyeOffLine } from "@remixicon/react";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { codeToHtml } from "shiki";
+import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 import { useTRPC } from "@/lib/trpc";
 
-interface InstallSDKStepProps {
-  onComplete: () => void;
-  onSkip: () => void;
-  isLoading?: boolean;
+function HighlightedCode({ html }: { html: string }) {
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML is from shiki (trusted source)
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 const installCommands = {
-  npm: "npm install @gradual/flags-sdk",
-  pnpm: "pnpm install @gradual/flags-sdk",
-  yarn: "yarn add @gradual/flags-sdk",
-  bun: "bun install @gradual/flags-sdk",
+  npm: "npm install @gradual-so/sdk",
+  pnpm: "pnpm install @gradual-so/sdk",
+  yarn: "yarn add @gradual-so/sdk",
+  bun: "bun add @gradual-so/sdk",
 };
 const packageManagers = Object.keys(
   installCommands
 ) as (keyof typeof installCommands)[];
 
-export function InstallSDKStep({
-  onComplete,
-  onSkip,
-  isLoading = false,
-}: InstallSDKStepProps) {
+export function InstallSDKStep() {
   const trpc = useTRPC();
   const { createdOrganizationId, createdProjectId } = useOnboardingStore();
+  const previewStore = useOnboardingPreviewStore;
+
+  useEffect(() => {
+    previewStore.getState().setStepCanContinue(true);
+    previewStore.getState().setStepIsSubmitting(false);
+  }, [previewStore]);
+
   const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [selectedPackageManager, setSelectedPackageManager] =
     useState<keyof typeof installCommands>("npm");
@@ -52,25 +56,77 @@ export function InstallSDKStep({
   );
 
   const codeExample = useMemo(() => {
-    return `import { Gradual } from '@gradual/flags-sdk';
+    return `import { createGradual } from '@gradual-so/sdk';
 
-const gradual = new Gradual({
-  apiKey: env.GRADUAL_API_KEY,
+const gradual = createGradual({
+  apiKey: process.env.GRADUAL_API_KEY,
   environment: 'production'
 });
 
-const isEnabled = await gradual.isEnabled('feature-flag-key');
+// Boolean flags
+const enabled = await gradual.isEnabled('new-feature');
 
-if (isEnabled) {
-    console.log('Feature is active!');
-}`;
+// Typed values (inferred from fallback)
+const theme = await gradual.get('theme', { fallback: 'dark' });
+
+// With user context
+gradual.identify({ user: { id: '123', plan: 'pro' } });`;
   }, []);
 
-  const codeLines = codeExample.split("\n");
-  const lineCount = codeLines.length;
+  const [highlightedHtml, setHighlightedHtml] = useState<string>("");
+  const [highlightedApiKey, setHighlightedApiKey] = useState<string>("");
+  const [highlightedInstall, setHighlightedInstall] = useState<string>("");
+
+  const apiKeyDisplay = useMemo(() => {
+    if (!data) {
+      return "";
+    }
+    const value = showApiKey
+      ? data.key
+      : `${data.keyPrefix}${"•".repeat((data.key?.length ?? 0) - (data.keyPrefix?.length ?? 0))}`;
+    return `GRADUAL_API_KEY=${value}`;
+  }, [data, showApiKey]);
+
+  useEffect(() => {
+    codeToHtml(codeExample, {
+      lang: "typescript",
+      themes: {
+        light: "github-light-default",
+        dark: "github-dark-default",
+      },
+    }).then(setHighlightedHtml);
+  }, [codeExample]);
+
+  useEffect(() => {
+    if (!apiKeyDisplay) {
+      return;
+    }
+    codeToHtml(apiKeyDisplay, {
+      lang: "shell",
+      themes: {
+        light: "github-light-default",
+        dark: "github-dark-default",
+      },
+    }).then(setHighlightedApiKey);
+  }, [apiKeyDisplay]);
+
+  useEffect(() => {
+    codeToHtml(selectedInstallCommand, {
+      lang: "shell",
+      themes: {
+        light: "github-light-default",
+        dark: "github-dark-default",
+      },
+    }).then(setHighlightedInstall);
+  }, [selectedInstallCommand]);
+
+  const handlePackageManagerChange = (pm: string) => {
+    setSelectedPackageManager(pm as keyof typeof installCommands);
+    previewStore.getState().setSelectedPackageManager(pm);
+  };
 
   return (
-    <div className="h-full w-full space-y-6">
+    <div className="mx-auto flex h-full w-full max-w-[480px] flex-col space-y-6">
       <div className="space-y-4">
         <Field className="-space-y-2">
           <FieldLabel>Install the SDK</FieldLabel>
@@ -79,27 +135,37 @@ if (isEnabled) {
           </FieldDescription>
         </Field>
 
-        <div className="relative rounded-lg bg-muted">
+        <div className="relative rounded-lg border bg-muted">
           <Tabs
             defaultValue={selectedPackageManager}
-            onValueChange={setSelectedPackageManager}
+            onValueChange={handlePackageManagerChange}
           >
-            <TabsList className="-mb-2 w-full bg-muted">
+            <TabsList className="-mb-2 h-8 px-2 shadow-elevation-card-rest">
               {packageManagers.map((packageManager) => (
-                <TabsTab key={packageManager} value={packageManager}>
+                <TabsTab
+                  className="h-5! px-2 text-[12px]! sm:max-h-5!"
+                  key={packageManager}
+                  value={packageManager}
+                >
                   {packageManager}
                 </TabsTab>
               ))}
             </TabsList>
             {packageManagers.map((packageManager) => (
               <TabsPanel key={packageManager} value={packageManager}>
-                <Card className="flex items-center gap-2 rounded-lg bg-ui-bg-base px-3 py-2 font-mono text-sm">
-                  <Text
-                    className="flex-1 font-medium font-mono text-ui-fg-base text-xs"
-                    weight={"plus"}
-                  >
-                    {selectedInstallCommand}
-                  </Text>
+                <Card className="relative flex items-center gap-2 rounded-lg bg-ui-bg-base px-3 py-2 text-xs [&_code]:text-xs [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-0">
+                  {highlightedInstall ? (
+                    <div className="flex-1">
+                      <HighlightedCode html={highlightedInstall} />
+                    </div>
+                  ) : (
+                    <Text
+                      className="flex-1 font-medium font-mono text-ui-fg-base text-xs"
+                      weight="plus"
+                    >
+                      {selectedInstallCommand}
+                    </Text>
+                  )}
                   <CopyButton text={selectedInstallCommand} />
                 </Card>
               </TabsPanel>
@@ -115,23 +181,17 @@ if (isEnabled) {
             SDK.
           </FieldDescription>
         </Field>
-        <Card className="relative mt-1 flex min-h-12 items-center gap-2 rounded-lg bg-ui-bg-base px-3 py-2 font-mono text-sm">
+        <Card className="relative mt-1 flex min-h-12 items-center gap-2 rounded-lg bg-ui-bg-base text-xs [&_code]:text-xs [&_pre]:bg-transparent!">
           {isLoadingApiKey && !data ? (
-            <Skeleton className="h-4 w-full" />
+            <Skeleton className="mx-3 h-4 w-full" />
+          ) : highlightedApiKey ? (
+            <HighlightedCode html={highlightedApiKey} />
           ) : (
-            <div>
-              <Text className="font-medium font-mono text-ui-fg-base text-xs">
-                GRADUAL_API_KEY=
-                {showApiKey
-                  ? data?.key
-                  : data?.keyPrefix +
-                    ".".repeat(
-                      (data?.key?.length ?? 0) - (data?.keyPrefix?.length ?? 0)
-                    )}
-              </Text>
-            </div>
+            <Text className="px-3 font-medium font-mono text-ui-fg-base text-xs">
+              {apiKeyDisplay}
+            </Text>
           )}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
+          <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-2">
             <Button
               aria-label="Show API key"
               className="size-6 disabled:opacity-100"
@@ -158,42 +218,18 @@ if (isEnabled) {
         </Field>
 
         <div className="relative">
-          <Card className="overflow-x-auto rounded-lg bg-ui-bg-base p-4 text-xs">
-            <div className="flex gap-4 font-mono">
-              <div className="select-none pr-4 text-right text-ui-fg-muted">
-                {Array.from({ length: lineCount }, (_, i) => (
-                  <div className="leading-normal" key={i}>
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-              <code className="flex-1 font-medium text-ui-fg-base text-xs">
-                {codeLines.map((line, i) => (
-                  <div className="whitespace-pre leading-normal" key={i}>
-                    {line || "\u00A0"}
-                  </div>
-                ))}
-              </code>
-            </div>
+          <Card className="overflow-x-auto rounded-lg bg-ui-bg-base text-xs [&_code]:text-xs [&_pre]:bg-transparent! [&_pre]:p-0">
+            {highlightedHtml ? (
+              <HighlightedCode html={highlightedHtml} />
+            ) : (
+              <pre className="p-4">
+                <code className="font-mono text-ui-fg-base text-xs">
+                  {codeExample}
+                </code>
+              </pre>
+            )}
           </Card>
           <CopyButton className="absolute top-3 right-3" text={codeExample} />
-        </div>
-      </div>
-
-      <div className="absolute bottom-16 left-0 mt-auto flex w-1/2 translate-x-1/2 items-center justify-center gap-2 pt-4">
-        <div className="flex w-[400px] gap-2">
-          <Button onClick={onSkip} type="button" variant="outline">
-            Skip
-          </Button>
-          <Button
-            className="w-full text-[13px]"
-            disabled={isLoading}
-            onClick={onComplete}
-            type="button"
-            variant="gradual"
-          >
-            Continue
-          </Button>
         </div>
       </div>
     </div>

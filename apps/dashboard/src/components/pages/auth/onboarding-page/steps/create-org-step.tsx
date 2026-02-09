@@ -16,17 +16,19 @@ import {
 } from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
 import Loader from "@gradual/ui/loader";
-import { LoadingButton } from "@gradual/ui/loading-button";
 import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
-import { RiArrowDownSFill } from "@remixicon/react";
+import { RiArrowDownSFill, RiBuilding2Fill } from "@remixicon/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDebounce } from "react-use";
 import z from "zod/v4";
+import { useFileUpload } from "@/lib/hooks/use-file-upload";
+import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import { useTRPC } from "@/lib/trpc";
+import { formatFormErrors } from "../utils";
 
 interface CreateOrgStepProps {
   onComplete: (
@@ -65,6 +67,7 @@ export function CreateOrgStep({
 }: CreateOrgStepProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const previewStore = useOnboardingPreviewStore;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,28 @@ export function CreateOrgStep({
 
   const createOrg = useMutation(trpc.organization.create.mutationOptions());
   const createProject = useMutation(trpc.project.create.mutationOptions());
+
+  const [
+    { files: logoFiles, isDragging: isLogoDragging },
+    {
+      handleDragEnter: handleLogoDragEnter,
+      handleDragLeave: handleLogoDragLeave,
+      handleDragOver: handleLogoDragOver,
+      handleDrop: handleLogoDrop,
+      openFileDialog: openLogoDialog,
+      getInputProps: getLogoInputProps,
+    },
+  ] = useFileUpload({
+    multiple: false,
+    maxFiles: 1,
+    maxSize: 1024 * 1024 * 5,
+    accept: "image/*",
+    onFilesChange: (newFiles) => {
+      if (newFiles.length > 0 && newFiles[0]?.preview) {
+        previewStore.getState().setOrgLogoPreviewUrl(newFiles[0].preview);
+      }
+    },
+  });
 
   const form = useForm({
     defaultValues: {
@@ -99,9 +124,31 @@ export function CreateOrgStep({
           return;
         }
 
+        let logoUrl: string | undefined;
+        if (logoFiles.length > 0 && logoFiles[0]?.file instanceof File) {
+          const file = logoFiles[0].file as File;
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const uploadError = await response.json();
+            throw new Error(uploadError.error || "Failed to upload logo");
+          }
+
+          const { url } = await response.json();
+          logoUrl = url;
+          previewStore.getState().setOrgLogoPreviewUrl(url);
+        }
+
         const organization = await createOrg.mutateAsync({
           name: value.orgName,
           slug: value.orgSlug,
+          logo: logoUrl,
         });
 
         const project = await createProject.mutateAsync({
@@ -149,14 +196,23 @@ export function CreateOrgStep({
         .replace(/^-+|-+$/g, "");
       if (autoSlug) {
         form.setFieldValue("orgSlug", autoSlug);
+        previewStore.getState().setOrgSlug(autoSlug);
         if (slugIsEmpty) {
           setIsSlugManuallyEdited(false);
         }
       }
     }
-  }, [orgName, isSlugManuallyEdited, form]);
+  }, [orgName, isSlugManuallyEdited, form, previewStore]);
 
   const [debouncedSlug, setDebouncedSlug] = useState(orgSlug);
+  const orgSlugRef = useRef(orgSlug);
+  orgSlugRef.current = orgSlug;
+
+  useEffect(() => {
+    if (orgSlug !== debouncedSlug) {
+      setSlugAvailabilityStatus("idle");
+    }
+  }, [orgSlug, debouncedSlug]);
 
   useDebounce(
     () => {
@@ -179,14 +235,18 @@ export function CreateOrgStep({
 
       setSlugAvailabilityStatus("checking");
       try {
-        const isAvailable = await queryClient.fetchQuery(
+        await queryClient.fetchQuery(
           trpc.organization.checkSlugAvailability.queryOptions({
             slug: debouncedSlug,
           })
         );
-        setSlugAvailabilityStatus(isAvailable ? "available" : "unavailable");
+        if (orgSlugRef.current === debouncedSlug) {
+          setSlugAvailabilityStatus("available");
+        }
       } catch {
-        setSlugAvailabilityStatus("idle");
+        if (orgSlugRef.current === debouncedSlug) {
+          setSlugAvailabilityStatus("unavailable");
+        }
       }
     };
 
@@ -209,18 +269,59 @@ export function CreateOrgStep({
 
   const isFormValid =
     !!(orgName && orgSlug && slugRegex.test(orgSlug)) &&
-    slugAvailabilityStatus !== "unavailable" &&
-    slugAvailabilityStatus !== "checking";
+    slugAvailabilityStatus === "available";
+
+  useEffect(() => {
+    previewStore
+      .getState()
+      .setStepCanContinue(!(isSubmitting || isLoading) && isFormValid);
+    previewStore.getState().setStepIsSubmitting(isSubmitting || isLoading);
+  }, [isSubmitting, isLoading, isFormValid, previewStore]);
 
   return (
     <form
-      className="relative h-full w-full space-y-6 pt-6"
+      className="mx-auto flex h-full w-full max-w-[480px] flex-col space-y-8"
+      id="onboarding-step-1"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
       }}
     >
-      <div className="flex items-center gap-x-2">
+      <Card
+        className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl bg-white px-1 py-3 transition-colors has-disabled:pointer-events-none has-[input:focus]:border-ring has-disabled:opacity-50 has-[input:focus]:ring-[3px] has-[input:focus]:ring-ring/50 data-[dragging=true]:border-interactive dark:bg-ui-bg-field"
+        data-dragging={isLogoDragging || undefined}
+        onClick={openLogoDialog}
+        onDragEnter={handleLogoDragEnter}
+        onDragLeave={handleLogoDragLeave}
+        onDragOver={handleLogoDragOver}
+        onDrop={handleLogoDrop}
+      >
+        <input
+          {...getLogoInputProps()}
+          aria-label="Upload organization logo"
+          className="sr-only"
+        />
+        <div className="flex flex-col items-center justify-center gap-2 text-center">
+          {logoFiles.length > 0 && logoFiles[0]?.preview ? (
+            <img
+              alt="Organization logo"
+              className="h-16 w-16 rounded-full object-cover shadow-elevation-card-rest"
+              height={64}
+              src={logoFiles[0].preview}
+              width={64}
+            />
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ui-bg-base shadow-borders-base">
+              <RiBuilding2Fill className="size-5 text-secondary-foreground/70" />
+            </div>
+          )}
+          <Text className="text-ui-fg-muted" size="xsmall" weight="plus">
+            Upload organization logo
+          </Text>
+        </div>
+      </Card>
+
+      <div className="flex w-full items-start gap-x-2">
         <form.Field
           children={(field) => {
             const hasErrors = field.state.meta.errors.length > 0;
@@ -228,35 +329,23 @@ export function CreateOrgStep({
               hasErrors &&
               (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field className="-mt-6" data-invalid={shouldShowError}>
+              <Field className="flex-1" data-invalid={shouldShowError}>
                 <FieldLabel>Organization</FieldLabel>
                 <Input
                   aria-invalid={shouldShowError}
-                  className="min-w-42"
                   id={field.name}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    previewStore.getState().setOrgName(e.target.value);
+                  }}
                   placeholder="Acme Inc."
                   value={field.state.value}
                 />
                 {shouldShowError && (
                   <FieldError>
-                    {field.state.meta.errors
-                      .map((error) => {
-                        if (typeof error === "string") {
-                          return error;
-                        }
-                        if (
-                          error &&
-                          typeof error === "object" &&
-                          "message" in error
-                        ) {
-                          return String(error.message);
-                        }
-                        return String(error);
-                      })
-                      .join(", ")}
+                    {formatFormErrors(field.state.meta.errors)}
                   </FieldError>
                 )}
               </Field>
@@ -272,50 +361,48 @@ export function CreateOrgStep({
               hasErrors &&
               (field.state.meta.isTouched || form.state.isSubmitted);
             return (
-              <Field className="w-full" data-invalid={shouldShowError}>
-                <Input
-                  aria-invalid={shouldShowError}
-                  className="w-full"
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                    setIsSlugManuallyEdited(true);
-                  }}
-                  placeholder="acme-inc"
-                  value={field.state.value}
-                />
-                {slugAvailabilityStatus === "checking" && (
-                  <Loader className="absolute -right-6 mt-2 animate-spin" />
-                )}
-                {slugAvailabilityStatus === "available" && (
-                  <FieldDescription className="absolute mt-9">
-                    <span className="text-green-600">✓ Available</span>
-                  </FieldDescription>
-                )}
-                {slugAvailabilityStatus === "unavailable" && (
-                  <FieldDescription className="absolute mt-9">
-                    <span className="text-destructive">✗ Already taken</span>
-                  </FieldDescription>
-                )}
+              <Field
+                className="relative flex w-full flex-1"
+                data-invalid={shouldShowError}
+              >
+                <FieldLabel>Slug</FieldLabel>
+                <div className="relative w-full">
+                  <div className="flex rounded-md">
+                    <span className="relative -top-px -left-px -z-10 inline-flex h-8.5 items-center rounded-s-md border border-r-0 bg-ui-bg-base px-3 text-muted-foreground text-sm">
+                      gradual.so/
+                    </span>
+                    <Input
+                      aria-invalid={shouldShowError}
+                      className="-ms-px w-full rounded-s-none"
+                      id={field.name}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                        setIsSlugManuallyEdited(true);
+                        previewStore.getState().setOrgSlug(e.target.value);
+                      }}
+                      placeholder="acme-inc"
+                      value={field.state.value}
+                    />
+                  </div>
+                  {slugAvailabilityStatus === "checking" && (
+                    <Loader className="absolute top-[16px] right-2 -translate-y-1/2 animate-spin" />
+                  )}
+                </div>
+                <div className="absolute -bottom-5 left-0">
+                  {slugAvailabilityStatus === "available" && (
+                    <span className="text-green-600 text-xs">Available</span>
+                  )}
+                  {slugAvailabilityStatus === "unavailable" && (
+                    <span className="text-destructive text-xs">
+                      This slug is already taken
+                    </span>
+                  )}
+                </div>
                 {shouldShowError && (
                   <FieldError>
-                    {field.state.meta.errors
-                      .map((error) => {
-                        if (typeof error === "string") {
-                          return error;
-                        }
-                        if (
-                          error &&
-                          typeof error === "object" &&
-                          "message" in error
-                        ) {
-                          return String(error.message);
-                        }
-                        return String(error);
-                      })
-                      .join(", ")}
+                    {formatFormErrors(field.state.meta.errors)}
                   </FieldError>
                 )}
               </Field>
@@ -358,10 +445,12 @@ export function CreateOrgStep({
                 return;
               }
 
-              field.handleChange([
+              const updated = [
                 ...teamMembers,
                 { email, role: "member" as const },
-              ]);
+              ];
+              field.handleChange(updated);
+              previewStore.getState().setTeamMembers(updated);
               setCurrentEmailInput("");
             };
 
@@ -375,7 +464,9 @@ export function CreateOrgStep({
             };
 
             const handleRemoveMember = (index: number) => {
-              field.handleChange(teamMembers.filter((_, i) => i !== index));
+              const updated = teamMembers.filter((_, i) => i !== index);
+              field.handleChange(updated);
+              previewStore.getState().setTeamMembers(updated);
             };
 
             const handleRoleChange = (
@@ -384,8 +475,12 @@ export function CreateOrgStep({
             ) => {
               const updated = [...teamMembers];
               if (updated[index]) {
-                updated[index] = { email: updated[index].email, role };
+                updated[index] = {
+                  email: updated[index].email,
+                  role,
+                };
                 field.handleChange(updated);
+                previewStore.getState().setTeamMembers(updated);
               }
             };
 
@@ -464,25 +559,6 @@ export function CreateOrgStep({
           {error}
         </div>
       )}
-
-      <div className="absolute bottom-0 mt-auto flex w-full gap-2 pt-4">
-        <LoadingButton
-          className="w-full text-[13px]"
-          disabled={
-            !form.state.canSubmit ||
-            isSubmitting ||
-            isLoading ||
-            !isFormValid ||
-            slugAvailabilityStatus !== "available"
-          }
-          loading={isSubmitting || isLoading}
-          size="base"
-          type="submit"
-          variant="gradual"
-        >
-          Continue
-        </LoadingButton>
-      </div>
     </form>
   );
 }

@@ -15,15 +15,16 @@ import {
   FieldLabel,
 } from "@gradual/ui/field";
 import { Input } from "@gradual/ui/input";
-import { LoadingButton } from "@gradual/ui/loading-button";
 import { Text } from "@gradual/ui/text";
 import { RiUserFill } from "@remixicon/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import z from "zod/v4";
 import { useFileUpload } from "@/lib/hooks/use-file-upload";
+import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import { useTRPC } from "@/lib/trpc";
+import { formatFormErrors } from "../utils";
 
 const roles = [
   "Software Engineer",
@@ -48,7 +49,6 @@ const roles = [
 
 interface GettingStartedStepProps {
   onComplete: () => void;
-  onSkip: () => void;
   isLoading?: boolean;
 }
 
@@ -60,7 +60,6 @@ const gettingStartedSchema = z.object({
 
 export function GettingStartedStep({
   onComplete,
-  onSkip,
   isLoading = false,
 }: GettingStartedStepProps) {
   const trpc = useTRPC();
@@ -76,6 +75,21 @@ export function GettingStartedStep({
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const previewStore = useOnboardingPreviewStore;
+
+  useEffect(() => {
+    previewStore.getState().setStepCanContinue(!(isSubmitting || isLoading));
+    previewStore.getState().setStepIsSubmitting(isSubmitting || isLoading);
+  }, [isSubmitting, isLoading, previewStore]);
+
+  useEffect(() => {
+    if (session?.user?.name) {
+      previewStore.getState().setDisplayName(session.user.name);
+    }
+    if (session?.user?.image) {
+      previewStore.getState().setAvatarPreviewUrl(session.user.image);
+    }
+  }, [session?.user?.name, session?.user?.image, previewStore]);
 
   const [
     { files, isDragging },
@@ -92,6 +106,11 @@ export function GettingStartedStep({
     maxFiles: 1,
     maxSize: 1024 * 1024 * 5,
     accept: "image/*",
+    onFilesChange: (newFiles) => {
+      if (newFiles.length > 0 && newFiles[0]?.preview) {
+        previewStore.getState().setAvatarPreviewUrl(newFiles[0].preview);
+      }
+    },
   });
 
   const form = useForm({
@@ -131,6 +150,7 @@ export function GettingStartedStep({
 
           const { url } = await response.json();
           avatarUrl = url;
+          previewStore.getState().setAvatarPreviewUrl(url);
         }
 
         await updateUser({
@@ -147,7 +167,8 @@ export function GettingStartedStep({
 
   return (
     <form
-      className="h-full w-full space-y-6"
+      className="mx-auto flex h-full w-full max-w-[480px] flex-col space-y-6"
+      id="onboarding-step-0"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
@@ -194,7 +215,7 @@ export function GettingStartedStep({
               </div>
             )}
           </div>
-          <Text className="text-ui-fg-muted" size={"xsmall"} weight={"plus"}>
+          <Text className="text-ui-fg-muted" size="xsmall" weight="plus">
             Drag & drop or click to browse
           </Text>
         </div>
@@ -212,7 +233,10 @@ export function GettingStartedStep({
                 id={field.name}
                 name={field.name}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                  previewStore.getState().setDisplayName(e.target.value);
+                }}
                 placeholder="Enter your desired display name"
                 value={field.state.value}
               />
@@ -221,23 +245,7 @@ export function GettingStartedStep({
               </FieldDescription>
               {isInvalid && (
                 <FieldError>
-                  {field.state.meta.errors
-                    .map((error) => {
-                      if (typeof error === "string") {
-                        return error;
-                      }
-                      if (
-                        error &&
-                        typeof error === "object" &&
-                        "message" in error &&
-                        typeof (error as { message: unknown }).message ===
-                          "string"
-                      ) {
-                        return (error as { message: string }).message;
-                      }
-                      return String(error);
-                    })
-                    .join(", ")}
+                  {formatFormErrors(field.state.meta.errors)}
                 </FieldError>
               )}
             </Field>
@@ -268,7 +276,10 @@ export function GettingStartedStep({
                   {roles.map((role) => (
                     <DropdownMenuItem
                       key={role}
-                      onClick={() => field.handleChange(role)}
+                      onClick={() => {
+                        field.handleChange(role);
+                        previewStore.getState().setJobRole(role);
+                      }}
                     >
                       {role}
                     </DropdownMenuItem>
@@ -280,11 +291,7 @@ export function GettingStartedStep({
               </FieldDescription>
               {isInvalid && (
                 <FieldError>
-                  {field.state.meta.errors.map((error, i) => (
-                    <Text className="text-ui-fg-error" key={i}>
-                      {typeof error === "string" ? error : String(error)}
-                    </Text>
-                  ))}
+                  {formatFormErrors(field.state.meta.errors)}
                 </FieldError>
               )}
             </Field>
@@ -292,22 +299,6 @@ export function GettingStartedStep({
         }}
         name="jobRole"
       />
-
-      <div className="absolute bottom-16 left-0 mt-auto flex w-1/2 translate-x-1/2 items-center justify-center gap-2 pt-4">
-        <div className="flex w-[400px] gap-2">
-          <Button onClick={onSkip} type="button" variant="outline">
-            Skip
-          </Button>
-          <LoadingButton
-            className="w-full text-[13px]"
-            loading={isSubmitting || isLoading}
-            type="submit"
-            variant="gradual"
-          >
-            Continue
-          </LoadingButton>
-        </div>
-      </div>
     </form>
   );
 }

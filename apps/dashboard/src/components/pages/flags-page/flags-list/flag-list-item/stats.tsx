@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
-import { RiCalendarLine, RiKeyFill, RiPulseFill } from "@remixicon/react";
+import { RiCalendarLine, RiKey2Fill, RiPulseFill } from "@remixicon/react";
 import dayjs from "dayjs";
 
 export default function FlagListItemStats({
@@ -22,7 +22,7 @@ export default function FlagListItemStats({
     <TooltipProvider>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1">
-          <RiKeyFill className="size-4 text-ui-fg-muted" />
+          <RiKey2Fill className="size-4 text-ui-fg-muted" />
           <Text className="font-mono text-ui-fg-muted" size="xsmall">
             {flagKey}
           </Text>
