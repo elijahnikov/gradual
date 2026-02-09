@@ -15,6 +15,7 @@ import type { TargetType } from "./types";
 
 interface AddNewTargetButtonProps {
   onAddTarget: (type: TargetType) => void;
+  disabled?: boolean;
 }
 
 const TARGET_OPTIONS: {
@@ -29,7 +30,16 @@ const TARGET_OPTIONS: {
 
 export default function AddNewTargetButton({
   onAddTarget,
+  disabled = false,
 }: AddNewTargetButtonProps) {
+  if (disabled) {
+    return (
+      <Button className="size-6 bg-ui-bg-base" disabled variant="outline">
+        <RiAddFill className="size-4 shrink-0" />
+      </Button>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>

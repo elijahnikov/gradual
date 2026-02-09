@@ -42,6 +42,7 @@ import { useMemo, useState } from "react";
 import DeleteFlagDialog from "@/components/common/dialogs/delete-flag-dialog";
 import EditableDescription from "@/components/common/editable-description";
 import EditableTitle from "@/components/common/editable-title";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 
 interface FlagSidebarProps {
@@ -69,6 +70,7 @@ export default function FlagSidebar({
   >(null);
   const [maintainerSearchTerm, setMaintainerSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { canUpdateFlags, canDeleteFlags } = usePermissions();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -223,6 +225,7 @@ export default function FlagSidebar({
         <div className="flex items-start justify-between gap-2">
           <EditableTitle
             loading={savingField === "name"}
+            readOnly={!canUpdateFlags}
             title={displayName}
             updateCallback={handleNameUpdate}
           />
@@ -244,6 +247,7 @@ export default function FlagSidebar({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+                disabled={!canDeleteFlags}
                 onClick={() => setDeleteDialogOpen(true)}
               >
                 <RiDeleteBinLine />
@@ -260,6 +264,7 @@ export default function FlagSidebar({
         <EditableDescription
           description={displayDescription}
           loading={savingField === "description"}
+          readOnly={!canUpdateFlags}
           updateCallback={handleDescriptionUpdate}
         />
       </div>
@@ -287,6 +292,7 @@ export default function FlagSidebar({
           Maintainer
         </Text>
         <Combobox
+          disabled={!canUpdateFlags}
           items={memberItems}
           onValueChange={(value) => {
             handleMaintainerUpdate(value);

@@ -6,12 +6,19 @@ export const Route = createFileRoute("/_organization/$organizationSlug")({
     const { organizationSlug } = params;
     const { trpc, queryClient } = context;
     try {
-      const organization = await queryClient.ensureQueryData(
-        trpc.organization.getBySlug.queryOptions({
-          organizationSlug: organizationSlug as string,
-        })
-      );
-      return { organization };
+      const [organization, currentMember] = await Promise.all([
+        queryClient.ensureQueryData(
+          trpc.organization.getBySlug.queryOptions({
+            organizationSlug: organizationSlug as string,
+          })
+        ),
+        queryClient.ensureQueryData(
+          trpc.organizationMember.getCurrentMember.queryOptions({
+            organizationSlug: organizationSlug as string,
+          })
+        ),
+      ]);
+      return { organization, currentMember };
     } catch (error) {
       console.error("Error loading organization", error);
       throw redirect({ to: "/" });

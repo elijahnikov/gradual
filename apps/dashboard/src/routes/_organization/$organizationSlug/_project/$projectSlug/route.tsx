@@ -12,6 +12,12 @@ export const Route = createFileRoute(
         projectSlug: params.projectSlug as string,
       })
     );
+    void queryClient.prefetchQuery(
+      trpc.project.getBySlug.queryOptions({
+        organizationSlug: params.organizationSlug as string,
+        slug: params.projectSlug as string,
+      })
+    );
   },
 });
 

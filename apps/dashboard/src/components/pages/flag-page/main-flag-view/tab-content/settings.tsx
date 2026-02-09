@@ -20,6 +20,8 @@ import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { type KeyboardEvent, useState } from "react";
 import DeleteFlagDialog from "@/components/common/dialogs/delete-flag-dialog";
+import { PermissionTooltip } from "@/components/common/permission-tooltip";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 
 type FlagData = RouterOutputs["featureFlags"]["getByKey"];
@@ -219,6 +221,7 @@ function DangerZone({
   projectSlug: string;
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { canUpdateFlags, canDeleteFlags } = usePermissions();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -275,19 +278,24 @@ function DangerZone({
                 : "Mark this flag as archived. It will no longer be evaluated by SDKs."}
             </Text>
           </div>
-          <LoadingButton
-            loading={archiveMutation.isPending}
-            onClick={handleArchiveToggle}
-            size="small"
-            variant="outline"
+          <PermissionTooltip
+            hasPermission={canUpdateFlags}
+            message="You don't have permission to archive flags"
           >
-            {isArchived ? (
-              <RiInboxUnarchiveLine className="size-4" />
-            ) : (
-              <RiArchiveLine className="size-4" />
-            )}
-            {isArchived ? "Unarchive" : "Archive"}
-          </LoadingButton>
+            <LoadingButton
+              loading={archiveMutation.isPending}
+              onClick={handleArchiveToggle}
+              size="small"
+              variant="outline"
+            >
+              {isArchived ? (
+                <RiInboxUnarchiveLine className="size-4" />
+              ) : (
+                <RiArchiveLine className="size-4" />
+              )}
+              {isArchived ? "Unarchive" : "Archive"}
+            </LoadingButton>
+          </PermissionTooltip>
         </div>
         <Separator />
         <div className="flex items-center justify-between p-3">
@@ -300,14 +308,19 @@ function DangerZone({
               undone.
             </Text>
           </div>
-          <Button
-            onClick={() => setDeleteDialogOpen(true)}
-            size="small"
-            variant="destructive"
+          <PermissionTooltip
+            hasPermission={canDeleteFlags}
+            message="You don't have permission to delete flags"
           >
-            <RiDeleteBinLine className="size-4" />
-            Delete
-          </Button>
+            <Button
+              onClick={() => setDeleteDialogOpen(true)}
+              size="small"
+              variant="destructive"
+            >
+              <RiDeleteBinLine className="size-4" />
+              Delete
+            </Button>
+          </PermissionTooltip>
         </div>
       </div>
       <DeleteFlagDialog

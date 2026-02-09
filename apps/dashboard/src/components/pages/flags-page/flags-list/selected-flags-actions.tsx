@@ -22,6 +22,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
 import { getBaseUrl } from "@/lib/url";
@@ -36,6 +37,7 @@ export default function SelectedFlagsActions({
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const { selectedFlags, clearSelectedFlags } = useSelectedFlagsStore();
+  const { canDeleteFlags } = usePermissions();
 
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -167,6 +169,7 @@ export default function SelectedFlagsActions({
 
           <DropdownMenuItem
             className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+            disabled={!canDeleteFlags}
             onClick={handleDeleteFlags}
           >
             <RiDeleteBinLine className="size-3" />

@@ -36,6 +36,7 @@ interface VariationsItemProps {
   organizationSlug: string;
   projectSlug: string;
   variationCount: number;
+  readOnly?: boolean;
 }
 
 export default function VariationsItem({
@@ -45,6 +46,7 @@ export default function VariationsItem({
   organizationSlug,
   projectSlug,
   variationCount,
+  readOnly = false,
 }: VariationsItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(variation.name);
@@ -65,9 +67,12 @@ export default function VariationsItem({
     organizationSlug,
   }).queryKey;
 
-  const canEdit = flagType !== "boolean";
+  const canEdit = flagType !== "boolean" && !readOnly;
   const canDelete =
-    flagType !== "boolean" && !variation.isDefault && variationCount > 2;
+    flagType !== "boolean" &&
+    !variation.isDefault &&
+    variationCount > 2 &&
+    !readOnly;
 
   useEffect(() => {
     setEditedName(variation.name);

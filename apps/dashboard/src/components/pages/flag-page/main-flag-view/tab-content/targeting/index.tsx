@@ -11,6 +11,7 @@ import {
 import { RiArrowGoBackFill } from "@remixicon/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import DefaultVariation from "./default-variation";
 import { IndividualTargetCard } from "./individual-target-card";
@@ -133,6 +134,7 @@ function FlagTargetingContent({
     });
   }, [flagEnvironment.targets]);
 
+  const { canUpdateFlags } = usePermissions();
   const initialize = useTargetingStore((s) => s.initialize);
   const targets = useTargetingStore((s) => s.targets);
   const addTarget = useTargetingStore((s) => s.addTarget);
@@ -204,7 +206,7 @@ function FlagTargetingContent({
                   render={
                     <Button
                       className="size-6"
-                      disabled={!hasChanges}
+                      disabled={!(hasChanges && canUpdateFlags)}
                       onClick={reset}
                       size="small"
                       variant="outline"
@@ -223,7 +225,9 @@ function FlagTargetingContent({
                 >
                   <Button
                     className="w-full sm:w-auto"
-                    disabled={!hasChanges || hasValidationErrors}
+                    disabled={
+                      !hasChanges || hasValidationErrors || !canUpdateFlags
+                    }
                     onClick={openReviewModal}
                     size="small"
                     variant="default"
@@ -245,6 +249,7 @@ function FlagTargetingContent({
             <div className="relative flex h-full min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
               <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
                 <TargetingList
+                  disabled={!canUpdateFlags}
                   footer={
                     (flagEnvironment.defaultVariation ||
                       flagEnvironment.defaultRollout) && <DefaultVariation />

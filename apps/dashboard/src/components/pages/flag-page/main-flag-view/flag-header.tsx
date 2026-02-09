@@ -33,6 +33,7 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import EditableDescription from "@/components/common/editable-description";
 import EditableTitle from "@/components/common/editable-title";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 
 interface FlagHeaderProps {
@@ -59,6 +60,7 @@ export default function FlagHeader({
     "name" | "description" | "maintainer" | null
   >(null);
   const [maintainerSearchTerm, setMaintainerSearchTerm] = useState("");
+  const { canUpdateFlags } = usePermissions();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -192,6 +194,7 @@ export default function FlagHeader({
           <div className="absolute top-0 w-full">
             <EditableTitle
               loading={savingField === "name"}
+              readOnly={!canUpdateFlags}
               title={displayName}
               updateCallback={handleNameUpdate}
             />
@@ -200,6 +203,7 @@ export default function FlagHeader({
             <EditableDescription
               description={displayDescription}
               loading={savingField === "description"}
+              readOnly={!canUpdateFlags}
               updateCallback={handleDescriptionUpdate}
             />
           </div>
@@ -257,6 +261,7 @@ export default function FlagHeader({
 
                 <Combobox
                   autoHighlight
+                  disabled={!canUpdateFlags}
                   items={memberItems}
                   onValueChange={(value) => {
                     handleMaintainerUpdate(value);
