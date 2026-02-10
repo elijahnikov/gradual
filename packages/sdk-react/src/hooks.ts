@@ -1,4 +1,8 @@
-import type { EvalDetail, EvaluationContext, Gradual } from "@gradual-so/sdk";
+import type {
+  EvaluationContext,
+  EvaluationResult,
+  Gradual,
+} from "@gradual-so/sdk";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { GradualContext } from "./context";
 
@@ -108,7 +112,7 @@ export function useFlag<T>(
 
   // Pure evaluation in useMemo — no side effects
   // biome-ignore lint/correctness/useExhaustiveDependencies: version triggers re-evaluation on snapshot update
-  const evalResult = useMemo((): EvalDetail | null => {
+  const evalResult = useMemo((): EvaluationResult | null => {
     if (!isReady) {
       return null;
     }
@@ -127,7 +131,7 @@ export function useFlag<T>(
       return;
     }
 
-    const trackKey = `${key}:${evalResult.variationKey}:${evalResult.reason}`;
+    const trackKey = `${key}:${evalResult.variationKey}:${evalResult.reasons.map((r) => r.type).join(",")}`;
     if (trackedRef.current === trackKey) {
       return;
     }

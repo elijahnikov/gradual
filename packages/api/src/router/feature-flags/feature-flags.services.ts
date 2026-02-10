@@ -1731,6 +1731,9 @@ export const getEvents = async ({
       variationId: featureFlagEvaluation.variationId,
       value: featureFlagEvaluation.value,
       reason: featureFlagEvaluation.reason,
+      reasons: featureFlagEvaluation.reasons,
+      evaluatedAt: featureFlagEvaluation.evaluatedAt,
+      ruleId: featureFlagEvaluation.ruleId,
       sdkVersion: featureFlagEvaluation.sdkVersion,
       userAgent: featureFlagEvaluation.userAgent,
       createdAt: featureFlagEvaluation.createdAt,
@@ -1788,6 +1791,9 @@ export interface WatchEventItem {
   variationId: string | null;
   value: unknown;
   reason: string | null;
+  reasons: unknown[] | null;
+  evaluatedAt: Date | null;
+  ruleId: string | null;
   sdkVersion: string | null;
   userAgent: string | null;
   createdAt: Date;
@@ -1872,6 +1878,9 @@ export async function* watchEvents({
       variationId: event.variationId,
       value: event.value,
       reason: event.reason,
+      reasons: event.reasons,
+      evaluatedAt: event.evaluatedAt,
+      ruleId: event.ruleId,
       sdkVersion: event.sdkVersion,
       userAgent: event.userAgent,
       createdAt: event.createdAt,

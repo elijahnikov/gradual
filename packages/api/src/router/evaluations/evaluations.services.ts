@@ -81,6 +81,9 @@ export async function ingestEvaluations({
       userAgent: string | null;
       value: unknown;
       reason: string;
+      reasons: unknown[] | null;
+      evaluatedAt: Date | null;
+      ruleId: string | null;
       sdkKey: string;
       sdkVersion: string;
       matchedTargetName: string | null;
@@ -111,6 +114,9 @@ export async function ingestEvaluations({
         userAgent: meta.userAgent ?? null,
         value: event.value as Record<string, unknown>,
         reason: event.reason,
+        reasons: event.reasons ?? null,
+        evaluatedAt: event.evaluatedAt ? new Date(event.evaluatedAt) : null,
+        ruleId: event.ruleId ?? null,
         sdkKey: meta.sdkKey,
         sdkVersion: meta.sdkVersion,
         matchedTargetName: event.matchedTargetName ?? null,
@@ -135,6 +141,9 @@ export async function ingestEvaluations({
           variationId: featureFlagEvaluation.variationId,
           value: featureFlagEvaluation.value,
           reason: featureFlagEvaluation.reason,
+          reasons: featureFlagEvaluation.reasons,
+          evaluatedAt: featureFlagEvaluation.evaluatedAt,
+          ruleId: featureFlagEvaluation.ruleId,
           sdkVersion: featureFlagEvaluation.sdkVersion,
           userAgent: featureFlagEvaluation.userAgent,
           createdAt: featureFlagEvaluation.createdAt,
@@ -150,6 +159,9 @@ export async function ingestEvaluations({
         ee.emit("add", {
           ...row,
           reason: row.reason ?? "DEFAULT_VARIATION",
+          reasons: row.reasons ?? null,
+          evaluatedAt: row.evaluatedAt ?? null,
+          ruleId: row.ruleId ?? null,
           sdkVersion: row.sdkVersion ?? "",
           createdAt: row.createdAt ?? new Date(),
         });

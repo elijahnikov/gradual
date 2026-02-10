@@ -39,6 +39,7 @@ export interface SnapshotRollout {
 }
 
 export interface SnapshotTarget {
+  id?: string;
   type: "rule" | "individual" | "segment";
   sortOrder: number;
   name?: string;

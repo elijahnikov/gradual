@@ -20,6 +20,9 @@ export interface EvaluationEvent {
   variationId: string | null;
   value: unknown;
   reason: string;
+  reasons: unknown[] | null;
+  evaluatedAt: Date | null;
+  ruleId: string | null;
   sdkVersion: string;
   userAgent: string | null;
   createdAt: Date;

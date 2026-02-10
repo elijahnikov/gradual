@@ -9,10 +9,13 @@ interface EvaluationEvent {
   variationKey: string | undefined;
   value: unknown;
   reason: string;
+  reasons?: unknown[];
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
+  evaluatedAt?: string;
   matchedTargetName?: string;
+  ruleId?: string;
   flagConfigVersion?: number;
   errorDetail?: string;
   evaluationDurationUs?: number;

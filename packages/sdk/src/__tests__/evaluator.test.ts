@@ -24,7 +24,7 @@ describe("evaluateFlag", () => {
       const flag = createFlag({ enabled: false });
       const result = evaluateFlag(flag, {}, {});
       expect(result.value).toBe(false);
-      expect(result.reason).toBe("FLAG_DISABLED");
+      expect(result.legacyReason).toBe("FLAG_DISABLED");
       expect(result.variationKey).toBe("off");
     });
 
@@ -49,7 +49,7 @@ describe("evaluateFlag", () => {
       });
       const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
       expect(result.value).toBe(false);
-      expect(result.reason).toBe("FLAG_DISABLED");
+      expect(result.legacyReason).toBe("FLAG_DISABLED");
     });
   });
 
@@ -58,7 +58,7 @@ describe("evaluateFlag", () => {
       const flag = createFlag({ enabled: true });
       const result = evaluateFlag(flag, {}, {});
       expect(result.value).toBe(true);
-      expect(result.reason).toBe("DEFAULT_VARIATION");
+      expect(result.legacyReason).toBe("DEFAULT_VARIATION");
       expect(result.variationKey).toBe("on");
     });
 
@@ -105,7 +105,7 @@ describe("evaluateFlag", () => {
       });
       const result = evaluateFlag(flag, { user: { userId: "user-123" } }, {});
       expect(result.value).toBe(false);
-      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.legacyReason).toBe("TARGET_MATCH");
       expect(result.variationKey).toBe("off");
     });
 
@@ -693,7 +693,7 @@ describe("evaluateFlag", () => {
         {}
       );
       expect(result1.value).toBe(result2.value);
-      expect(result1.reason).toBe("TARGET_MATCH");
+      expect(result1.legacyReason).toBe("TARGET_MATCH");
 
       // Different users may get different results, but should be deterministic
       const result3 = evaluateFlag(
@@ -767,7 +767,7 @@ describe("evaluateFlag", () => {
       const result1 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
       const result2 = evaluateFlag(flag, { user: { key: "user-abc" } }, {});
       expect(result1.value).toBe(result2.value);
-      expect(result1.reason).toBe("DEFAULT_ROLLOUT");
+      expect(result1.legacyReason).toBe("DEFAULT_ROLLOUT");
 
       // Results should be one of the variations
       expect(["control", "variant"]).toContain(result1.value);
@@ -1134,21 +1134,21 @@ describe("evaluateFlag", () => {
         ],
       });
       const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
-      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.legacyReason).toBe("TARGET_MATCH");
       expect(result.matchedTargetName).toBe("Beta Users Rule");
     });
 
     it("does not include target name when no target matches", () => {
       const flag = createFlag({ enabled: true, targets: [] });
       const result = evaluateFlag(flag, {}, {});
-      expect(result.reason).toBe("DEFAULT_VARIATION");
+      expect(result.legacyReason).toBe("DEFAULT_VARIATION");
       expect(result.matchedTargetName).toBeUndefined();
     });
 
     it("does not include target name when flag is disabled", () => {
       const flag = createFlag({ enabled: false });
       const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
-      expect(result.reason).toBe("FLAG_DISABLED");
+      expect(result.legacyReason).toBe("FLAG_DISABLED");
       expect(result.matchedTargetName).toBeUndefined();
     });
 
@@ -1167,7 +1167,7 @@ describe("evaluateFlag", () => {
         ],
       });
       const result = evaluateFlag(flag, { user: { id: "user-123" } }, {});
-      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.legacyReason).toBe("TARGET_MATCH");
       expect(result.matchedTargetName).toBe("VIP User");
     });
 
@@ -1190,7 +1190,7 @@ describe("evaluateFlag", () => {
         ],
       });
       const result = evaluateFlag(flag, { user: { plan: "pro" } }, {});
-      expect(result.reason).toBe("TARGET_MATCH");
+      expect(result.legacyReason).toBe("TARGET_MATCH");
       expect(result.matchedTargetName).toBeUndefined();
     });
   });

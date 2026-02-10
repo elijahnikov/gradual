@@ -61,6 +61,49 @@ const reasonVariants: Record<
   ERROR: "error",
 };
 
+interface StructuredReason {
+  type: string;
+  ruleId?: string;
+  ruleName?: string;
+  percentage?: number;
+  bucket?: number;
+  detail?: string;
+}
+
+function isStructuredReason(v: unknown): v is StructuredReason {
+  return typeof v === "object" && v !== null && "type" in v;
+}
+
+const structuredReasonVariants: Record<
+  string,
+  "secondary" | "success" | "warning" | "error" | "info" | "outline"
+> = {
+  rule_match: "success",
+  percentage_rollout: "info",
+  default: "outline",
+  off: "secondary",
+  error: "error",
+};
+
+function formatStructuredReason(reason: StructuredReason): string {
+  switch (reason.type) {
+    case "rule_match":
+      return reason.ruleName ? `Rule: ${reason.ruleName}` : "Rule match";
+    case "percentage_rollout":
+      return reason.percentage != null
+        ? `Rollout: ${(reason.percentage / 100).toFixed(1)}%`
+        : "Rollout";
+    case "default":
+      return "Default";
+    case "off":
+      return "Disabled";
+    case "error":
+      return reason.detail ? `Error: ${reason.detail}` : "Error";
+    default:
+      return reason.type;
+  }
+}
+
 function formatDuration(us: number): string {
   return `${(us / 1000).toFixed(2)}ms`;
 }
@@ -106,8 +149,60 @@ const columns = [
   columnHelper.accessor("reason", {
     header: "Reason",
     cell: (info) => {
-      const reason = info.getValue() ?? "DEFAULT_VARIATION";
       const row = info.row.original;
+      const structuredReasons = row.reasons;
+
+      if (
+        Array.isArray(structuredReasons) &&
+        structuredReasons.length > 0 &&
+        structuredReasons.every(isStructuredReason)
+      ) {
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {structuredReasons.map((r, i) => {
+              const label = formatStructuredReason(r);
+              const variant = structuredReasonVariants[r.type] ?? "outline";
+
+              if (r.type === "error" && r.detail) {
+                return (
+                  <Tooltip key={i}>
+                    <TooltipTrigger>
+                      <Badge size="sm" variant={variant}>
+                        {label}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>{r.detail}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              if (r.type === "percentage_rollout" && r.bucket != null) {
+                return (
+                  <Tooltip key={i}>
+                    <TooltipTrigger>
+                      <Badge size="sm" variant={variant}>
+                        {label}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Bucket: {r.bucket.toLocaleString()}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Badge key={i} size="sm" variant={variant}>
+                  {label}
+                </Badge>
+              );
+            })}
+          </div>
+        );
+      }
+
+      // Fallback: legacy string reason
+      const reason = info.getValue() ?? "DEFAULT_VARIATION";
       if (reason === "ERROR" && row.errorDetail) {
         return (
           <Tooltip>

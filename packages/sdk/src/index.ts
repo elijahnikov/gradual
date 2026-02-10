@@ -7,6 +7,7 @@ export {
 export { evaluateFlag } from "./evaluator";
 export type {
   EnvironmentSnapshot,
+  EvalOutput,
   EvaluationBatchPayload,
   EvaluationContext,
   EvaluationEvent,
@@ -16,7 +17,9 @@ export type {
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
+  LegacyEvaluationReason,
   PollingOptions,
+  Reason,
   SnapshotFlag,
   SnapshotRollout,
   SnapshotRolloutVariation,
