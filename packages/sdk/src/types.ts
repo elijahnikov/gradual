@@ -39,6 +39,7 @@ export interface SnapshotRollout {
 }
 
 export interface SnapshotTarget {
+  id?: string;
   type: "rule" | "individual" | "segment";
   sortOrder: number;
   name?: string;
@@ -106,31 +107,58 @@ export interface IsEnabledOptions {
   context?: EvaluationContext;
 }
 
-export type EvaluationReason =
-  | "FLAG_DISABLED"
-  | "TARGET_MATCH"
-  | "DEFAULT_ROLLOUT"
-  | "DEFAULT_VARIATION"
-  | "FLAG_NOT_FOUND"
-  | "ERROR";
+// ---------------------------------------------------------------------------
+// Structured Reason (v1)
+// ---------------------------------------------------------------------------
 
-export interface EvaluationResult {
+export type Reason =
+  | { type: "rule_match"; ruleId: string; ruleName?: string }
+  | { type: "percentage_rollout"; percentage: number; bucket: number }
+  | { type: "default" }
+  | { type: "off" }
+  | { type: "error"; detail: string };
+
+// ---------------------------------------------------------------------------
+// EvaluationResult — the core primitive
+// ---------------------------------------------------------------------------
+
+export interface EvaluationResult<T = unknown> {
+  key: string;
+  value: T;
+  variationKey?: string;
+  reasons: Reason[];
+  ruleId?: string;
+  version: number;
+  evaluatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Internal evaluator output (used between evaluator and client)
+// ---------------------------------------------------------------------------
+
+export interface EvalOutput {
   value: unknown;
   variationKey: string | undefined;
-  reason: EvaluationReason;
+  reasons: Reason[];
   matchedTargetName?: string;
   errorDetail?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Evaluation events (wire format — SDK → Worker → API)
+// ---------------------------------------------------------------------------
 
 export interface EvaluationEvent {
   flagKey: string;
   variationKey: string | undefined;
   value: unknown;
-  reason: EvaluationReason;
+  reasons: Reason[];
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
+  evaluatedAt?: string;
   matchedTargetName?: string;
+  ruleId?: string;
   flagConfigVersion?: number;
   errorDetail?: string;
   evaluationDurationUs?: number;

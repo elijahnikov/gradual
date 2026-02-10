@@ -709,7 +709,7 @@ export const seedEvaluations = async ({
       context: { userId: `user_${Math.floor(Math.random() * 5000)}` },
       ipAddress: getRandomElement(ips),
       userAgent: getRandomElement(userAgents),
-      reason: "seeded",
+      reasons: [{ type: "default" }],
       createdAt,
     });
   }
@@ -1730,7 +1730,9 @@ export const getEvents = async ({
       id: featureFlagEvaluation.id,
       variationId: featureFlagEvaluation.variationId,
       value: featureFlagEvaluation.value,
-      reason: featureFlagEvaluation.reason,
+      reasons: featureFlagEvaluation.reasons,
+      evaluatedAt: featureFlagEvaluation.evaluatedAt,
+      ruleId: featureFlagEvaluation.ruleId,
       sdkVersion: featureFlagEvaluation.sdkVersion,
       userAgent: featureFlagEvaluation.userAgent,
       createdAt: featureFlagEvaluation.createdAt,
@@ -1787,7 +1789,9 @@ export interface WatchEventItem {
   id: string;
   variationId: string | null;
   value: unknown;
-  reason: string | null;
+  reasons: unknown[] | null;
+  evaluatedAt: Date | null;
+  ruleId: string | null;
   sdkVersion: string | null;
   userAgent: string | null;
   createdAt: Date;
@@ -1871,7 +1875,9 @@ export async function* watchEvents({
       id: event.id,
       variationId: event.variationId,
       value: event.value,
-      reason: event.reason,
+      reasons: event.reasons,
+      evaluatedAt: event.evaluatedAt,
+      ruleId: event.ruleId,
       sdkVersion: event.sdkVersion,
       userAgent: event.userAgent,
       createdAt: event.createdAt,

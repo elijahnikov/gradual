@@ -1,8 +1,10 @@
 import type {
+  EvalOutput,
   EvaluationContext,
-  EvaluationResult,
+  Reason,
   SnapshotFlag,
   SnapshotRollout,
+  SnapshotRolloutVariation,
   SnapshotRuleCondition,
   SnapshotSegment,
   SnapshotTarget,
@@ -33,22 +35,48 @@ function getBucketValue(
   return hashString(hashInput) % 100_000;
 }
 
+interface RolloutResult {
+  variation: SnapshotVariation;
+  variationKey: string;
+  matchedWeight: number;
+  bucketValue: number;
+}
+
 function selectVariationFromRollout(
   rollout: SnapshotRollout,
   bucketValue: number,
   variations: Record<string, SnapshotVariation>
-): SnapshotVariation | undefined {
+): RolloutResult | undefined {
   let cumulative = 0;
+  let matchedRv: SnapshotRolloutVariation | undefined;
 
   for (const rv of rollout.variations) {
     cumulative += rv.weight;
     if (bucketValue < cumulative) {
-      return variations[rv.variationKey];
+      matchedRv = rv;
+      break;
     }
   }
 
-  const lastVariation = rollout.variations.at(-1);
-  return lastVariation ? variations[lastVariation.variationKey] : undefined;
+  if (!matchedRv) {
+    matchedRv = rollout.variations.at(-1);
+  }
+
+  if (!matchedRv) {
+    return undefined;
+  }
+
+  const variation = variations[matchedRv.variationKey];
+  if (!variation) {
+    return undefined;
+  }
+
+  return {
+    variation,
+    variationKey: matchedRv.variationKey,
+    matchedWeight: matchedRv.weight,
+    bucketValue,
+  };
 }
 
 function evaluateCondition(
@@ -195,38 +223,27 @@ function evaluateTarget(
   }
 }
 
-interface ResolvedVariation {
-  variation: SnapshotVariation;
-  variationKey: string;
-}
-
 function resolveTargetVariation(
   target: SnapshotTarget,
   flagKey: string,
   context: EvaluationContext,
   variations: Record<string, SnapshotVariation>
-): ResolvedVariation | undefined {
+): RolloutResult | undefined {
   if (target.rollout) {
     const bucketValue = getBucketValue(flagKey, context, target.rollout);
-    const variation = selectVariationFromRollout(
-      target.rollout,
-      bucketValue,
-      variations
-    );
-    if (variation) {
-      const key = Object.keys(variations).find(
-        (k) => variations[k] === variation
-      );
-      return key ? { variation, variationKey: key } : undefined;
-    }
-    return undefined;
+    return selectVariationFromRollout(target.rollout, bucketValue, variations);
   }
 
   if (target.variationKey) {
     const variation = variations[target.variationKey];
-    return variation
-      ? { variation, variationKey: target.variationKey }
-      : undefined;
+    if (variation) {
+      return {
+        variation,
+        variationKey: target.variationKey,
+        matchedWeight: 100_000,
+        bucketValue: 0,
+      };
+    }
   }
 
   return undefined;
@@ -235,44 +252,59 @@ function resolveTargetVariation(
 function resolveDefaultVariation(
   flag: SnapshotFlag,
   context: EvaluationContext
-): ResolvedVariation | undefined {
+): RolloutResult | undefined {
   if (flag.defaultRollout) {
     const bucketValue = getBucketValue(flag.key, context, flag.defaultRollout);
-    const variation = selectVariationFromRollout(
+    return selectVariationFromRollout(
       flag.defaultRollout,
       bucketValue,
       flag.variations
     );
-    if (variation) {
-      const key = Object.keys(flag.variations).find(
-        (k) => flag.variations[k] === variation
-      );
-      return key ? { variation, variationKey: key } : undefined;
-    }
-    return undefined;
   }
 
   if (flag.defaultVariationKey) {
     const variation = flag.variations[flag.defaultVariationKey];
-    return variation
-      ? { variation, variationKey: flag.defaultVariationKey }
-      : undefined;
+    if (variation) {
+      return {
+        variation,
+        variationKey: flag.defaultVariationKey,
+        matchedWeight: 100_000,
+        bucketValue: 0,
+      };
+    }
   }
 
   return undefined;
+}
+
+function buildRuleMatchReason(target: SnapshotTarget): Reason {
+  return {
+    type: "rule_match",
+    ruleId: target.id ?? "",
+    ruleName: target.name,
+  };
+}
+
+function buildRolloutReason(rolloutResult: RolloutResult): Reason {
+  return {
+    type: "percentage_rollout",
+    percentage: rolloutResult.matchedWeight / 1000,
+    bucket: rolloutResult.bucketValue,
+  };
 }
 
 export function evaluateFlag(
   flag: SnapshotFlag,
   context: EvaluationContext,
   segments: Record<string, SnapshotSegment>
-): EvaluationResult {
+): EvalOutput {
   if (!flag.enabled) {
     const offVariation = flag.variations[flag.offVariationKey];
     return {
       value: offVariation?.value,
       variationKey: flag.offVariationKey,
-      reason: "FLAG_DISABLED",
+
+      reasons: [{ type: "off" }],
     };
   }
 
@@ -289,10 +321,16 @@ export function evaluateFlag(
         flag.variations
       );
       if (resolved) {
+        const reasons: Reason[] = [buildRuleMatchReason(target)];
+        if (target.rollout) {
+          reasons.push(buildRolloutReason(resolved));
+        }
+
         return {
           value: resolved.variation.value,
           variationKey: resolved.variationKey,
-          reason: "TARGET_MATCH",
+
+          reasons,
           matchedTargetName: target.name,
         };
       }
@@ -301,16 +339,24 @@ export function evaluateFlag(
 
   const resolved = resolveDefaultVariation(flag, context);
   if (resolved) {
+    const reasons: Reason[] = [];
+    if (flag.defaultRollout) {
+      reasons.push(buildRolloutReason(resolved));
+    }
+    reasons.push({ type: "default" });
+
     return {
       value: resolved.variation.value,
       variationKey: resolved.variationKey,
-      reason: flag.defaultRollout ? "DEFAULT_ROLLOUT" : "DEFAULT_VARIATION",
+
+      reasons,
     };
   }
 
   return {
     value: undefined,
     variationKey: undefined,
-    reason: "DEFAULT_VARIATION",
+
+    reasons: [{ type: "default" }],
   };
 }

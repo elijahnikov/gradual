@@ -279,6 +279,7 @@ export async function buildEnvironmentSnapshot({
 
     for (const t of flagTargets) {
       const snapshotTarget: SnapshotTarget = {
+        id: t.target.id,
         type: t.target.type as "rule" | "individual" | "segment",
         sortOrder: t.target.sortOrder,
         name: t.target.name,

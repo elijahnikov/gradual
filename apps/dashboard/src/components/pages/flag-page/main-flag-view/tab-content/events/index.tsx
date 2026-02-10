@@ -40,26 +40,48 @@ interface FlagEventsProps {
   environmentId?: string;
 }
 
-const reasonLabels: Record<string, string> = {
-  FLAG_DISABLED: "Disabled",
-  TARGET_MATCH: "Target match",
-  DEFAULT_ROLLOUT: "Default rollout",
-  DEFAULT_VARIATION: "Default",
-  FLAG_NOT_FOUND: "Not found",
-  ERROR: "Error",
-};
+interface StructuredReason {
+  type: string;
+  ruleId?: string;
+  ruleName?: string;
+  percentage?: number;
+  bucket?: number;
+  detail?: string;
+}
 
-const reasonVariants: Record<
+function isStructuredReason(v: unknown): v is StructuredReason {
+  return typeof v === "object" && v !== null && "type" in v;
+}
+
+const structuredReasonVariants: Record<
   string,
   "secondary" | "success" | "warning" | "error" | "info" | "outline"
 > = {
-  FLAG_DISABLED: "secondary",
-  TARGET_MATCH: "success",
-  DEFAULT_ROLLOUT: "info",
-  DEFAULT_VARIATION: "outline",
-  FLAG_NOT_FOUND: "warning",
-  ERROR: "error",
+  rule_match: "success",
+  percentage_rollout: "info",
+  default: "outline",
+  off: "secondary",
+  error: "error",
 };
+
+function formatStructuredReason(reason: StructuredReason): string {
+  switch (reason.type) {
+    case "rule_match":
+      return reason.ruleName ? `Rule: ${reason.ruleName}` : "Rule match";
+    case "percentage_rollout":
+      return reason.percentage != null
+        ? `Rollout: ${(reason.percentage / 100).toFixed(1)}%`
+        : "Rollout";
+    case "default":
+      return "Default";
+    case "off":
+      return "Disabled";
+    case "error":
+      return reason.detail ? `Error: ${reason.detail}` : "Error";
+    default:
+      return reason.type;
+  }
+}
 
 function formatDuration(us: number): string {
   return `${(us / 1000).toFixed(2)}ms`;
@@ -103,26 +125,63 @@ const columns = [
       );
     },
   }),
-  columnHelper.accessor("reason", {
+  columnHelper.accessor("reasons", {
     header: "Reason",
     cell: (info) => {
-      const reason = info.getValue() ?? "DEFAULT_VARIATION";
-      const row = info.row.original;
-      if (reason === "ERROR" && row.errorDetail) {
+      const structuredReasons = info.getValue();
+
+      if (
+        Array.isArray(structuredReasons) &&
+        structuredReasons.length > 0 &&
+        structuredReasons.every(isStructuredReason)
+      ) {
         return (
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge size="sm" variant="error">
-                {reasonLabels[reason] ?? reason}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>{row.errorDetail}</TooltipContent>
-          </Tooltip>
+          <div className="flex flex-wrap items-center gap-1">
+            {structuredReasons.map((r, i) => {
+              const label = formatStructuredReason(r);
+              const variant = structuredReasonVariants[r.type] ?? "outline";
+
+              if (r.type === "error" && r.detail) {
+                return (
+                  <Tooltip key={i}>
+                    <TooltipTrigger>
+                      <Badge size="sm" variant={variant}>
+                        {label}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>{r.detail}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              if (r.type === "percentage_rollout" && r.bucket != null) {
+                return (
+                  <Tooltip key={i}>
+                    <TooltipTrigger>
+                      <Badge size="sm" variant={variant}>
+                        {label}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Bucket: {r.bucket.toLocaleString()}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Badge key={i} size="sm" variant={variant}>
+                  {label}
+                </Badge>
+              );
+            })}
+          </div>
         );
       }
+
       return (
-        <Badge size="sm" variant={reasonVariants[reason] ?? "outline"}>
-          {reasonLabels[reason] ?? reason}
+        <Badge size="sm" variant="outline">
+          Unknown
         </Badge>
       );
     },

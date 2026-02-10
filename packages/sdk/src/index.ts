@@ -1,22 +1,18 @@
-export {
-  createGradual,
-  type EvalDetail,
-  type Gradual,
-  type GradualSync,
-} from "./client";
+export { createGradual, type Gradual, type GradualSync } from "./client";
 export { evaluateFlag } from "./evaluator";
 export type {
   EnvironmentSnapshot,
+  EvalOutput,
   EvaluationBatchPayload,
   EvaluationContext,
   EvaluationEvent,
-  EvaluationReason,
   EvaluationResult,
   EventsOptions,
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
   PollingOptions,
+  Reason,
   SnapshotFlag,
   SnapshotRollout,
   SnapshotRolloutVariation,

@@ -2,11 +2,13 @@ import { evaluateFlag } from "./evaluator";
 import { EventBuffer } from "./event-buffer";
 import type {
   EnvironmentSnapshot,
+  EvalOutput,
   EvaluationContext,
   EvaluationResult,
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
+  Reason,
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://worker.gradual.so/api/v1";
@@ -80,6 +82,12 @@ export interface Gradual {
   /** Get a flag value with type inference from fallback */
   get<T>(key: string, options: FlagOptions<T>): Promise<T>;
 
+  /** Evaluate a flag and return the full structured result (also tracks the evaluation) */
+  evaluate<T = unknown>(
+    key: string,
+    options?: { context?: EvaluationContext }
+  ): Promise<EvaluationResult<T>>;
+
   /** Set persistent user context for all evaluations */
   identify(context: EvaluationContext): void;
 
@@ -102,16 +110,6 @@ export interface Gradual {
   sync: GradualSync;
 }
 
-export interface EvalDetail {
-  value: unknown;
-  variationKey: string | undefined;
-  reason: EvaluationResult["reason"];
-  matchedTargetName?: string;
-  errorDetail?: string;
-  evaluationDurationUs?: number;
-  flagConfigVersion?: number;
-}
-
 export interface GradualSync {
   /** Sync version of isEnabled (throws if not ready) */
   isEnabled(key: string, options?: IsEnabledOptions): boolean;
@@ -120,10 +118,17 @@ export interface GradualSync {
   get<T>(key: string, options: FlagOptions<T>): T;
 
   /** Evaluate a flag without tracking. Use with track() for React-safe evaluation. */
-  evaluate(key: string, options?: { context?: EvaluationContext }): EvalDetail;
+  evaluate<T = unknown>(
+    key: string,
+    options?: { context?: EvaluationContext }
+  ): EvaluationResult<T>;
 
   /** Manually track an evaluation that was produced by evaluate(). */
-  track(key: string, detail: EvalDetail, context?: EvaluationContext): void;
+  track(
+    key: string,
+    result: EvaluationResult,
+    context?: EvaluationContext
+  ): void;
 }
 
 class GradualClient implements Gradual {
@@ -260,61 +265,98 @@ class GradualClient implements Gradual {
     return merged;
   }
 
-  private evaluate(key: string, context: EvaluationContext): unknown {
+  private evaluateRaw(
+    key: string,
+    context: EvaluationContext
+  ): {
+    output: EvalOutput | null;
+    snapshot: EnvironmentSnapshot;
+    durationUs: number;
+  } {
     const snapshot = this.ensureReady();
     if (!snapshot.flags) {
-      return undefined;
+      return { output: null, snapshot, durationUs: 0 };
     }
     const flag = snapshot.flags[key];
     if (!flag) {
+      return { output: null, snapshot, durationUs: 0 };
+    }
+
+    const startTime = nowNs();
+    let output: EvalOutput;
+    try {
+      output = evaluateFlag(flag, context, snapshot.segments ?? {});
+    } catch (err) {
+      const errorDetail = err instanceof Error ? err.message : String(err);
+      output = {
+        value: undefined,
+        variationKey: undefined,
+        reasons: [{ type: "error", detail: errorDetail }],
+        errorDetail,
+      };
+    }
+
+    return { output, snapshot, durationUs: elapsedUs(startTime) };
+  }
+
+  private buildResult<T>(
+    key: string,
+    output: EvalOutput,
+    version: number
+  ): EvaluationResult<T> {
+    const ruleMatch = output.reasons.find(
+      (r): r is Extract<Reason, { type: "rule_match" }> =>
+        r.type === "rule_match"
+    );
+
+    return {
+      key,
+      value: output.value as T,
+      variationKey: output.variationKey,
+      reasons: output.reasons,
+      ruleId: ruleMatch?.ruleId,
+      version,
+      evaluatedAt: new Date().toISOString(),
+    };
+  }
+
+  private evaluateAndTrack(key: string, context: EvaluationContext): unknown {
+    const { output, snapshot, durationUs } = this.evaluateRaw(key, context);
+
+    if (!output) {
       this.trackEvent({
         flagKey: key,
         variationKey: undefined,
         value: undefined,
-        reason: "FLAG_NOT_FOUND",
+        reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
         context,
         flagConfigVersion: snapshot.version,
       });
       return undefined;
     }
 
-    const startTime = nowNs();
-
-    let result: EvaluationResult;
-    try {
-      result = evaluateFlag(flag, context, snapshot.segments ?? {});
-    } catch (err) {
-      const errorDetail = err instanceof Error ? err.message : String(err);
-      result = {
-        value: undefined,
-        variationKey: undefined,
-        reason: "ERROR",
-        errorDetail,
-      };
-    }
-
-    const evaluationDurationUs = elapsedUs(startTime);
-
     this.trackEvent({
       flagKey: key,
-      variationKey: result.variationKey,
-      value: result.value,
-      reason: result.reason,
+      variationKey: output.variationKey,
+      value: output.value,
+      reasons: output.reasons,
       context,
-      matchedTargetName: result.matchedTargetName,
+      matchedTargetName: output.matchedTargetName,
       flagConfigVersion: snapshot.version,
-      errorDetail: result.errorDetail,
-      evaluationDurationUs,
+      errorDetail: output.errorDetail,
+      evaluationDurationUs: durationUs,
     });
 
-    return result.value;
+    return output.value;
   }
 
   private trackEvent(params: {
     flagKey: string;
     variationKey: string | undefined;
     value: unknown;
-    reason: EvaluationResult["reason"];
+    reasons: Reason[];
+    evaluatedAt?: string;
+    ruleId?: string;
     context: EvaluationContext;
     matchedTargetName?: string;
     flagConfigVersion?: number;
@@ -341,7 +383,9 @@ class GradualClient implements Gradual {
       flagKey: params.flagKey,
       variationKey: params.variationKey,
       value: params.value,
-      reason: params.reason,
+      reasons: params.reasons,
+      evaluatedAt: params.evaluatedAt,
+      ruleId: params.ruleId,
       contextKinds,
       contextKeys,
       timestamp: Date.now(),
@@ -363,97 +407,119 @@ class GradualClient implements Gradual {
 
   async isEnabled(key: string, options?: IsEnabledOptions): Promise<boolean> {
     await this.initPromise;
-    const value = this.evaluate(key, this.mergeContext(options));
+    const value = this.evaluateAndTrack(key, this.mergeContext(options));
     return typeof value === "boolean" ? value : false;
   }
 
   async get<T>(key: string, options: FlagOptions<T>): Promise<T> {
     await this.initPromise;
-    const value = this.evaluate(key, this.mergeContext(options));
+    const value = this.evaluateAndTrack(key, this.mergeContext(options));
     return value !== undefined && value !== null
       ? (value as T)
       : options.fallback;
   }
 
+  async evaluate<T = unknown>(
+    key: string,
+    options?: { context?: EvaluationContext }
+  ): Promise<EvaluationResult<T>> {
+    await this.initPromise;
+    const context = this.mergeContext(options);
+    const { output, snapshot, durationUs } = this.evaluateRaw(key, context);
+
+    if (!output) {
+      const result: EvaluationResult<T> = {
+        key,
+        value: undefined as T,
+        variationKey: undefined,
+        reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
+        version: snapshot.version,
+        evaluatedAt: new Date().toISOString(),
+      };
+      this.trackEvent({
+        flagKey: key,
+        variationKey: undefined,
+        value: undefined,
+        reasons: result.reasons,
+        evaluatedAt: result.evaluatedAt,
+        context,
+        flagConfigVersion: snapshot.version,
+      });
+      return result;
+    }
+
+    const result = this.buildResult<T>(key, output, snapshot.version);
+
+    this.trackEvent({
+      flagKey: key,
+      variationKey: output.variationKey,
+      value: output.value,
+      reasons: output.reasons,
+      evaluatedAt: result.evaluatedAt,
+      ruleId: result.ruleId,
+      context,
+      matchedTargetName: output.matchedTargetName,
+      flagConfigVersion: snapshot.version,
+      errorDetail: output.errorDetail,
+      evaluationDurationUs: durationUs,
+    });
+
+    return result;
+  }
+
   private isEnabledSync(key: string, options?: IsEnabledOptions): boolean {
-    const value = this.evaluate(key, this.mergeContext(options));
+    const value = this.evaluateAndTrack(key, this.mergeContext(options));
     return typeof value === "boolean" ? value : false;
   }
 
   private getSync<T>(key: string, options: FlagOptions<T>): T {
-    const value = this.evaluate(key, this.mergeContext(options));
+    const value = this.evaluateAndTrack(key, this.mergeContext(options));
     return value !== undefined && value !== null
       ? (value as T)
       : options.fallback;
   }
 
-  private evaluateSync(
+  private evaluateSync<T = unknown>(
     key: string,
     options?: { context?: EvaluationContext }
-  ): EvalDetail {
-    const snapshot = this.ensureReady();
+  ): EvaluationResult<T> {
     const context = this.mergeContext(options);
+    const { output, snapshot } = this.evaluateRaw(key, context);
 
-    if (!snapshot.flags) {
+    if (!output) {
       return {
-        value: undefined,
+        key,
+        value: undefined as T,
         variationKey: undefined,
-        reason: "FLAG_NOT_FOUND",
-        flagConfigVersion: snapshot.version,
+        reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
+        version: snapshot.version,
+        evaluatedAt: new Date().toISOString(),
       };
     }
 
-    const flag = snapshot.flags[key];
-    if (!flag) {
-      return {
-        value: undefined,
-        variationKey: undefined,
-        reason: "FLAG_NOT_FOUND",
-        flagConfigVersion: snapshot.version,
-      };
-    }
-
-    const startTime = nowNs();
-
-    let result: EvaluationResult;
-    try {
-      result = evaluateFlag(flag, context, snapshot.segments ?? {});
-    } catch (err) {
-      const errorDetail = err instanceof Error ? err.message : String(err);
-      result = {
-        value: undefined,
-        variationKey: undefined,
-        reason: "ERROR",
-        errorDetail,
-      };
-    }
-
-    return {
-      value: result.value,
-      variationKey: result.variationKey,
-      reason: result.reason,
-      matchedTargetName: result.matchedTargetName,
-      errorDetail: result.errorDetail,
-      evaluationDurationUs: elapsedUs(startTime),
-      flagConfigVersion: snapshot.version,
-    };
+    return this.buildResult<T>(key, output, snapshot.version);
   }
 
   private trackSync(
     key: string,
-    detail: EvalDetail,
+    result: EvaluationResult,
     context?: EvaluationContext
   ): void {
+    const ruleMatch = result.reasons.find(
+      (r): r is Extract<Reason, { type: "rule_match" }> =>
+        r.type === "rule_match"
+    );
+
     this.trackEvent({
       flagKey: key,
-      variationKey: detail.variationKey,
-      value: detail.value,
-      reason: detail.reason,
+      variationKey: result.variationKey,
+      value: result.value,
+      reasons: result.reasons,
+      evaluatedAt: result.evaluatedAt,
+      ruleId: result.ruleId,
       context: this.mergeContext({ context }),
-      matchedTargetName: detail.matchedTargetName,
-      flagConfigVersion: detail.flagConfigVersion,
-      errorDetail: detail.errorDetail,
-      evaluationDurationUs: detail.evaluationDurationUs,
+      matchedTargetName: ruleMatch?.ruleName,
+      flagConfigVersion: result.version,
     });
   }
 
@@ -513,6 +579,10 @@ class GradualClient implements Gradual {
  *
  * // Typed values (inferred from fallback)
  * const theme = await gradual.get('theme', { fallback: 'dark' })
+ *
+ * // Full structured result
+ * const result = await gradual.evaluate('new-feature')
+ * // result.value, result.reasons, result.ruleId, result.version
  *
  * // With user context
  * gradual.identify({ userId: '123', plan: 'pro' })
