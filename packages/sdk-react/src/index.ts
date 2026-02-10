@@ -7,6 +7,7 @@ export type {
 export { GradualContext, type GradualContextValue } from "./context";
 export {
   type FlagDetail,
+  type UseEvaluationOptions,
   type UseEvaluationResult,
   type UseFlagOptions,
   useEvaluation,
