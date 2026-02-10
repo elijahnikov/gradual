@@ -86,9 +86,14 @@ export type UseEvaluationResult<T> =
  * console.log(result.ruleId)    // convenience accessor
  * ```
  */
-export function useEvaluation<T = unknown>(
+export interface UseEvaluationOptions<T> {
+  fallback: T;
+  context?: EvaluationContext;
+}
+
+export function useEvaluation<T>(
   key: string,
-  options?: { context?: EvaluationContext }
+  options: UseEvaluationOptions<T>
 ): UseEvaluationResult<T> {
   const { gradual, isReady, version } = useGradualContext();
   const trackedRef = useRef<string | null>(null);
@@ -98,8 +103,14 @@ export function useEvaluation<T = unknown>(
     if (!isReady) {
       return null;
     }
-    return gradual.sync.evaluate<T>(key, { context: options?.context });
-  }, [gradual, isReady, key, options?.context, version]);
+    const raw = gradual.sync.evaluate<T>(key, {
+      context: options.context,
+    });
+    if (raw.value === undefined || raw.value === null) {
+      return { ...raw, value: options.fallback };
+    }
+    return raw;
+  }, [gradual, isReady, key, options.context, options.fallback, version]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only track when evalResult changes
   useEffect(() => {
@@ -113,7 +124,7 @@ export function useEvaluation<T = unknown>(
     }
     trackedRef.current = trackKey;
 
-    gradual.sync.track(key, evalResult, options?.context);
+    gradual.sync.track(key, evalResult, options.context);
   }, [gradual, key, evalResult]);
 
   if (!evalResult) {
