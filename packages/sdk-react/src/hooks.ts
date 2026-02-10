@@ -69,6 +69,60 @@ export function useGradual(): {
   );
 }
 
+export type UseEvaluationResult<T> =
+  | { result: null; isLoading: true; isReady: false }
+  | { result: EvaluationResult<T>; isLoading: false; isReady: true };
+
+/**
+ * Get the full structured evaluation result for a flag
+ *
+ * @example
+ * ```tsx
+ * const { result, isLoading } = useEvaluation('my-flag')
+ * if (isLoading) return <Loading />
+ *
+ * console.log(result.value)     // flag value
+ * console.log(result.reasons)   // [{ type: "rule_match", ruleId: "...", ruleName: "Beta" }]
+ * console.log(result.ruleId)    // convenience accessor
+ * ```
+ */
+export function useEvaluation<T = unknown>(
+  key: string,
+  options?: { context?: EvaluationContext }
+): UseEvaluationResult<T> {
+  const { gradual, isReady, version } = useGradualContext();
+  const trackedRef = useRef<string | null>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version triggers re-evaluation on snapshot update
+  const evalResult = useMemo((): EvaluationResult<T> | null => {
+    if (!isReady) {
+      return null;
+    }
+    return gradual.sync.evaluate<T>(key, { context: options?.context });
+  }, [gradual, isReady, key, options?.context, version]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only track when evalResult changes
+  useEffect(() => {
+    if (!evalResult) {
+      return;
+    }
+
+    const trackKey = `${key}:${evalResult.variationKey}:${evalResult.reasons.map((r) => r.type).join(",")}`;
+    if (trackedRef.current === trackKey) {
+      return;
+    }
+    trackedRef.current = trackKey;
+
+    gradual.sync.track(key, evalResult, options?.context);
+  }, [gradual, key, evalResult]);
+
+  if (!evalResult) {
+    return { result: null, isLoading: true, isReady: false };
+  }
+
+  return { result: evalResult, isLoading: false, isReady: true };
+}
+
 /**
  * Get a feature flag value with type inference
  *

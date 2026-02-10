@@ -1,9 +1,15 @@
 // Re-export types from core SDK
-export type { EvaluationContext, GradualOptions } from "@gradual-so/sdk";
+export type {
+  EvaluationContext,
+  EvaluationResult,
+  GradualOptions,
+} from "@gradual-so/sdk";
 export { GradualContext, type GradualContextValue } from "./context";
 export {
   type FlagDetail,
+  type UseEvaluationResult,
   type UseFlagOptions,
+  useEvaluation,
   useFlag,
   useGradual,
 } from "./hooks";
