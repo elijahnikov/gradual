@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.2
+
+### Patch Changes
+
+- [#59](https://github.com/elijahnikov/gradual/pull/59) [`e0283c0`](https://github.com/elijahnikov/gradual/commit/e0283c0a0ddbac7ed2cf1f5f1dc084eb9b4c0c6a) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding fallback and context support to useEvaluation
+
 ## 0.8.1
 
 ### Patch Changes
