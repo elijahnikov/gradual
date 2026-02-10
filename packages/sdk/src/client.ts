@@ -8,7 +8,6 @@ import type {
   FlagOptions,
   GradualOptions,
   IsEnabledOptions,
-  LegacyEvaluationReason,
   Reason,
 } from "./types";
 
@@ -70,31 +69,6 @@ function elapsedUs(start: bigint | number): number {
   return Math.round(((end as number) - (start as number)) * 1000);
 }
 
-function legacyReasonFromReasons(reasons: Reason[]): LegacyEvaluationReason {
-  const first = reasons[0];
-  if (!first) {
-    return "DEFAULT_VARIATION";
-  }
-  switch (first.type) {
-    case "rule_match":
-      return "TARGET_MATCH";
-    case "off":
-      return "FLAG_DISABLED";
-    case "error":
-      return first.detail === "FLAG_NOT_FOUND" ? "FLAG_NOT_FOUND" : "ERROR";
-    case "default":
-      return reasons.some((r) => r.type === "percentage_rollout")
-        ? "DEFAULT_ROLLOUT"
-        : "DEFAULT_VARIATION";
-    case "percentage_rollout":
-      return reasons.some((r) => r.type === "default")
-        ? "DEFAULT_ROLLOUT"
-        : "TARGET_MATCH";
-    default:
-      return "DEFAULT_VARIATION";
-  }
-}
-
 export interface Gradual {
   /** Wait for the SDK to be ready (snapshot fetched) */
   ready(): Promise<void>;
@@ -134,17 +108,6 @@ export interface Gradual {
 
   /** Sync methods (throw if not ready) */
   sync: GradualSync;
-}
-
-/** @deprecated Use EvaluationResult instead */
-export interface EvalDetail {
-  value: unknown;
-  variationKey: string | undefined;
-  reason: LegacyEvaluationReason;
-  matchedTargetName?: string;
-  errorDetail?: string;
-  evaluationDurationUs?: number;
-  flagConfigVersion?: number;
 }
 
 export interface GradualSync {
@@ -328,7 +291,6 @@ class GradualClient implements Gradual {
       output = {
         value: undefined,
         variationKey: undefined,
-        legacyReason: "ERROR",
         reasons: [{ type: "error", detail: errorDetail }],
         errorDetail,
       };
@@ -366,7 +328,6 @@ class GradualClient implements Gradual {
         flagKey: key,
         variationKey: undefined,
         value: undefined,
-        reason: "FLAG_NOT_FOUND",
         reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
         context,
         flagConfigVersion: snapshot.version,
@@ -378,7 +339,6 @@ class GradualClient implements Gradual {
       flagKey: key,
       variationKey: output.variationKey,
       value: output.value,
-      reason: output.legacyReason,
       reasons: output.reasons,
       context,
       matchedTargetName: output.matchedTargetName,
@@ -394,8 +354,7 @@ class GradualClient implements Gradual {
     flagKey: string;
     variationKey: string | undefined;
     value: unknown;
-    reason: LegacyEvaluationReason;
-    reasons?: Reason[];
+    reasons: Reason[];
     evaluatedAt?: string;
     ruleId?: string;
     context: EvaluationContext;
@@ -424,7 +383,6 @@ class GradualClient implements Gradual {
       flagKey: params.flagKey,
       variationKey: params.variationKey,
       value: params.value,
-      reason: params.reason,
       reasons: params.reasons,
       evaluatedAt: params.evaluatedAt,
       ruleId: params.ruleId,
@@ -482,7 +440,6 @@ class GradualClient implements Gradual {
         flagKey: key,
         variationKey: undefined,
         value: undefined,
-        reason: "FLAG_NOT_FOUND",
         reasons: result.reasons,
         evaluatedAt: result.evaluatedAt,
         context,
@@ -497,7 +454,6 @@ class GradualClient implements Gradual {
       flagKey: key,
       variationKey: output.variationKey,
       value: output.value,
-      reason: output.legacyReason,
       reasons: output.reasons,
       evaluatedAt: result.evaluatedAt,
       ruleId: result.ruleId,
@@ -558,7 +514,6 @@ class GradualClient implements Gradual {
       flagKey: key,
       variationKey: result.variationKey,
       value: result.value,
-      reason: legacyReasonFromReasons(result.reasons),
       reasons: result.reasons,
       evaluatedAt: result.evaluatedAt,
       ruleId: result.ruleId,

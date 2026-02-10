@@ -303,7 +303,7 @@ export function evaluateFlag(
     return {
       value: offVariation?.value,
       variationKey: flag.offVariationKey,
-      legacyReason: "FLAG_DISABLED",
+
       reasons: [{ type: "off" }],
     };
   }
@@ -329,7 +329,7 @@ export function evaluateFlag(
         return {
           value: resolved.variation.value,
           variationKey: resolved.variationKey,
-          legacyReason: "TARGET_MATCH",
+
           reasons,
           matchedTargetName: target.name,
         };
@@ -348,9 +348,7 @@ export function evaluateFlag(
     return {
       value: resolved.variation.value,
       variationKey: resolved.variationKey,
-      legacyReason: flag.defaultRollout
-        ? "DEFAULT_ROLLOUT"
-        : "DEFAULT_VARIATION",
+
       reasons,
     };
   }
@@ -358,7 +356,7 @@ export function evaluateFlag(
   return {
     value: undefined,
     variationKey: undefined,
-    legacyReason: "DEFAULT_VARIATION",
+
     reasons: [{ type: "default" }],
   };
 }

@@ -19,7 +19,6 @@ export interface EvaluationEvent {
   environmentId: string;
   variationId: string | null;
   value: unknown;
-  reason: string;
   reasons: unknown[] | null;
   evaluatedAt: Date | null;
   ruleId: string | null;

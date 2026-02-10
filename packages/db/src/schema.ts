@@ -653,7 +653,6 @@ export const featureFlagEvaluation = pgTable(
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     value: jsonb("value"),
-    reason: text("reason"),
     reasons: jsonb("reasons").$type<unknown[]>(),
     evaluatedAt: timestamp("evaluated_at", { withTimezone: true }),
     ruleId: text("rule_id"),

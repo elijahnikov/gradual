@@ -80,8 +80,7 @@ export async function ingestEvaluations({
       ipAddress: null;
       userAgent: string | null;
       value: unknown;
-      reason: string;
-      reasons: unknown[] | null;
+      reasons: unknown[];
       evaluatedAt: Date | null;
       ruleId: string | null;
       sdkKey: string;
@@ -113,8 +112,7 @@ export async function ingestEvaluations({
         ipAddress: null,
         userAgent: meta.userAgent ?? null,
         value: event.value as Record<string, unknown>,
-        reason: event.reason,
-        reasons: event.reasons ?? null,
+        reasons: event.reasons,
         evaluatedAt: event.evaluatedAt ? new Date(event.evaluatedAt) : null,
         ruleId: event.ruleId ?? null,
         sdkKey: meta.sdkKey,
@@ -140,7 +138,6 @@ export async function ingestEvaluations({
           environmentId: featureFlagEvaluation.environmentId,
           variationId: featureFlagEvaluation.variationId,
           value: featureFlagEvaluation.value,
-          reason: featureFlagEvaluation.reason,
           reasons: featureFlagEvaluation.reasons,
           evaluatedAt: featureFlagEvaluation.evaluatedAt,
           ruleId: featureFlagEvaluation.ruleId,
@@ -158,7 +155,6 @@ export async function ingestEvaluations({
       for (const row of inserted) {
         ee.emit("add", {
           ...row,
-          reason: row.reason ?? "DEFAULT_VARIATION",
           reasons: row.reasons ?? null,
           evaluatedAt: row.evaluatedAt ?? null,
           ruleId: row.ruleId ?? null,

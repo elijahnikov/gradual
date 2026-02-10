@@ -133,28 +133,12 @@ export interface EvaluationResult<T = unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// Legacy types (kept for wire format backwards compat)
-// ---------------------------------------------------------------------------
-
-export type LegacyEvaluationReason =
-  | "FLAG_DISABLED"
-  | "TARGET_MATCH"
-  | "DEFAULT_ROLLOUT"
-  | "DEFAULT_VARIATION"
-  | "FLAG_NOT_FOUND"
-  | "ERROR";
-
-/** @deprecated Use LegacyEvaluationReason */
-export type EvaluationReason = LegacyEvaluationReason;
-
-// ---------------------------------------------------------------------------
 // Internal evaluator output (used between evaluator and client)
 // ---------------------------------------------------------------------------
 
 export interface EvalOutput {
   value: unknown;
   variationKey: string | undefined;
-  legacyReason: LegacyEvaluationReason;
   reasons: Reason[];
   matchedTargetName?: string;
   errorDetail?: string;
@@ -168,8 +152,7 @@ export interface EvaluationEvent {
   flagKey: string;
   variationKey: string | undefined;
   value: unknown;
-  reason: LegacyEvaluationReason;
-  reasons?: Reason[];
+  reasons: Reason[];
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;

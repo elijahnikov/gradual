@@ -40,27 +40,6 @@ interface FlagEventsProps {
   environmentId?: string;
 }
 
-const reasonLabels: Record<string, string> = {
-  FLAG_DISABLED: "Disabled",
-  TARGET_MATCH: "Target match",
-  DEFAULT_ROLLOUT: "Default rollout",
-  DEFAULT_VARIATION: "Default",
-  FLAG_NOT_FOUND: "Not found",
-  ERROR: "Error",
-};
-
-const reasonVariants: Record<
-  string,
-  "secondary" | "success" | "warning" | "error" | "info" | "outline"
-> = {
-  FLAG_DISABLED: "secondary",
-  TARGET_MATCH: "success",
-  DEFAULT_ROLLOUT: "info",
-  DEFAULT_VARIATION: "outline",
-  FLAG_NOT_FOUND: "warning",
-  ERROR: "error",
-};
-
 interface StructuredReason {
   type: string;
   ruleId?: string;
@@ -146,11 +125,10 @@ const columns = [
       );
     },
   }),
-  columnHelper.accessor("reason", {
+  columnHelper.accessor("reasons", {
     header: "Reason",
     cell: (info) => {
-      const row = info.row.original;
-      const structuredReasons = row.reasons;
+      const structuredReasons = info.getValue();
 
       if (
         Array.isArray(structuredReasons) &&
@@ -201,23 +179,9 @@ const columns = [
         );
       }
 
-      // Fallback: legacy string reason
-      const reason = info.getValue() ?? "DEFAULT_VARIATION";
-      if (reason === "ERROR" && row.errorDetail) {
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge size="sm" variant="error">
-                {reasonLabels[reason] ?? reason}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>{row.errorDetail}</TooltipContent>
-          </Tooltip>
-        );
-      }
       return (
-        <Badge size="sm" variant={reasonVariants[reason] ?? "outline"}>
-          {reasonLabels[reason] ?? reason}
+        <Badge size="sm" variant="outline">
+          Unknown
         </Badge>
       );
     },

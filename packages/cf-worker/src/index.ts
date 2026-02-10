@@ -8,8 +8,7 @@ interface EvaluationEvent {
   flagKey: string;
   variationKey: string | undefined;
   value: unknown;
-  reason: string;
-  reasons?: unknown[];
+  reasons: unknown[];
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
