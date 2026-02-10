@@ -863,6 +863,8 @@ export const saveTargetingRules = async ({
     targets,
     defaultVariationId,
     defaultRollout,
+    enabled,
+    offVariationId,
   } = input;
 
   const foundProject = await ctx.db.query.project.findFirst({
@@ -922,10 +924,20 @@ export const saveTargetingRules = async ({
         eq(featureFlagDefaultRollout.flagEnvironmentId, flagEnvironment.id)
       );
 
+    const envUpdate: Partial<typeof featureFlagEnvironment.$inferInsert> = {};
+
+    if (enabled !== undefined) {
+      envUpdate.enabled = enabled;
+    }
+    if (offVariationId !== undefined) {
+      envUpdate.offVariationId = offVariationId;
+    }
+
     if (defaultRollout) {
+      envUpdate.defaultVariationId = null;
       await tx
         .update(featureFlagEnvironment)
-        .set({ defaultVariationId: null })
+        .set(envUpdate)
         .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
 
       const [insertedDefaultRollout] = await tx
@@ -951,11 +963,16 @@ export const saveTargetingRules = async ({
           }
         }
       }
-    } else if (defaultVariationId) {
-      await tx
-        .update(featureFlagEnvironment)
-        .set({ defaultVariationId })
-        .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+    } else {
+      if (defaultVariationId) {
+        envUpdate.defaultVariationId = defaultVariationId;
+      }
+      if (Object.keys(envUpdate).length > 0) {
+        await tx
+          .update(featureFlagEnvironment)
+          .set(envUpdate)
+          .where(eq(featureFlagEnvironment.id, flagEnvironment.id));
+      }
     }
 
     for (let i = 0; i < targets.length; i++) {

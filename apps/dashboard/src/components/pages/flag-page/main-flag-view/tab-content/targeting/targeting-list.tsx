@@ -9,6 +9,7 @@ interface TargetingListProps {
   onAddTarget: (type: TargetType, index: number) => void;
   footer: ReactNode;
   disabled?: boolean;
+  collapsed?: boolean;
 }
 
 export function TargetingList({
@@ -16,42 +17,45 @@ export function TargetingList({
   onAddTarget,
   footer,
   disabled = false,
+  collapsed = false,
 }: TargetingListProps) {
   return (
     <div className="flex w-full flex-col items-center py-4 sm:py-8">
-      <AddNewTargetButton
-        disabled={disabled}
-        onAddTarget={(type) => onAddTarget(type, 0)}
-      />
-      <TargetConnector />
-
-      {children.map((child, index) => (
-        <div className="flex w-full flex-col items-center" key={index}>
-          <div
-            className={cn(
-              "flex w-full justify-center",
-              disabled && "pointer-events-none"
-            )}
-          >
-            {child}
-          </div>
-          <TargetConnector />
-          <AddNewTargetButton
-            disabled={disabled}
-            onAddTarget={(type) => onAddTarget(type, index + 1)}
-          />
-          <TargetConnector />
-        </div>
-      ))}
-
       <div
         className={cn(
-          "flex w-full justify-center",
-          disabled && "pointer-events-none"
+          "grid w-full transition-[grid-template-rows] duration-300 ease-in-out",
+          collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
         )}
       >
-        {footer}
+        <div className="flex w-full flex-col items-center overflow-hidden">
+          <AddNewTargetButton
+            disabled={disabled}
+            onAddTarget={(type) => onAddTarget(type, 0)}
+          />
+          <TargetConnector />
+
+          {children.map((child, index) => (
+            <div className="flex w-full flex-col items-center" key={index}>
+              <div
+                className={cn(
+                  "flex w-full justify-center",
+                  disabled && "pointer-events-none"
+                )}
+              >
+                {child}
+              </div>
+              <TargetConnector />
+              <AddNewTargetButton
+                disabled={disabled}
+                onAddTarget={(type) => onAddTarget(type, index + 1)}
+              />
+              <TargetConnector />
+            </div>
+          ))}
+        </div>
       </div>
+
+      <div className="flex w-full justify-center">{footer}</div>
     </div>
   );
 }

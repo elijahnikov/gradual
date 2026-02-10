@@ -412,6 +412,12 @@ export function ReviewChangesModal() {
   const originalDefaultRollout = useTargetingStore(
     (s) => s.originalDefaultRollout
   );
+  const enabled = useTargetingStore((s) => s.enabled);
+  const originalEnabled = useTargetingStore((s) => s.originalEnabled);
+  const offVariationId = useTargetingStore((s) => s.offVariationId);
+  const originalOffVariationId = useTargetingStore(
+    (s) => s.originalOffVariationId
+  );
   const variationsById = useTargetingStore((s) => s.variationsById);
   const segmentsById = useTargetingStore((s) => s.segmentsById);
   const flagId = useTargetingStore((s) => s.flagId);
@@ -423,11 +429,11 @@ export function ReviewChangesModal() {
   const saveMutation = useMutation(
     trpc.featureFlags.saveTargetingRules.mutationOptions({
       onSuccess: () => {
+        markSaved();
+        closeModal();
         queryClient.invalidateQueries(
           trpc.featureFlags.getTargetingRules.pathFilter()
         );
-        markSaved();
-        closeModal();
         toastManager.add({
           type: "success",
           title: "Changes saved",
@@ -461,11 +467,18 @@ export function ReviewChangesModal() {
   const defaultChanged =
     defaultModeChanged || defaultVariationChanged || defaultRolloutChanged;
 
+  const enabledChanged = enabled !== originalEnabled;
+  const offVariationChanged = offVariationId !== originalOffVariationId;
+
   const originalVariation = variationsById.get(originalDefaultVariationId);
   const newVariation = variationsById.get(defaultVariationIdState);
 
   const hasAnyChanges =
-    diffs.length > 0 || defaultChanged || orderChanges.length > 0;
+    diffs.length > 0 ||
+    defaultChanged ||
+    orderChanges.length > 0 ||
+    enabledChanged ||
+    offVariationChanged;
 
   const diffCounts = useMemo(() => {
     const counts = { added: 0, removed: 0, modified: 0 };
@@ -476,7 +489,11 @@ export function ReviewChangesModal() {
   }, [diffs]);
 
   const totalChanges =
-    diffs.length + (defaultChanged ? 1 : 0) + (orderChanges.length > 0 ? 1 : 0);
+    diffs.length +
+    (defaultChanged ? 1 : 0) +
+    (orderChanges.length > 0 ? 1 : 0) +
+    (enabledChanged ? 1 : 0) +
+    (offVariationChanged ? 1 : 0);
 
   const handleSave = () => {
     saveMutation.mutate({
@@ -487,6 +504,8 @@ export function ReviewChangesModal() {
       targets,
       defaultVariationId: defaultRollout ? undefined : defaultVariationIdState,
       defaultRollout: defaultRollout ?? undefined,
+      enabled,
+      offVariationId,
     });
   };
 
@@ -520,6 +539,70 @@ export function ReviewChangesModal() {
           <div className="flex flex-col gap-4 py-4">
             {hasAnyChanges ? (
               <div className="flex flex-col gap-4">
+                {(enabledChanged || offVariationChanged) && (
+                  <>
+                    <div className="flex flex-col gap-3">
+                      <Text
+                        className="font-mono text-ui-fg-muted uppercase tracking-wide"
+                        size="xsmall"
+                      >
+                        Flag Status
+                      </Text>
+                      <div className="flex flex-col gap-2">
+                        {enabledChanged && (
+                          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-warning/10">
+                              <RiPencilLine className="size-4 text-warning-foreground" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  originalEnabled ? "success" : "outline"
+                                }
+                              >
+                                {originalEnabled ? "ON" : "OFF"}
+                              </Badge>
+                              <RiArrowRightLine className="size-4 text-ui-fg-muted" />
+                              <Badge variant={enabled ? "success" : "outline"}>
+                                {enabled ? "ON" : "OFF"}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                        {offVariationChanged && (
+                          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-warning/10">
+                              <RiPencilLine className="size-4 text-warning-foreground" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Text className="text-ui-fg-muted" size="xsmall">
+                                Off variation
+                              </Text>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {(originalOffVariationId
+                                    ? variationsById.get(originalOffVariationId)
+                                        ?.name
+                                    : null) ?? "None"}
+                                </Badge>
+                                <RiArrowRightLine className="size-4 text-ui-fg-muted" />
+                                <Badge variant="warning">
+                                  {(offVariationId
+                                    ? variationsById.get(offVariationId)?.name
+                                    : null) ?? "None"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {(defaultChanged ||
+                      diffs.length > 0 ||
+                      orderChanges.length > 0) && <Separator />}
+                  </>
+                )}
+
                 {defaultChanged && (
                   <>
                     <div className="flex flex-col gap-3">
@@ -722,6 +805,14 @@ export function ReviewChangesModal() {
                     )}
                     {defaultChanged && (
                       <Badge variant="outline">Default changed</Badge>
+                    )}
+                    {enabledChanged && (
+                      <Badge variant={enabled ? "success" : "outline"}>
+                        Turned {enabled ? "ON" : "OFF"}
+                      </Badge>
+                    )}
+                    {offVariationChanged && (
+                      <Badge variant="warning">Off variation changed</Badge>
                     )}
                     {orderChanges.length > 0 && (
                       <Badge variant="info">Order changed</Badge>

@@ -234,6 +234,8 @@ export const saveTargetingRulesSchema = z.object({
   targets: z.array(targetSchema),
   defaultVariationId: z.uuid().optional(),
   defaultRollout: rolloutConfigSchema.optional(),
+  enabled: z.boolean().optional(),
+  offVariationId: z.uuid().optional().nullable(),
 });
 export type SaveTargetingRulesInput = z.infer<typeof saveTargetingRulesSchema>;
 

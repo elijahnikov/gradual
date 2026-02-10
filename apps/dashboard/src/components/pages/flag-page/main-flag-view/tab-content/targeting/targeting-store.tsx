@@ -60,6 +60,11 @@ interface TargetingState {
   defaultRollout: LocalRollout | null;
   originalDefaultRollout: LocalRollout | null;
 
+  enabled: boolean;
+  originalEnabled: boolean;
+  offVariationId: string | null;
+  originalOffVariationId: string | null;
+
   hasChanges: boolean;
   isReviewModalOpen: boolean;
 }
@@ -74,6 +79,8 @@ interface TargetingActions {
     projectSlug: string;
     defaultVariationId: string;
     defaultRollout?: LocalRollout | null;
+    enabled?: boolean;
+    offVariationId?: string | null;
     flagId: string;
     environmentSlug: string;
     existingTargets?: LocalTarget[];
@@ -100,6 +107,8 @@ interface TargetingActions {
   setDefaultVariation: (variationId: string) => void;
   setDefaultRollout: (rollout: LocalRollout) => void;
   setDefaultMode: (mode: "single" | "rollout") => void;
+  setEnabled: (enabled: boolean) => void;
+  setOffVariationId: (offVariationId: string | null) => void;
 
   openReviewModal: () => void;
   closeReviewModal: () => void;
@@ -130,6 +139,10 @@ export const createTargetingStore = () =>
     originalDefaultVariationId: "",
     defaultRollout: null,
     originalDefaultRollout: null,
+    enabled: false,
+    originalEnabled: false,
+    offVariationId: null,
+    originalOffVariationId: null,
     hasChanges: false,
     isReviewModalOpen: false,
 
@@ -159,6 +172,22 @@ export const createTargetingStore = () =>
 
       const defaultRollout = config.defaultRollout ?? null;
 
+      // After first init, preserve enabled/offVariationId from the store
+      // since they are managed by setEnabled/setOffVariationId/markSaved/reset.
+      // Re-initializing them from the (possibly stale) query cache causes a flash.
+      const current = get();
+      const isFirstInit = !current.flagId;
+      const enabled = isFirstInit ? (config.enabled ?? false) : current.enabled;
+      const originalEnabled = isFirstInit
+        ? (config.enabled ?? false)
+        : current.originalEnabled;
+      const offVariationId = isFirstInit
+        ? (config.offVariationId ?? null)
+        : current.offVariationId;
+      const originalOffVariationId = isFirstInit
+        ? (config.offVariationId ?? null)
+        : current.originalOffVariationId;
+
       set({
         attributes: config.attributes,
         contexts: config.contexts,
@@ -173,6 +202,10 @@ export const createTargetingStore = () =>
         originalDefaultRollout: defaultRollout
           ? JSON.parse(JSON.stringify(defaultRollout))
           : null,
+        enabled,
+        originalEnabled,
+        offVariationId,
+        originalOffVariationId,
         flagId: config.flagId,
         environmentSlug: config.environmentSlug,
         attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
@@ -190,13 +223,21 @@ export const createTargetingStore = () =>
     },
 
     markSaved: () => {
-      const { targets, defaultVariationIdState, defaultRollout } = get();
+      const {
+        targets,
+        defaultVariationIdState,
+        defaultRollout,
+        enabled,
+        offVariationId,
+      } = get();
       set({
         originalTargets: JSON.parse(JSON.stringify(targets)),
         originalDefaultVariationId: defaultVariationIdState,
         originalDefaultRollout: defaultRollout
           ? JSON.parse(JSON.stringify(defaultRollout))
           : null,
+        originalEnabled: enabled,
+        originalOffVariationId: offVariationId,
         hasChanges: false,
       });
     },
@@ -206,6 +247,8 @@ export const createTargetingStore = () =>
         originalTargets,
         originalDefaultVariationId,
         originalDefaultRollout,
+        originalEnabled,
+        originalOffVariationId,
       } = get();
       set({
         targets: JSON.parse(JSON.stringify(originalTargets)),
@@ -213,6 +256,8 @@ export const createTargetingStore = () =>
         defaultRollout: originalDefaultRollout
           ? JSON.parse(JSON.stringify(originalDefaultRollout))
           : null,
+        enabled: originalEnabled,
+        offVariationId: originalOffVariationId,
         hasChanges: false,
       });
     },
@@ -408,6 +453,14 @@ export const createTargetingStore = () =>
       }
     },
 
+    setEnabled: (enabled) => {
+      set({ enabled, hasChanges: true });
+    },
+
+    setOffVariationId: (offVariationId) => {
+      set({ offVariationId, hasChanges: true });
+    },
+
     openReviewModal: () => {
       set({ isReviewModalOpen: true });
     },
@@ -434,6 +487,10 @@ export function getValidationErrors(
         targetErrors.push("At least one condition is required");
       } else {
         for (const condition of target.conditions) {
+          if (!condition.attributeKey?.trim()) {
+            targetErrors.push("All conditions must have an attribute selected");
+            break;
+          }
           if (
             condition.operator !== "exists" &&
             condition.operator !== "not_exists"

@@ -1,4 +1,3 @@
-import { Badge } from "@gradual/ui/badge";
 import { Card } from "@gradual/ui/card";
 import {
   Select,
@@ -9,6 +8,7 @@ import {
   SelectValue,
 } from "@gradual/ui/select";
 import { Separator } from "@gradual/ui/separator";
+import { Switch } from "@gradual/ui/switch";
 import { Text } from "@gradual/ui/text";
 import { RiPercentLine } from "@remixicon/react";
 import { useCallback, useMemo } from "react";
@@ -18,7 +18,13 @@ import { useTargetingStore } from "./targeting-store";
 
 const ROLLOUT_VALUE = "__rollout__";
 
-export default function DefaultVariation() {
+interface DefaultVariationProps {
+  disabled?: boolean;
+}
+
+export default function DefaultVariation({
+  disabled = false,
+}: DefaultVariationProps) {
   const variations = useTargetingStore((s) => s.variations);
   const defaultVariationIdState = useTargetingStore(
     (s) => s.defaultVariationIdState
@@ -27,6 +33,10 @@ export default function DefaultVariation() {
   const setDefaultVariation = useTargetingStore((s) => s.setDefaultVariation);
   const setDefaultRollout = useTargetingStore((s) => s.setDefaultRollout);
   const setDefaultMode = useTargetingStore((s) => s.setDefaultMode);
+  const enabled = useTargetingStore((s) => s.enabled);
+  const setEnabled = useTargetingStore((s) => s.setEnabled);
+  const offVariationId = useTargetingStore((s) => s.offVariationId);
+  const setOffVariationId = useTargetingStore((s) => s.setOffVariationId);
 
   const variationItems = useMemo(
     () =>
@@ -62,17 +72,26 @@ export default function DefaultVariation() {
     [setDefaultRollout]
   );
 
+  const selectedOffVariation = variationItems.find(
+    (v) => v.value === offVariationId
+  );
+
   return (
     <Card className="flex w-full max-w-3xl flex-col gap-3 p-0">
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <Badge size="lg" variant="outline">
-          Default
-        </Badge>
         <div className="flex items-center gap-2">
+          <Switch
+            checked={enabled}
+            disabled={disabled}
+            onCheckedChange={setEnabled}
+          />
           <Text className="text-ui-fg-subtle" size="small">
-            If no rules match, serve
+            {enabled ? "If no rules match, serve" : "Flag is off, serve"}
           </Text>
+        </div>
+        {enabled ? (
           <Select
+            disabled={disabled}
             onValueChange={(val) => {
               if (val) {
                 handleValueChange(val);
@@ -123,10 +142,55 @@ export default function DefaultVariation() {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        ) : (
+          <Select
+            disabled={disabled}
+            onValueChange={(val) => {
+              if (val) {
+                setOffVariationId(val);
+              }
+            }}
+            value={offVariationId ?? ""}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue>
+                {selectedOffVariation ? (
+                  <span className="flex items-center gap-1.5">
+                    {selectedOffVariation.color && (
+                      <span
+                        className="size-3 shrink-0 rounded-[4px]"
+                        style={{
+                          backgroundColor: selectedOffVariation.color,
+                        }}
+                      />
+                    )}
+                    {selectedOffVariation.label}
+                  </span>
+                ) : (
+                  "Select variation"
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              {variationItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  <span className="flex items-center gap-1.5">
+                    {item.color && (
+                      <span
+                        className="size-3 shrink-0 rounded-[4px]"
+                        style={{ backgroundColor: item.color }}
+                      />
+                    )}
+                    {item.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      {isRollout && defaultRollout && (
+      {enabled && isRollout && defaultRollout && (
         <>
           <Separator className="-mt-2.5" />
           <RolloutEditor

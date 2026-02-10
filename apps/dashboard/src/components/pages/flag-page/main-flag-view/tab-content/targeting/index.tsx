@@ -141,6 +141,7 @@ function FlagTargetingContent({
   const hasChanges = useTargetingStore((s) => s.hasChanges);
   const openReviewModal = useTargetingStore((s) => s.openReviewModal);
   const reset = useTargetingStore((s) => s.reset);
+  const enabled = useTargetingStore((s) => s.enabled);
 
   const validationErrors = useMemo(
     () => getValidationErrors(targets),
@@ -174,6 +175,8 @@ function FlagTargetingContent({
       defaultVariationId:
         flagEnvironment.defaultVariation?.id ?? defaultVariationId,
       defaultRollout: existingDefaultRollout,
+      enabled: flagEnvironment.enabled,
+      offVariationId: flagEnvironment.offVariationId,
       flagId: flag.flag.id,
       environmentSlug,
       existingTargets,
@@ -189,6 +192,8 @@ function FlagTargetingContent({
     projectSlug,
     environmentSlug,
     flagEnvironment.defaultVariation?.id,
+    flagEnvironment.enabled,
+    flagEnvironment.offVariationId,
     defaultVariationId,
     existingDefaultRollout,
     existingTargets,
@@ -198,7 +203,9 @@ function FlagTargetingContent({
     <div className="flex w-full flex-1 flex-col px-2">
       <div className="flex h-full w-full flex-1 flex-col p-0">
         <div className="mb-1 flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <Text weight="plus">Targeting rules for {environmentSlug}</Text>
+          <Text className="ml-1" weight="plus">
+            Targeting rules for {environmentSlug}
+          </Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
@@ -249,10 +256,13 @@ function FlagTargetingContent({
             <div className="relative flex h-full min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
               <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
                 <TargetingList
-                  disabled={!canUpdateFlags}
+                  collapsed={!enabled}
+                  disabled={!(canUpdateFlags && enabled)}
                   footer={
                     (flagEnvironment.defaultVariation ||
-                      flagEnvironment.defaultRollout) && <DefaultVariation />
+                      flagEnvironment.defaultRollout) && (
+                      <DefaultVariation disabled={!canUpdateFlags} />
+                    )
                   }
                   onAddTarget={addTarget}
                 >
