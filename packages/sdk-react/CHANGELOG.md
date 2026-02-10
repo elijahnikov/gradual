@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.1
+
+### Patch Changes
+
+- [#57](https://github.com/elijahnikov/gradual/pull/57) [`17e5703`](https://github.com/elijahnikov/gradual/commit/17e5703d4bd21e9ee4e5daaf637d67a55ef9b0ad) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding useEvaluation hook
+
+- Updated dependencies [[`17e5703`](https://github.com/elijahnikov/gradual/commit/17e5703d4bd21e9ee4e5daaf637d67a55ef9b0ad)]:
+  - @gradual-so/sdk@0.8.1
+
 ## 0.8.0
 
 ### Minor Changes
