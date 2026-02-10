@@ -1,5 +1,15 @@
 # @gradual-so/sdk
 
+## 0.8.0
+
+### Minor Changes
+
+- [#55](https://github.com/elijahnikov/gradual/pull/55) [`e099133`](https://github.com/elijahnikov/gradual/commit/e0991333ae3902c01bb3b0d1edfa162c34a06b3a) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding better evaluation reasoning
+
+### Patch Changes
+
+- [#55](https://github.com/elijahnikov/gradual/pull/55) [`870cc06`](https://github.com/elijahnikov/gradual/commit/870cc06592cb6d3b4f693b30d78395eaeef9ecc3) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Removing legacy reason
+
 ## 0.7.5
 
 ### Patch Changes
