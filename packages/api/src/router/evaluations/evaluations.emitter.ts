@@ -31,6 +31,10 @@ export interface EvaluationEvent {
   errorDetail: string | null;
   evaluationDurationUs: number | null;
   isAnonymous: boolean | null;
+  inputsUsed: string[] | null;
+  traceId: string | null;
+  schemaVersion: number | null;
+  policyVersion: number | null;
 }
 
 interface EvaluationEvents {

@@ -27,7 +27,7 @@ export function TargetingList({
           collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
         )}
       >
-        <div className="flex w-full flex-col items-center overflow-hidden">
+        <div className="flex w-full flex-col items-center overflow-hidden pt-1">
           <AddNewTargetButton
             disabled={disabled}
             onAddTarget={(type) => onAddTarget(type, 0)}

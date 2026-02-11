@@ -153,7 +153,13 @@ export default function MetricsHeader({ variations }: MetricsHeaderProps) {
               key={variation.id}
               onCheckedChange={() => toggleVariation(variation.id)}
             >
-              {variation.name}
+              <div className="flex items-center gap-2">
+                <span
+                  className="col-start-2! size-3! shrink-0 rounded-[4px]"
+                  style={{ backgroundColor: variation.color ?? "" }}
+                />
+                {variation.name}
+              </div>
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>

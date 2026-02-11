@@ -95,9 +95,11 @@ function SheetPopup({
             <SheetPrimitive.Close
               aria-label="Close"
               className="absolute end-2 top-2"
-              render={<Button size="small" variant="ghost" />}
+              render={
+                <Button className="size-6" size="small" variant="ghost" />
+              }
             >
-              <XIcon />
+              <XIcon className="size-4 shrink-0" />
             </SheetPrimitive.Close>
           )}
         </SheetPrimitive.Popup>
@@ -144,7 +146,7 @@ function SheetFooter({
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
     <SheetPrimitive.Title
-      className={cn("font-heading text-xl leading-none", className)}
+      className={cn("text-lg", className)}
       data-slot="sheet-title"
       {...props}
     />

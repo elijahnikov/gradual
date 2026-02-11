@@ -1742,6 +1742,10 @@ export const getEvents = async ({
       errorDetail: featureFlagEvaluation.errorDetail,
       evaluationDurationUs: featureFlagEvaluation.evaluationDurationUs,
       isAnonymous: featureFlagEvaluation.isAnonymous,
+      inputsUsed: featureFlagEvaluation.inputsUsed,
+      traceId: featureFlagEvaluation.traceId,
+      schemaVersion: featureFlagEvaluation.schemaVersion,
+      policyVersion: featureFlagEvaluation.policyVersion,
     })
     .from(featureFlagEvaluation)
     .where(and(...conditions))
@@ -1801,6 +1805,10 @@ export interface WatchEventItem {
   errorDetail: string | null;
   evaluationDurationUs: number | null;
   isAnonymous: boolean | null;
+  inputsUsed: string[] | null;
+  traceId: string | null;
+  schemaVersion: number | null;
+  policyVersion: number | null;
   variationName: string | null;
   variationColor: string | null;
 }
@@ -1887,6 +1895,10 @@ export async function* watchEvents({
       errorDetail: event.errorDetail,
       evaluationDurationUs: event.evaluationDurationUs,
       isAnonymous: event.isAnonymous,
+      inputsUsed: event.inputsUsed,
+      traceId: event.traceId,
+      schemaVersion: event.schemaVersion,
+      policyVersion: event.policyVersion,
       variationName: event.variationId
         ? (variationMap.get(event.variationId)?.name ?? null)
         : null,

@@ -13,11 +13,16 @@ const reasonSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("default") }),
   z.object({ type: z.literal("off") }),
-  z.object({ type: z.literal("error"), detail: z.string() }),
+  z.object({
+    type: z.literal("error"),
+    detail: z.string(),
+    errorCode: z.string().optional(),
+  }),
 ]);
 
 const evaluationEventSchema = z.object({
-  flagKey: z.string(),
+  schemaVersion: z.number().optional(),
+  key: z.string(),
   variationKey: z.string().optional(),
   value: z.unknown(),
   reasons: z.array(reasonSchema),
@@ -27,10 +32,13 @@ const evaluationEventSchema = z.object({
   evaluatedAt: z.string().optional(),
   matchedTargetName: z.string().optional(),
   ruleId: z.string().optional(),
-  flagConfigVersion: z.number().optional(),
+  flagVersion: z.number().optional(),
+  policyVersion: z.number().optional(),
   errorDetail: z.string().optional(),
   evaluationDurationUs: z.number().optional(),
   isAnonymous: z.boolean().optional(),
+  inputsUsed: z.array(z.string()).optional(),
+  traceId: z.string().optional(),
 });
 
 const evaluationBatchSchema = z.object({

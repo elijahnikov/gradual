@@ -131,7 +131,7 @@ export default function FlagVariations({
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
+    <div className="flex w-full flex-1 flex-col px-5 py-3">
       {flagType !== "boolean" && (
         <div className="mb-3 flex justify-end">
           <Button

@@ -26,8 +26,10 @@ function hashString(str: string): number {
 function getBucketValue(
   flagKey: string,
   context: EvaluationContext,
-  rollout: SnapshotRollout
+  rollout: SnapshotRollout,
+  inputsUsed: Set<string>
 ): number {
+  inputsUsed.add(`${rollout.bucketContextKind}.${rollout.bucketAttributeKey}`);
   const bucketKey =
     context[rollout.bucketContextKind]?.[rollout.bucketAttributeKey];
   const seed = rollout.seed ?? "";
@@ -81,9 +83,11 @@ function selectVariationFromRollout(
 
 function evaluateCondition(
   condition: SnapshotRuleCondition,
-  context: EvaluationContext
+  context: EvaluationContext,
+  inputsUsed: Set<string>
 ): boolean {
   const { contextKind, attributeKey, operator, value } = condition;
+  inputsUsed.add(`${contextKind}.${attributeKey}`);
   const contextValue = context[contextKind]?.[attributeKey];
 
   switch (operator) {
@@ -172,22 +176,27 @@ function evaluateCondition(
 
 function evaluateConditions(
   conditions: SnapshotRuleCondition[],
-  context: EvaluationContext
+  context: EvaluationContext,
+  inputsUsed: Set<string>
 ): boolean {
-  return conditions.every((condition) => evaluateCondition(condition, context));
+  return conditions.every((condition) =>
+    evaluateCondition(condition, context, inputsUsed)
+  );
 }
 
 function evaluateSegment(
   segment: SnapshotSegment,
-  context: EvaluationContext
+  context: EvaluationContext,
+  inputsUsed: Set<string>
 ): boolean {
-  return evaluateConditions(segment.conditions, context);
+  return evaluateConditions(segment.conditions, context, inputsUsed);
 }
 
 function evaluateTarget(
   target: SnapshotTarget,
   context: EvaluationContext,
-  segments: Record<string, SnapshotSegment>
+  segments: Record<string, SnapshotSegment>,
+  inputsUsed: Set<string>
 ): boolean {
   switch (target.type) {
     case "individual":
@@ -196,6 +205,7 @@ function evaluateTarget(
         target.attributeKey &&
         target.attributeValue !== undefined
       ) {
+        inputsUsed.add(`${target.contextKind}.${target.attributeKey}`);
         return (
           context[target.contextKind]?.[target.attributeKey] ===
           target.attributeValue
@@ -205,7 +215,7 @@ function evaluateTarget(
 
     case "rule":
       if (target.conditions) {
-        return evaluateConditions(target.conditions, context);
+        return evaluateConditions(target.conditions, context, inputsUsed);
       }
       return false;
 
@@ -213,7 +223,7 @@ function evaluateTarget(
       if (target.segmentKey) {
         const segment = segments[target.segmentKey];
         if (segment) {
-          return evaluateSegment(segment, context);
+          return evaluateSegment(segment, context, inputsUsed);
         }
       }
       return false;
@@ -227,10 +237,16 @@ function resolveTargetVariation(
   target: SnapshotTarget,
   flagKey: string,
   context: EvaluationContext,
-  variations: Record<string, SnapshotVariation>
+  variations: Record<string, SnapshotVariation>,
+  inputsUsed: Set<string>
 ): RolloutResult | undefined {
   if (target.rollout) {
-    const bucketValue = getBucketValue(flagKey, context, target.rollout);
+    const bucketValue = getBucketValue(
+      flagKey,
+      context,
+      target.rollout,
+      inputsUsed
+    );
     return selectVariationFromRollout(target.rollout, bucketValue, variations);
   }
 
@@ -251,10 +267,16 @@ function resolveTargetVariation(
 
 function resolveDefaultVariation(
   flag: SnapshotFlag,
-  context: EvaluationContext
+  context: EvaluationContext,
+  inputsUsed: Set<string>
 ): RolloutResult | undefined {
   if (flag.defaultRollout) {
-    const bucketValue = getBucketValue(flag.key, context, flag.defaultRollout);
+    const bucketValue = getBucketValue(
+      flag.key,
+      context,
+      flag.defaultRollout,
+      inputsUsed
+    );
     return selectVariationFromRollout(
       flag.defaultRollout,
       bucketValue,
@@ -303,22 +325,25 @@ export function evaluateFlag(
     return {
       value: offVariation?.value,
       variationKey: flag.offVariationKey,
-
       reasons: [{ type: "off" }],
+      inputsUsed: [],
     };
   }
+
+  const inputsUsed = new Set<string>();
 
   const sortedTargets = [...flag.targets].sort(
     (a, b) => a.sortOrder - b.sortOrder
   );
 
   for (const target of sortedTargets) {
-    if (evaluateTarget(target, context, segments)) {
+    if (evaluateTarget(target, context, segments, inputsUsed)) {
       const resolved = resolveTargetVariation(
         target,
         flag.key,
         context,
-        flag.variations
+        flag.variations,
+        inputsUsed
       );
       if (resolved) {
         const reasons: Reason[] = [buildRuleMatchReason(target)];
@@ -329,15 +354,15 @@ export function evaluateFlag(
         return {
           value: resolved.variation.value,
           variationKey: resolved.variationKey,
-
           reasons,
           matchedTargetName: target.name,
+          inputsUsed: [...inputsUsed],
         };
       }
     }
   }
 
-  const resolved = resolveDefaultVariation(flag, context);
+  const resolved = resolveDefaultVariation(flag, context, inputsUsed);
   if (resolved) {
     const reasons: Reason[] = [];
     if (flag.defaultRollout) {
@@ -348,15 +373,15 @@ export function evaluateFlag(
     return {
       value: resolved.variation.value,
       variationKey: resolved.variationKey,
-
       reasons,
+      inputsUsed: [...inputsUsed],
     };
   }
 
   return {
     value: undefined,
     variationKey: undefined,
-
     reasons: [{ type: "default" }],
+    inputsUsed: [...inputsUsed],
   };
 }
