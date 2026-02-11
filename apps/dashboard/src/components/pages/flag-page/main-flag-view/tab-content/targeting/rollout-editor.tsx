@@ -28,7 +28,7 @@ interface RolloutEditorProps {
 
 const TOTAL_WEIGHT = 100_000;
 
-function weightToPercent(weight: number): string {
+export function weightToPercent(weight: number): string {
   return (weight / 1000).toFixed(1);
 }
 
@@ -40,7 +40,7 @@ function percentToWeight(percent: string): number {
   return Math.round(val * 1000);
 }
 
-function PercentInput({
+export function PercentInput({
   value,
   onChange,
 }: {
@@ -87,7 +87,10 @@ interface PercentageSliderProps {
   ) => void;
 }
 
-function PercentageSlider({ variations, onChange }: PercentageSliderProps) {
+export function PercentageSlider({
+  variations,
+  onChange,
+}: PercentageSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 

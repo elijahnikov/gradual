@@ -10,13 +10,15 @@ import {
 import { Separator } from "@gradual/ui/separator";
 import { Switch } from "@gradual/ui/switch";
 import { Text } from "@gradual/ui/text";
-import { RiPercentLine } from "@remixicon/react";
+import { RiPercentLine, RiTimerLine } from "@remixicon/react";
 import { useCallback, useMemo } from "react";
+import { GradualRolloutEditor } from "./gradual-rollout-editor";
 import { RolloutEditor } from "./rollout-editor";
 import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
 
 const ROLLOUT_VALUE = "__rollout__";
+const GRADUAL_VALUE = "__gradual__";
 
 interface DefaultVariationProps {
   disabled?: boolean;
@@ -48,15 +50,22 @@ export default function DefaultVariation({
     [variations]
   );
 
-  const isRollout = !!defaultRollout;
-  const displayValue = isRollout ? ROLLOUT_VALUE : defaultVariationIdState;
+  const isGradual = !!defaultRollout?.schedule;
+  const isRollout = !!defaultRollout && !isGradual;
+  const displayValue = isGradual
+    ? GRADUAL_VALUE
+    : isRollout
+      ? ROLLOUT_VALUE
+      : defaultVariationIdState;
   const selectedVariation = variationItems.find(
     (v) => v.value === defaultVariationIdState
   );
 
   const handleValueChange = useCallback(
     (value: string) => {
-      if (value === ROLLOUT_VALUE) {
+      if (value === GRADUAL_VALUE) {
+        setDefaultMode("gradual");
+      } else if (value === ROLLOUT_VALUE) {
         setDefaultMode("rollout");
       } else {
         setDefaultVariation(value);
@@ -99,12 +108,17 @@ export default function DefaultVariation({
             }}
             value={displayValue}
           >
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue>
-                {isRollout ? (
+                {isGradual ? (
+                  <span className="flex items-center gap-1.5">
+                    <RiTimerLine className="size-3.5" />
+                    Gradual rollout
+                  </span>
+                ) : isRollout ? (
                   <span className="flex items-center gap-1.5">
                     <RiPercentLine className="size-3.5" />
-                    Rollout
+                    Percentage rollout
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">
@@ -137,7 +151,13 @@ export default function DefaultVariation({
               <SelectItem value={ROLLOUT_VALUE}>
                 <span className="flex items-center gap-1.5">
                   <RiPercentLine className="size-3.5" />
-                  Rollout
+                  Percentage rollout
+                </span>
+              </SelectItem>
+              <SelectItem value={GRADUAL_VALUE}>
+                <span className="flex items-center gap-1.5">
+                  <RiTimerLine className="size-3.5" />
+                  Gradual rollout
                 </span>
               </SelectItem>
             </SelectContent>
@@ -190,6 +210,16 @@ export default function DefaultVariation({
         )}
       </div>
 
+      {enabled && isGradual && defaultRollout && (
+        <>
+          <Separator className="-mt-2.5" />
+          <GradualRolloutEditor
+            onRolloutChange={handleRolloutChange}
+            rollout={defaultRollout}
+            variations={variations}
+          />
+        </>
+      )}
       {enabled && isRollout && defaultRollout && (
         <>
           <Separator className="-mt-2.5" />

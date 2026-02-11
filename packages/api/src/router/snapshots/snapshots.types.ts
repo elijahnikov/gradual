@@ -31,11 +31,18 @@ export interface SnapshotRolloutVariation {
   weight: number; // 0-100000 for 0.001% precision
 }
 
+export interface SnapshotScheduleStep {
+  durationMinutes: number;
+  variations: SnapshotRolloutVariation[];
+}
+
 export interface SnapshotRollout {
   variations: SnapshotRolloutVariation[];
   bucketContextKind: string;
   bucketAttributeKey: string;
   seed?: string;
+  schedule?: SnapshotScheduleStep[];
+  startedAt?: string;
 }
 
 export interface SnapshotTarget {

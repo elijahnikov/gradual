@@ -15,11 +15,17 @@ export interface LocalRolloutVariation {
   weight: number;
 }
 
+export interface LocalScheduleStep {
+  durationMinutes: number;
+  variations: LocalRolloutVariation[];
+}
+
 export interface LocalRollout {
   variations: LocalRolloutVariation[];
   bucketContextKind: string;
   bucketAttributeKey: string;
   seed?: string;
+  schedule?: LocalScheduleStep[];
 }
 
 export interface LocalTarget {
@@ -94,7 +100,7 @@ interface TargetingActions {
   moveTarget: (id: string, direction: "up" | "down") => void;
   updateTargetVariation: (id: string, variationId: string) => void;
   updateTargetRollout: (id: string, rollout: LocalRollout) => void;
-  setTargetMode: (id: string, mode: "single" | "rollout") => void;
+  setTargetMode: (id: string, mode: "single" | "rollout" | "gradual") => void;
   updateTargetConditions: (id: string, conditions: RuleCondition[]) => void;
   updateTargetIndividual: (
     id: string,
@@ -106,7 +112,7 @@ interface TargetingActions {
   updateTargetName: (id: string, name: string) => void;
   setDefaultVariation: (variationId: string) => void;
   setDefaultRollout: (rollout: LocalRollout) => void;
-  setDefaultMode: (mode: "single" | "rollout") => void;
+  setDefaultMode: (mode: "single" | "rollout" | "gradual") => void;
   setEnabled: (enabled: boolean) => void;
   setOffVariationId: (offVariationId: string | null) => void;
 
@@ -328,7 +334,6 @@ export const createTargetingStore = () =>
     setTargetMode: (id, mode) => {
       const { variations, defaultVariationId } = get();
       if (mode === "single") {
-        // Switch to single variation mode
         const firstVariation = variations[0];
         set((state) => ({
           targets: state.targets.map((t) =>
@@ -343,22 +348,58 @@ export const createTargetingStore = () =>
           hasChanges: true,
         }));
       } else {
-        // Switch to rollout mode - create default 50/50 split
         const v1 = variations[0];
         const v2 = variations[1] ?? variations[0];
+        const baseVariations: LocalRolloutVariation[] =
+          v1 && v2
+            ? [
+                { variationId: v1.id, weight: 50_000 },
+                { variationId: v2.id, weight: 50_000 },
+              ]
+            : v1
+              ? [{ variationId: v1.id, weight: 100_000 }]
+              : [];
         const rollout: LocalRollout = {
-          variations:
-            v1 && v2
-              ? [
-                  { variationId: v1.id, weight: 50_000 },
-                  { variationId: v2.id, weight: 50_000 },
-                ]
-              : v1
-                ? [{ variationId: v1.id, weight: 100_000 }]
-                : [],
+          variations: baseVariations,
           bucketContextKind: "user",
           bucketAttributeKey: "id",
         };
+        if (mode === "gradual") {
+          rollout.schedule = [
+            {
+              durationMinutes: 120,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 10_000 },
+                      { variationId: v2.id, weight: 90_000 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+            {
+              durationMinutes: 240,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 50_000 },
+                      { variationId: v2.id, weight: 50_000 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+            {
+              durationMinutes: 0,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 100_000 },
+                      { variationId: v2.id, weight: 0 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+          ];
+          rollout.variations =
+            rollout.schedule[0]?.variations ?? baseVariations;
+        }
         set((state) => ({
           targets: state.targets.map((t) =>
             t.id === id ? { ...t, rollout, variationId: undefined } : t
@@ -421,7 +462,6 @@ export const createTargetingStore = () =>
     setDefaultMode: (mode) => {
       const { variations, defaultVariationId } = get();
       if (mode === "single") {
-        // Switch to single variation mode
         const firstVariation = variations[0];
         set({
           defaultVariationIdState: firstVariation?.id ?? defaultVariationId,
@@ -429,22 +469,58 @@ export const createTargetingStore = () =>
           hasChanges: true,
         });
       } else {
-        // Switch to rollout mode - create default 50/50 split
         const v1 = variations[0];
         const v2 = variations[1] ?? variations[0];
+        const baseVariations: LocalRolloutVariation[] =
+          v1 && v2
+            ? [
+                { variationId: v1.id, weight: 50_000 },
+                { variationId: v2.id, weight: 50_000 },
+              ]
+            : v1
+              ? [{ variationId: v1.id, weight: 100_000 }]
+              : [];
         const rollout: LocalRollout = {
-          variations:
-            v1 && v2
-              ? [
-                  { variationId: v1.id, weight: 50_000 },
-                  { variationId: v2.id, weight: 50_000 },
-                ]
-              : v1
-                ? [{ variationId: v1.id, weight: 100_000 }]
-                : [],
+          variations: baseVariations,
           bucketContextKind: "user",
           bucketAttributeKey: "id",
         };
+        if (mode === "gradual") {
+          rollout.schedule = [
+            {
+              durationMinutes: 120,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 10_000 },
+                      { variationId: v2.id, weight: 90_000 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+            {
+              durationMinutes: 240,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 50_000 },
+                      { variationId: v2.id, weight: 50_000 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+            {
+              durationMinutes: 0,
+              variations:
+                v1 && v2
+                  ? [
+                      { variationId: v1.id, weight: 100_000 },
+                      { variationId: v2.id, weight: 0 },
+                    ]
+                  : baseVariations.map((rv) => ({ ...rv })),
+            },
+          ];
+          rollout.variations =
+            rollout.schedule[0]?.variations ?? baseVariations;
+        }
         set({
           defaultRollout: rollout,
           defaultVariationIdState: "",

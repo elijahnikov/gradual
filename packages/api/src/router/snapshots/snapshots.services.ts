@@ -177,8 +177,11 @@ export async function buildEnvironmentSnapshot({
       bucketContextKind: string;
       bucketAttributeKey: string;
       seed: string | null;
+      schedule: unknown;
+      startedAt: Date | null;
       variations: Array<{
         variationName: string;
+        variationId: string;
         weight: number;
       }>;
     }
@@ -203,8 +206,11 @@ export async function buildEnvironmentSnapshot({
         bucketContextKind: dr.bucketContextKind,
         bucketAttributeKey: dr.bucketAttributeKey,
         seed: dr.seed,
+        schedule: dr.schedule,
+        startedAt: dr.startedAt,
         variations: dr.variations.map((v) => ({
           variationName: v.variation.name,
+          variationId: v.variation.id,
           weight: v.weight,
         })),
       });
@@ -297,6 +303,28 @@ export async function buildEnvironmentSnapshot({
         if (t.rollout.seed) {
           rollout.seed = t.rollout.seed;
         }
+        if (t.rollout.schedule && t.rollout.startedAt) {
+          const variationIdToName = new Map(
+            t.rollout.variations.map((rv) => [
+              rv.variation.id,
+              rv.variation.name,
+            ])
+          );
+          rollout.schedule = (
+            t.rollout.schedule as Array<{
+              durationMinutes: number;
+              variations: Array<{ variationId: string; weight: number }>;
+            }>
+          ).map((step) => ({
+            durationMinutes: step.durationMinutes,
+            variations: step.variations.map((sv) => ({
+              variationKey:
+                variationIdToName.get(sv.variationId) ?? sv.variationId,
+              weight: sv.weight,
+            })),
+          }));
+          rollout.startedAt = t.rollout.startedAt.toISOString();
+        }
         snapshotTarget.rollout = rollout;
       } else {
         snapshotTarget.variationKey = t.variation?.name ?? defaultVariationKey;
@@ -360,6 +388,28 @@ export async function buildEnvironmentSnapshot({
       };
       if (defaultRolloutData.seed) {
         defaultRollout.seed = defaultRolloutData.seed;
+      }
+      if (defaultRolloutData.schedule && defaultRolloutData.startedAt) {
+        const variationIdToName = new Map(
+          defaultRolloutData.variations.map((v) => [
+            v.variationId,
+            v.variationName,
+          ])
+        );
+        defaultRollout.schedule = (
+          defaultRolloutData.schedule as Array<{
+            durationMinutes: number;
+            variations: Array<{ variationId: string; weight: number }>;
+          }>
+        ).map((step) => ({
+          durationMinutes: step.durationMinutes,
+          variations: step.variations.map((sv) => ({
+            variationKey:
+              variationIdToName.get(sv.variationId) ?? sv.variationId,
+            weight: sv.weight,
+          })),
+        }));
+        defaultRollout.startedAt = defaultRolloutData.startedAt.toISOString();
       }
       snapshotFlag.defaultRollout = defaultRollout;
     } else {

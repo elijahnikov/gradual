@@ -189,23 +189,66 @@ const rolloutVariationSchema = z.object({
   weight: z.number().int().min(0).max(100_000),
 });
 
+const scheduleStepSchema = z.object({
+  durationMinutes: z.number().int().min(0),
+  variations: z.array(rolloutVariationSchema).min(1),
+});
+
+const scheduleSchema = z
+  .array(scheduleStepSchema)
+  .min(2)
+  .superRefine((steps, ctx) => {
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      if (!step) {
+        continue;
+      }
+      const totalWeight = step.variations.reduce((sum, v) => sum + v.weight, 0);
+      if (totalWeight !== 100_000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Step ${i + 1} weights must sum to 100000, got ${totalWeight}`,
+          path: [i, "variations"],
+        });
+      }
+      if (i < steps.length - 1 && step.durationMinutes <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Step ${i + 1} must have a duration greater than 0`,
+          path: [i, "durationMinutes"],
+        });
+      }
+    }
+    const last = steps.at(-1);
+    if (last && last.durationMinutes !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The final step must have durationMinutes of 0",
+        path: [steps.length - 1, "durationMinutes"],
+      });
+    }
+  });
+
 const rolloutConfigSchema = z
   .object({
     variations: z.array(rolloutVariationSchema).min(1),
     bucketContextKind: z.string().default("user"),
     bucketAttributeKey: z.string().default("id"),
     seed: z.string().optional(),
+    schedule: scheduleSchema.optional(),
   })
   .superRefine((rollout, ctx) => {
-    const totalWeight = rollout.variations.reduce(
-      (sum, v) => sum + v.weight,
-      0
-    );
-    if (totalWeight !== 100_000) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Rollout weights must sum to 100000, got ${totalWeight}`,
-      });
+    if (!rollout.schedule) {
+      const totalWeight = rollout.variations.reduce(
+        (sum, v) => sum + v.weight,
+        0
+      );
+      if (totalWeight !== 100_000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Rollout weights must sum to 100000, got ${totalWeight}`,
+        });
+      }
     }
   });
 
