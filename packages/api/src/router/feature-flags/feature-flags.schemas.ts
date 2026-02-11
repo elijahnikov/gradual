@@ -303,6 +303,13 @@ export const getEventsSchema = z.object({
   environmentId: z.uuid(),
   limit: z.number().int().positive().max(100).default(50),
   cursor: z.string().uuid().optional(),
+  variationIds: z.array(z.string().uuid()).optional(),
+  reasonTypes: z.array(z.string()).optional(),
+  targetNameSearch: z.string().optional(),
+  minLatencyUs: z.number().int().optional(),
+  sdkVersion: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
 });
 export type GetEventsInput = z.infer<typeof getEventsSchema>;
 

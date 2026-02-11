@@ -23,7 +23,6 @@ export const structuredReasonVariants: Record<
   error: "error",
 };
 
-/** Detailed label for the sheet detail view */
 export function formatStructuredReason(reason: StructuredReason): string {
   switch (reason.type) {
     case "rule_match":

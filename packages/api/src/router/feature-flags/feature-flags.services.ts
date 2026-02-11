@@ -1724,6 +1724,44 @@ export const getEvents = async ({
   if (cursor) {
     conditions.push(lt(featureFlagEvaluation.id, cursor));
   }
+  if (input.variationIds && input.variationIds.length > 0) {
+    conditions.push(
+      inArray(featureFlagEvaluation.variationId, input.variationIds)
+    );
+  }
+  if (input.reasonTypes && input.reasonTypes.length > 0) {
+    const reasonConditions = input.reasonTypes.map(
+      (t) =>
+        sql`${featureFlagEvaluation.reasons} @> ${JSON.stringify([{ type: t }])}::jsonb`
+    );
+    conditions.push(sql`(${sql.join(reasonConditions, sql` OR `)})`);
+  }
+  if (input.targetNameSearch) {
+    conditions.push(
+      ilike(
+        featureFlagEvaluation.matchedTargetName,
+        `%${input.targetNameSearch}%`
+      )
+    );
+  }
+  if (input.minLatencyUs != null) {
+    conditions.push(
+      gte(featureFlagEvaluation.evaluationDurationUs, input.minLatencyUs)
+    );
+  }
+  if (input.sdkVersion) {
+    conditions.push(eq(featureFlagEvaluation.sdkVersion, input.sdkVersion));
+  }
+  if (input.startDate) {
+    conditions.push(
+      gte(featureFlagEvaluation.createdAt, new Date(input.startDate))
+    );
+  }
+  if (input.endDate) {
+    conditions.push(
+      lt(featureFlagEvaluation.createdAt, new Date(input.endDate))
+    );
+  }
 
   const evaluations = await ctx.db
     .select({

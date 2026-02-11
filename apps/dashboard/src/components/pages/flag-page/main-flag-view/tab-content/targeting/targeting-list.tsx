@@ -1,6 +1,6 @@
 import { cn } from "@gradual/ui";
 import { Separator } from "@gradual/ui/separator";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import AddNewTargetButton from "./add-new-target-button";
 import type { TargetType } from "./types";
 
@@ -19,11 +19,21 @@ export function TargetingList({
   disabled = false,
   collapsed = false,
 }: TargetingListProps) {
+  const [canAnimate, setCanAnimate] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setCanAnimate(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="flex w-full flex-col items-center py-4 sm:py-8">
       <div
         className={cn(
-          "grid w-full transition-[grid-template-rows] duration-300 ease-in-out",
+          "grid w-full",
+          canAnimate &&
+            "transition-[grid-template-rows] duration-300 ease-in-out",
           collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
         )}
       >
