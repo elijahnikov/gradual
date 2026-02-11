@@ -7,18 +7,21 @@ import {
   SelectValue,
 } from "@gradual/ui/select";
 import { Text } from "@gradual/ui/text";
-import { RiPercentLine } from "@remixicon/react";
+import { RiPercentLine, RiTimerLine } from "@remixicon/react";
 import { useMemo } from "react";
 import type { Variation } from "./types";
 
 const ROLLOUT_VALUE = "__rollout__";
+const GRADUAL_VALUE = "__gradual__";
 
 interface VariationSelectorProps {
   variations: Variation[];
   value?: string;
   isRollout?: boolean;
+  isGradual?: boolean;
   onChange: (variationId: string) => void;
   onRolloutSelect: () => void;
+  onGradualSelect?: () => void;
   label?: string;
 }
 
@@ -26,8 +29,10 @@ export function VariationSelector({
   variations,
   value,
   isRollout,
+  isGradual,
   onChange,
   onRolloutSelect,
+  onGradualSelect,
   label = "Serve",
 }: VariationSelectorProps) {
   const variationItems = useMemo(
@@ -40,7 +45,11 @@ export function VariationSelector({
     [variations]
   );
 
-  const displayValue = isRollout ? ROLLOUT_VALUE : (value ?? "");
+  const displayValue = isGradual
+    ? GRADUAL_VALUE
+    : isRollout
+      ? ROLLOUT_VALUE
+      : (value ?? "");
   const selectedVariation = variationItems.find((v) => v.value === value);
 
   return (
@@ -52,7 +61,9 @@ export function VariationSelector({
       )}
       <Select
         onValueChange={(val) => {
-          if (val === ROLLOUT_VALUE) {
+          if (val === GRADUAL_VALUE) {
+            onGradualSelect?.();
+          } else if (val === ROLLOUT_VALUE) {
             onRolloutSelect();
           } else if (val) {
             onChange(val);
@@ -60,12 +71,17 @@ export function VariationSelector({
         }}
         value={displayValue}
       >
-        <SelectTrigger className="w-full sm:w-40">
+        <SelectTrigger className="w-full sm:w-48">
           <SelectValue>
-            {isRollout ? (
+            {isGradual ? (
+              <span className="flex items-center gap-1.5">
+                <RiTimerLine className="size-3.5" />
+                Gradual rollout
+              </span>
+            ) : isRollout ? (
               <span className="flex items-center gap-1.5">
                 <RiPercentLine className="size-3.5" />
-                Rollout
+                Percentage rollout
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
@@ -98,7 +114,13 @@ export function VariationSelector({
           <SelectItem value={ROLLOUT_VALUE}>
             <span className="flex items-center gap-1.5">
               <RiPercentLine className="size-3.5" />
-              Rollout
+              Percentage rollout
+            </span>
+          </SelectItem>
+          <SelectItem value={GRADUAL_VALUE}>
+            <span className="flex items-center gap-1.5">
+              <RiTimerLine className="size-3.5" />
+              Gradual rollout
             </span>
           </SelectItem>
         </SelectContent>

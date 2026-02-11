@@ -16,6 +16,7 @@ import {
   RiMore2Fill,
 } from "@remixicon/react";
 import type { ReactNode } from "react";
+import { GradualRolloutEditor } from "./gradual-rollout-editor";
 import { RolloutEditor } from "./rollout-editor";
 import type { LocalRollout } from "./targeting-store";
 import { useTargetingStore } from "./targeting-store";
@@ -28,7 +29,7 @@ interface TargetingCardProps {
   rollout?: LocalRollout;
   onVariationChange: (variationId: string) => void;
   onRolloutChange: (rollout: LocalRollout) => void;
-  onModeChange: (mode: "single" | "rollout") => void;
+  onModeChange: (mode: "single" | "rollout" | "gradual") => void;
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -57,7 +58,8 @@ export default function TargetingCard({
   const variations = useTargetingStore((s) => s.variations);
   const defaultVariationId = useTargetingStore((s) => s.defaultVariationId);
 
-  const isRollout = !!rollout;
+  const isGradual = !!rollout?.schedule;
+  const isRollout = !!rollout && !isGradual;
   const effectiveVariationId =
     selectedVariationId ?? defaultVariationId ?? variations[0]?.id ?? "";
 
@@ -113,15 +115,24 @@ export default function TargetingCard({
         <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <VariationSelector
+              isGradual={isGradual}
               isRollout={isRollout}
               label="Serve"
               onChange={onVariationChange}
+              onGradualSelect={() => onModeChange("gradual")}
               onRolloutSelect={() => onModeChange("rollout")}
               value={effectiveVariationId}
               variations={variations}
             />
           </div>
         </div>
+        {isGradual && rollout && (
+          <GradualRolloutEditor
+            onRolloutChange={onRolloutChange}
+            rollout={rollout}
+            variations={variations}
+          />
+        )}
         {isRollout && rollout && (
           <RolloutEditor
             label=""

@@ -1199,4 +1199,331 @@ describe("evaluateFlag", () => {
       expect(result.matchedTargetName).toBeUndefined();
     });
   });
+
+  describe("gradual rollout", () => {
+    const baseTime = new Date("2025-01-01T00:00:00Z");
+
+    function minutesAfter(minutes: number): Date {
+      return new Date(baseTime.getTime() + minutes * 60_000);
+    }
+
+    it("serves first step when just started (default rollout)", () => {
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 10_000 },
+            { variationKey: "off", weight: 90_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+          startedAt: baseTime.toISOString(),
+          schedule: [
+            {
+              durationMinutes: 120,
+              variations: [
+                { variationKey: "on", weight: 10_000 },
+                { variationKey: "off", weight: 90_000 },
+              ],
+            },
+            {
+              durationMinutes: 240,
+              variations: [
+                { variationKey: "on", weight: 50_000 },
+                { variationKey: "off", weight: 50_000 },
+              ],
+            },
+            {
+              durationMinutes: 0,
+              variations: [
+                { variationKey: "on", weight: 100_000 },
+                { variationKey: "off", weight: 0 },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = evaluateFlag(
+        flag,
+        { user: { id: "user-1" } },
+        {},
+        { now: minutesAfter(0) }
+      );
+      expect(result.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 0 })
+      );
+    });
+
+    it("advances to second step after first step duration expires", () => {
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 10_000 },
+            { variationKey: "off", weight: 90_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+          startedAt: baseTime.toISOString(),
+          schedule: [
+            {
+              durationMinutes: 120,
+              variations: [
+                { variationKey: "on", weight: 10_000 },
+                { variationKey: "off", weight: 90_000 },
+              ],
+            },
+            {
+              durationMinutes: 240,
+              variations: [
+                { variationKey: "on", weight: 50_000 },
+                { variationKey: "off", weight: 50_000 },
+              ],
+            },
+            {
+              durationMinutes: 0,
+              variations: [
+                { variationKey: "on", weight: 100_000 },
+                { variationKey: "off", weight: 0 },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = evaluateFlag(
+        flag,
+        { user: { id: "user-1" } },
+        {},
+        { now: minutesAfter(121) }
+      );
+      expect(result.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 1 })
+      );
+    });
+
+    it("stays at final step indefinitely", () => {
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 10_000 },
+            { variationKey: "off", weight: 90_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+          startedAt: baseTime.toISOString(),
+          schedule: [
+            {
+              durationMinutes: 60,
+              variations: [
+                { variationKey: "on", weight: 10_000 },
+                { variationKey: "off", weight: 90_000 },
+              ],
+            },
+            {
+              durationMinutes: 0,
+              variations: [
+                { variationKey: "on", weight: 100_000 },
+                { variationKey: "off", weight: 0 },
+              ],
+            },
+          ],
+        },
+      });
+
+      // Well past all durations
+      const result = evaluateFlag(
+        flag,
+        { user: { id: "user-1" } },
+        {},
+        { now: minutesAfter(10_000) }
+      );
+      expect(result.value).toBe(true);
+      expect(result.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 1 })
+      );
+    });
+
+    it("works on target rollouts", () => {
+      const flag = createFlag({
+        targets: [
+          {
+            type: "rule",
+            sortOrder: 0,
+            name: "Beta users",
+            conditions: [
+              {
+                contextKind: "user",
+                attributeKey: "plan",
+                operator: "equals",
+                value: "pro",
+              },
+            ],
+            rollout: {
+              variations: [
+                { variationKey: "on", weight: 10_000 },
+                { variationKey: "off", weight: 90_000 },
+              ],
+              bucketContextKind: "user",
+              bucketAttributeKey: "id",
+              startedAt: baseTime.toISOString(),
+              schedule: [
+                {
+                  durationMinutes: 60,
+                  variations: [
+                    { variationKey: "on", weight: 10_000 },
+                    { variationKey: "off", weight: 90_000 },
+                  ],
+                },
+                {
+                  durationMinutes: 0,
+                  variations: [
+                    { variationKey: "on", weight: 100_000 },
+                    { variationKey: "off", weight: 0 },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      // Before first step completes
+      const result1 = evaluateFlag(
+        flag,
+        { user: { id: "user-1", plan: "pro" } },
+        {},
+        { now: minutesAfter(30) }
+      );
+      expect(result1.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 0 })
+      );
+
+      // After first step completes — final step
+      const result2 = evaluateFlag(
+        flag,
+        { user: { id: "user-1", plan: "pro" } },
+        {},
+        { now: minutesAfter(61) }
+      );
+      expect(result2.value).toBe(true);
+      expect(result2.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 1 })
+      );
+    });
+
+    it("returns percentage_rollout for standard rollouts (no schedule)", () => {
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 50_000 },
+            { variationKey: "off", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+        },
+      });
+
+      const result = evaluateFlag(flag, { user: { id: "user-1" } }, {});
+      const rolloutReason = result.reasons.find(
+        (r) => r.type === "percentage_rollout" || r.type === "gradual_rollout"
+      );
+      expect(rolloutReason?.type).toBe("percentage_rollout");
+    });
+
+    it("uses first step when startedAt is in the future", () => {
+      const futureStart = new Date(
+        baseTime.getTime() + 60 * 60_000
+      ).toISOString();
+
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 10_000 },
+            { variationKey: "off", weight: 90_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+          startedAt: futureStart,
+          schedule: [
+            {
+              durationMinutes: 120,
+              variations: [
+                { variationKey: "on", weight: 10_000 },
+                { variationKey: "off", weight: 90_000 },
+              ],
+            },
+            {
+              durationMinutes: 0,
+              variations: [
+                { variationKey: "on", weight: 100_000 },
+                { variationKey: "off", weight: 0 },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = evaluateFlag(
+        flag,
+        { user: { id: "user-1" } },
+        {},
+        { now: baseTime }
+      );
+      expect(result.reasons).toContainEqual(
+        expect.objectContaining({ type: "gradual_rollout", stepIndex: 0 })
+      );
+    });
+
+    it("is deterministic — same user gets same variation", () => {
+      const flag = createFlag({
+        defaultVariationKey: undefined,
+        defaultRollout: {
+          variations: [
+            { variationKey: "on", weight: 50_000 },
+            { variationKey: "off", weight: 50_000 },
+          ],
+          bucketContextKind: "user",
+          bucketAttributeKey: "id",
+          startedAt: baseTime.toISOString(),
+          schedule: [
+            {
+              durationMinutes: 120,
+              variations: [
+                { variationKey: "on", weight: 50_000 },
+                { variationKey: "off", weight: 50_000 },
+              ],
+            },
+            {
+              durationMinutes: 0,
+              variations: [
+                { variationKey: "on", weight: 100_000 },
+                { variationKey: "off", weight: 0 },
+              ],
+            },
+          ],
+        },
+      });
+
+      const now = minutesAfter(10);
+      const result1 = evaluateFlag(
+        flag,
+        { user: { id: "user-abc" } },
+        {},
+        { now }
+      );
+      const result2 = evaluateFlag(
+        flag,
+        { user: { id: "user-abc" } },
+        {},
+        { now }
+      );
+      expect(result1.value).toBe(result2.value);
+      expect(result1.variationKey).toBe(result2.variationKey);
+    });
+  });
 });

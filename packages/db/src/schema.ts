@@ -371,6 +371,8 @@ export const featureFlagTargetRollout = pgTable(
       .notNull()
       .default("id"),
     seed: varchar("seed", { length: 256 }),
+    schedule: jsonb("schedule"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -421,6 +423,8 @@ export const featureFlagDefaultRollout = pgTable(
       .notNull()
       .default("id"),
     seed: varchar("seed", { length: 256 }),
+    schedule: jsonb("schedule"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

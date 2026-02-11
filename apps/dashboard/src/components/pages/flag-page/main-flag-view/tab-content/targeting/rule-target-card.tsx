@@ -52,7 +52,7 @@ export function RuleTargetCard({ targetId, hasError }: RuleTargetCardProps) {
   );
 
   const handleModeChange = useCallback(
-    (mode: "single" | "rollout") => setTargetMode(targetId, mode),
+    (mode: "single" | "rollout" | "gradual") => setTargetMode(targetId, mode),
     [setTargetMode, targetId]
   );
 

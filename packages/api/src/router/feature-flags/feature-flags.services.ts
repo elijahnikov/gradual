@@ -947,6 +947,8 @@ export const saveTargetingRules = async ({
           bucketContextKind: defaultRollout.bucketContextKind,
           bucketAttributeKey: defaultRollout.bucketAttributeKey,
           seed: defaultRollout.seed,
+          schedule: defaultRollout.schedule ?? null,
+          startedAt: defaultRollout.schedule ? new Date() : null,
         })
         .returning();
 
@@ -1007,6 +1009,8 @@ export const saveTargetingRules = async ({
             bucketContextKind: target.rollout.bucketContextKind,
             bucketAttributeKey: target.rollout.bucketAttributeKey,
             seed: target.rollout.seed,
+            schedule: target.rollout.schedule ?? null,
+            startedAt: target.rollout.schedule ? new Date() : null,
           })
           .returning();
 

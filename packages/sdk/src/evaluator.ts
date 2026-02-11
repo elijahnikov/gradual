@@ -6,6 +6,7 @@ import type {
   SnapshotRollout,
   SnapshotRolloutVariation,
   SnapshotRuleCondition,
+  SnapshotScheduleStep,
   SnapshotSegment,
   SnapshotTarget,
   SnapshotVariation,
@@ -37,22 +38,67 @@ function getBucketValue(
   return hashString(hashInput) % 100_000;
 }
 
+interface ActiveRollout {
+  variations: SnapshotRolloutVariation[];
+  stepIndex: number;
+}
+
+function resolveActiveRollout(
+  rollout: SnapshotRollout,
+  now: Date
+): ActiveRollout {
+  if (!(rollout.schedule && rollout.startedAt)) {
+    return { variations: rollout.variations, stepIndex: -1 };
+  }
+
+  const startedAt = new Date(rollout.startedAt).getTime();
+  const elapsedMs = now.getTime() - startedAt;
+  const elapsedMinutes = elapsedMs / 60_000;
+
+  if (elapsedMinutes < 0) {
+    return {
+      variations: rollout.schedule[0]?.variations ?? rollout.variations,
+      stepIndex: 0,
+    };
+  }
+
+  let cumulativeMinutes = 0;
+  for (let i = 0; i < rollout.schedule.length; i++) {
+    const step = rollout.schedule[i] as SnapshotScheduleStep;
+    if (step.durationMinutes === 0) {
+      return { variations: step.variations, stepIndex: i };
+    }
+    cumulativeMinutes += step.durationMinutes;
+    if (elapsedMinutes < cumulativeMinutes) {
+      return { variations: step.variations, stepIndex: i };
+    }
+  }
+
+  const lastStep = rollout.schedule.at(-1);
+  return {
+    variations: lastStep?.variations ?? rollout.variations,
+    stepIndex: rollout.schedule.length - 1,
+  };
+}
+
 interface RolloutResult {
   variation: SnapshotVariation;
   variationKey: string;
   matchedWeight: number;
   bucketValue: number;
+  scheduleStepIndex: number;
 }
 
 function selectVariationFromRollout(
-  rollout: SnapshotRollout,
+  activeVariations: SnapshotRolloutVariation[],
   bucketValue: number,
-  variations: Record<string, SnapshotVariation>
+  variations: Record<string, SnapshotVariation>,
+  scheduleStepIndex: number
 ): RolloutResult | undefined {
   let cumulative = 0;
   let matchedRv: SnapshotRolloutVariation | undefined;
 
-  for (const rv of rollout.variations) {
+  for (const rv of activeVariations) {
     cumulative += rv.weight;
     if (bucketValue < cumulative) {
       matchedRv = rv;
@@ -61,7 +107,7 @@ function selectVariationFromRollout(
   }
 
   if (!matchedRv) {
-    matchedRv = rollout.variations.at(-1);
+    matchedRv = activeVariations.at(-1);
   }
 
   if (!matchedRv) {
@@ -78,6 +124,7 @@ function selectVariationFromRollout(
     variationKey: matchedRv.variationKey,
     matchedWeight: matchedRv.weight,
     bucketValue,
+    scheduleStepIndex,
   };
 }
 
@@ -238,16 +285,23 @@ function resolveTargetVariation(
   flagKey: string,
   context: EvaluationContext,
   variations: Record<string, SnapshotVariation>,
-  inputsUsed: Set<string>
+  inputsUsed: Set<string>,
+  now: Date
 ): RolloutResult | undefined {
   if (target.rollout) {
+    const active = resolveActiveRollout(target.rollout, now);
     const bucketValue = getBucketValue(
       flagKey,
       context,
       target.rollout,
       inputsUsed
     );
-    return selectVariationFromRollout(target.rollout, bucketValue, variations);
+    return selectVariationFromRollout(
+      active.variations,
+      bucketValue,
+      variations,
+      active.stepIndex
+    );
   }
 
   if (target.variationKey) {
@@ -258,6 +312,7 @@ function resolveTargetVariation(
         variationKey: target.variationKey,
         matchedWeight: 100_000,
         bucketValue: 0,
+        scheduleStepIndex: -1,
       };
     }
   }
@@ -268,9 +323,11 @@ function resolveTargetVariation(
 function resolveDefaultVariation(
   flag: SnapshotFlag,
   context: EvaluationContext,
-  inputsUsed: Set<string>
+  inputsUsed: Set<string>,
+  now: Date
 ): RolloutResult | undefined {
   if (flag.defaultRollout) {
+    const active = resolveActiveRollout(flag.defaultRollout, now);
     const bucketValue = getBucketValue(
       flag.key,
       context,
@@ -278,9 +335,10 @@ function resolveDefaultVariation(
       inputsUsed
     );
     return selectVariationFromRollout(
-      flag.defaultRollout,
+      active.variations,
       bucketValue,
-      flag.variations
+      flag.variations,
+      active.stepIndex
     );
   }
 
@@ -292,6 +350,7 @@ function resolveDefaultVariation(
         variationKey: flag.defaultVariationKey,
         matchedWeight: 100_000,
         bucketValue: 0,
+        scheduleStepIndex: -1,
       };
     }
   }
@@ -308,6 +367,14 @@ function buildRuleMatchReason(target: SnapshotTarget): Reason {
 }
 
 function buildRolloutReason(rolloutResult: RolloutResult): Reason {
+  if (rolloutResult.scheduleStepIndex >= 0) {
+    return {
+      type: "gradual_rollout",
+      stepIndex: rolloutResult.scheduleStepIndex,
+      percentage: rolloutResult.matchedWeight / 1000,
+      bucket: rolloutResult.bucketValue,
+    };
+  }
   return {
     type: "percentage_rollout",
     percentage: rolloutResult.matchedWeight / 1000,
@@ -318,7 +385,8 @@ function buildRolloutReason(rolloutResult: RolloutResult): Reason {
 export function evaluateFlag(
   flag: SnapshotFlag,
   context: EvaluationContext,
-  segments: Record<string, SnapshotSegment>
+  segments: Record<string, SnapshotSegment>,
+  options?: { now?: Date }
 ): EvalOutput {
   if (!flag.enabled) {
     const offVariation = flag.variations[flag.offVariationKey];
@@ -330,6 +398,7 @@ export function evaluateFlag(
     };
   }
 
+  const now = options?.now ?? new Date();
   const inputsUsed = new Set<string>();
 
   const sortedTargets = [...flag.targets].sort(
@@ -343,7 +412,8 @@ export function evaluateFlag(
         flag.key,
         context,
         flag.variations,
-        inputsUsed
+        inputsUsed,
+        now
       );
       if (resolved) {
         const reasons: Reason[] = [buildRuleMatchReason(target)];
@@ -362,7 +432,7 @@ export function evaluateFlag(
     }
   }
 
-  const resolved = resolveDefaultVariation(flag, context, inputsUsed);
+  const resolved = resolveDefaultVariation(flag, context, inputsUsed, now);
   if (resolved) {
     const reasons: Reason[] = [];
     if (flag.defaultRollout) {

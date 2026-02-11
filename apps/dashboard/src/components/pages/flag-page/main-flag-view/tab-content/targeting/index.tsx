@@ -112,6 +112,23 @@ function FlagTargetingContent({
           bucketContextKind: target.rollout.bucketContextKind,
           bucketAttributeKey: target.rollout.bucketAttributeKey,
           seed: target.rollout.seed ?? undefined,
+          schedule: target.rollout.schedule
+            ? (
+                target.rollout.schedule as Array<{
+                  durationMinutes: number;
+                  variations: Array<{
+                    variationId: string;
+                    weight: number;
+                  }>;
+                }>
+              ).map((step) => ({
+                durationMinutes: step.durationMinutes,
+                variations: step.variations.map((sv) => ({
+                  variationId: sv.variationId,
+                  weight: sv.weight,
+                })),
+              }))
+            : undefined,
         };
       }
 
@@ -153,14 +170,29 @@ function FlagTargetingContent({
     if (!flagEnvironment.defaultRollout) {
       return null;
     }
+    const dr = flagEnvironment.defaultRollout;
     return {
-      variations: flagEnvironment.defaultRollout.variations.map((rv) => ({
+      variations: dr.variations.map((rv) => ({
         variationId: rv.variationId,
         weight: rv.weight,
       })),
-      bucketContextKind: flagEnvironment.defaultRollout.bucketContextKind,
-      bucketAttributeKey: flagEnvironment.defaultRollout.bucketAttributeKey,
-      seed: flagEnvironment.defaultRollout.seed ?? undefined,
+      bucketContextKind: dr.bucketContextKind,
+      bucketAttributeKey: dr.bucketAttributeKey,
+      seed: dr.seed ?? undefined,
+      schedule: dr.schedule
+        ? (
+            dr.schedule as Array<{
+              durationMinutes: number;
+              variations: Array<{ variationId: string; weight: number }>;
+            }>
+          ).map((step) => ({
+            durationMinutes: step.durationMinutes,
+            variations: step.variations.map((sv) => ({
+              variationId: sv.variationId,
+              weight: sv.weight,
+            })),
+          }))
+        : undefined,
     };
   }, [flagEnvironment.defaultRollout]);
 
@@ -235,7 +267,7 @@ function FlagTargetingContent({
                     }
                     onClick={openReviewModal}
                     size="small"
-                    variant="default"
+                    variant="gradual"
                   >
                     Review and save
                   </Button>

@@ -78,7 +78,7 @@ export function summarizeReasons(reasons: StructuredReason[]): {
       | undefined;
     if (rollout?.percentage != null) {
       return {
-        label: `Rolled out at ${(rollout.percentage / 100).toFixed(1)}%`,
+        label: `Rolled out at ${rollout.percentage.toFixed(1)}%`,
         variant: "info",
       };
     }
@@ -94,7 +94,7 @@ export function summarizeReasons(reasons: StructuredReason[]): {
       : "Matched targeting rule";
     if (rollout?.percentage != null) {
       return {
-        label: `${name} (${(rollout.percentage / 100).toFixed(1)}%)`,
+        label: `${name} (${rollout.percentage.toFixed(1)}%)`,
         variant,
       };
     }
@@ -104,9 +104,7 @@ export function summarizeReasons(reasons: StructuredReason[]): {
   if (primary.type === "percentage_rollout") {
     const hasDefault = reasons.some((r) => r.type === "default");
     const pct =
-      primary.percentage != null
-        ? `${(primary.percentage / 100).toFixed(1)}%`
-        : "";
+      primary.percentage != null ? `${primary.percentage.toFixed(1)}%` : "";
     if (hasDefault) {
       return {
         label: pct ? `Rolled out at ${pct}` : "Included in default rollout",

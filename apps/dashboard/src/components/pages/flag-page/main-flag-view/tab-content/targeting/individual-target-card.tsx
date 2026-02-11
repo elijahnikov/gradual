@@ -57,7 +57,7 @@ export function IndividualTargetCard({
   );
 
   const handleModeChange = useCallback(
-    (mode: "single" | "rollout") => setTargetMode(targetId, mode),
+    (mode: "single" | "rollout" | "gradual") => setTargetMode(targetId, mode),
     [setTargetMode, targetId]
   );
 

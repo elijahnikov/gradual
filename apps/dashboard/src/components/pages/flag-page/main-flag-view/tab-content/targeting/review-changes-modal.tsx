@@ -144,6 +144,18 @@ function FieldChange({
   );
 }
 
+function formatDuration(minutes: number): string {
+  if (minutes >= 1440 && minutes % 1440 === 0) {
+    const days = minutes / 1440;
+    return `${days}d`;
+  }
+  if (minutes >= 60 && minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours}h`;
+  }
+  return `${minutes}m`;
+}
+
 function formatOperator(op: string): string {
   return OPERATOR_LABELS[op as keyof typeof OPERATOR_LABELS] ?? op;
 }
@@ -366,18 +378,47 @@ function TargetSummary({
       {target.rollout ? (
         <div className="flex flex-col gap-1">
           <Text className="text-ui-fg-muted" size="xsmall">
-            Serves % rollout:
+            {target.rollout.schedule
+              ? "Serves gradual rollout:"
+              : "Serves % rollout:"}
           </Text>
-          <div className="flex flex-wrap gap-1">
-            {target.rollout.variations.map((rv) => {
-              const v = variationsById.get(rv.variationId);
-              return (
-                <Badge key={rv.variationId} size="sm" variant="outline">
-                  {v?.name ?? "Unknown"}: {(rv.weight / 1000).toFixed(1)}%
-                </Badge>
-              );
-            })}
-          </div>
+          {target.rollout.schedule ? (
+            <div className="flex flex-col gap-0.5">
+              {target.rollout.schedule.map((step, i, arr) => {
+                const isLast = i === arr.length - 1;
+                const label = isLast
+                  ? "Final"
+                  : `Step ${i + 1} (${formatDuration(step.durationMinutes)})`;
+                return (
+                  <div className="flex flex-wrap items-center gap-1" key={i}>
+                    <Badge size="sm" variant={isLast ? "success" : "outline"}>
+                      {label}
+                    </Badge>
+                    {step.variations.map((sv) => {
+                      const v = variationsById.get(sv.variationId);
+                      return (
+                        <Badge key={sv.variationId} size="sm" variant="outline">
+                          {v?.name ?? "Unknown"}:{" "}
+                          {(sv.weight / 1000).toFixed(1)}%
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {target.rollout.variations.map((rv) => {
+                const v = variationsById.get(rv.variationId);
+                return (
+                  <Badge key={rv.variationId} size="sm" variant="outline">
+                    {v?.name ?? "Unknown"}: {(rv.weight / 1000).toFixed(1)}%
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : (
         <FieldChange
@@ -438,6 +479,13 @@ export function ReviewChangesModal() {
           type: "success",
           title: "Changes saved",
           description: `Your targeting rules have been saved to ${environmentSlug}`,
+        });
+      },
+      onError: (error) => {
+        toastManager.add({
+          type: "error",
+          title: "Failed to save changes",
+          description: error.message,
         });
       },
     })
@@ -610,7 +658,12 @@ export function ReviewChangesModal() {
                         className="font-mono text-ui-fg-muted uppercase tracking-wide"
                         size="xsmall"
                       >
-                        Default {defaultRollout ? "Rollout" : "Variation"}
+                        Default{" "}
+                        {defaultRollout?.schedule
+                          ? "Gradual Rollout"
+                          : defaultRollout
+                            ? "Rollout"
+                            : "Variation"}
                       </Text>
                       <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
                         <div className="flex size-8 items-center justify-center rounded-full bg-warning/10">
@@ -630,7 +683,11 @@ export function ReviewChangesModal() {
                               </Badge>
                             )}
                             <RiArrowRightLine className="size-4 text-ui-fg-muted" />
-                            {defaultRollout ? (
+                            {defaultRollout?.schedule ? (
+                              <Badge variant="warning">
+                                Gradual ({defaultRollout.schedule.length} steps)
+                              </Badge>
+                            ) : defaultRollout ? (
                               <Badge variant="warning">
                                 % Rollout ({defaultRollout.variations.length}{" "}
                                 variations)
@@ -641,24 +698,63 @@ export function ReviewChangesModal() {
                               </Badge>
                             )}
                           </div>
-                          {defaultRollout && (
-                            <div className="flex flex-wrap gap-1 text-ui-fg-muted text-xs">
-                              {defaultRollout.variations.map((rv) => {
-                                const variation = variationsById.get(
-                                  rv.variationId
-                                );
+                          {defaultRollout?.schedule ? (
+                            <div className="flex flex-col gap-0.5 text-ui-fg-muted text-xs">
+                              {defaultRollout.schedule.map((step, i, arr) => {
+                                const isLast = i === arr.length - 1;
+                                const label = isLast
+                                  ? "Final"
+                                  : `Step ${i + 1} (${formatDuration(step.durationMinutes)})`;
                                 return (
-                                  <Badge
-                                    key={rv.variationId}
-                                    size="sm"
-                                    variant="outline"
+                                  <div
+                                    className="flex flex-wrap items-center gap-1"
+                                    key={i}
                                   >
-                                    {variation?.name ?? "Unknown"}:{" "}
-                                    {(rv.weight / 1000).toFixed(1)}%
-                                  </Badge>
+                                    <Badge
+                                      size="sm"
+                                      variant={isLast ? "success" : "outline"}
+                                    >
+                                      {label}
+                                    </Badge>
+                                    {step.variations.map((sv) => {
+                                      const v = variationsById.get(
+                                        sv.variationId
+                                      );
+                                      return (
+                                        <Badge
+                                          key={sv.variationId}
+                                          size="sm"
+                                          variant="outline"
+                                        >
+                                          {v?.name ?? "Unknown"}:{" "}
+                                          {(sv.weight / 1000).toFixed(1)}%
+                                        </Badge>
+                                      );
+                                    })}
+                                  </div>
                                 );
                               })}
                             </div>
+                          ) : (
+                            defaultRollout && (
+                              <div className="flex flex-wrap gap-1 text-ui-fg-muted text-xs">
+                                {defaultRollout.variations.map((rv) => {
+                                  const variation = variationsById.get(
+                                    rv.variationId
+                                  );
+                                  return (
+                                    <Badge
+                                      key={rv.variationId}
+                                      size="sm"
+                                      variant="outline"
+                                    >
+                                      {variation?.name ?? "Unknown"}:{" "}
+                                      {(rv.weight / 1000).toFixed(1)}%
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            )
                           )}
                         </div>
                       </div>

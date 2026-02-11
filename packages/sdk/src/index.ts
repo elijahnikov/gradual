@@ -17,6 +17,7 @@ export type {
   SnapshotRollout,
   SnapshotRolloutVariation,
   SnapshotRuleCondition,
+  SnapshotScheduleStep,
   SnapshotSegment,
   SnapshotTarget,
   SnapshotVariation,

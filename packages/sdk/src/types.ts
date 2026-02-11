@@ -31,11 +31,18 @@ export interface SnapshotRolloutVariation {
   weight: number; // 0-100000 for 0.001% precision
 }
 
+export interface SnapshotScheduleStep {
+  durationMinutes: number;
+  variations: SnapshotRolloutVariation[];
+}
+
 export interface SnapshotRollout {
   variations: SnapshotRolloutVariation[];
   bucketContextKind: string;
   bucketAttributeKey: string;
   seed?: string;
+  schedule?: SnapshotScheduleStep[];
+  startedAt?: string;
 }
 
 export interface SnapshotTarget {
@@ -114,6 +121,12 @@ export interface IsEnabledOptions {
 export type Reason =
   | { type: "rule_match"; ruleId: string; ruleName?: string }
   | { type: "percentage_rollout"; percentage: number; bucket: number }
+  | {
+      type: "gradual_rollout";
+      stepIndex: number;
+      percentage: number;
+      bucket: number;
+    }
   | { type: "default" }
   | { type: "off" }
   | { type: "error"; detail: string; errorCode?: string };
