@@ -41,7 +41,7 @@ export default function FlagSettings({
 
   return (
     <TooltipProvider>
-      <div className="flex w-full flex-1 flex-col gap-4 p-2">
+      <div className="flex w-full flex-1 flex-col gap-4 px-5 py-3">
         <DangerZone
           flag={flagData}
           organizationSlug={organizationSlug}

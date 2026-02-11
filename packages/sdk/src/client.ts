@@ -302,7 +302,8 @@ class GradualClient implements Gradual {
   private buildResult<T>(
     key: string,
     output: EvalOutput,
-    version: number
+    flagVersion: number,
+    durationUs?: number
   ): EvaluationResult<T> {
     const ruleMatch = output.reasons.find(
       (r): r is Extract<Reason, { type: "rule_match" }> =>
@@ -310,48 +311,61 @@ class GradualClient implements Gradual {
     );
 
     return {
+      schemaVersion: 1,
       key,
       value: output.value as T,
       variationKey: output.variationKey,
       reasons: output.reasons,
       ruleId: ruleMatch?.ruleId,
-      version,
+      flagVersion,
       evaluatedAt: new Date().toISOString(),
+      evaluationDurationUs: durationUs,
+      inputsUsed: output.inputsUsed,
+      traceId: crypto.randomUUID(),
     };
   }
 
   private evaluateAndTrack(key: string, context: EvaluationContext): unknown {
     const { output, snapshot, durationUs } = this.evaluateRaw(key, context);
+    const evaluatedAt = new Date().toISOString();
+    const traceId = crypto.randomUUID();
 
     if (!output) {
       this.trackEvent({
-        flagKey: key,
+        key,
         variationKey: undefined,
         value: undefined,
         reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
         context,
-        flagConfigVersion: snapshot.version,
+        flagVersion: snapshot.version,
+        schemaVersion: 1,
+        evaluatedAt,
+        traceId,
       });
       return undefined;
     }
 
     this.trackEvent({
-      flagKey: key,
+      key,
       variationKey: output.variationKey,
       value: output.value,
       reasons: output.reasons,
       context,
       matchedTargetName: output.matchedTargetName,
-      flagConfigVersion: snapshot.version,
+      flagVersion: snapshot.version,
       errorDetail: output.errorDetail,
       evaluationDurationUs: durationUs,
+      schemaVersion: 1,
+      evaluatedAt,
+      inputsUsed: output.inputsUsed,
+      traceId,
     });
 
     return output.value;
   }
 
   private trackEvent(params: {
-    flagKey: string;
+    key: string;
     variationKey: string | undefined;
     value: unknown;
     reasons: Reason[];
@@ -359,9 +373,13 @@ class GradualClient implements Gradual {
     ruleId?: string;
     context: EvaluationContext;
     matchedTargetName?: string;
-    flagConfigVersion?: number;
+    flagVersion?: number;
     errorDetail?: string;
     evaluationDurationUs?: number;
+    schemaVersion?: 1;
+    policyVersion?: number;
+    inputsUsed?: string[];
+    traceId?: string;
   }): void {
     if (!this.eventBuffer) {
       return;
@@ -380,17 +398,21 @@ class GradualClient implements Gradual {
       );
 
     this.eventBuffer.push({
-      flagKey: params.flagKey,
+      schemaVersion: params.schemaVersion ?? 1,
+      key: params.key,
       variationKey: params.variationKey,
       value: params.value,
       reasons: params.reasons,
-      evaluatedAt: params.evaluatedAt,
+      evaluatedAt: params.evaluatedAt ?? new Date().toISOString(),
       ruleId: params.ruleId,
+      flagVersion: params.flagVersion ?? 0,
+      policyVersion: params.policyVersion,
+      inputsUsed: params.inputsUsed,
+      traceId: params.traceId,
       contextKinds,
       contextKeys,
       timestamp: Date.now(),
       matchedTargetName: params.matchedTargetName,
-      flagConfigVersion: params.flagConfigVersion,
       errorDetail: params.errorDetail,
       evaluationDurationUs: params.evaluationDurationUs,
       isAnonymous,
@@ -428,30 +450,41 @@ class GradualClient implements Gradual {
     const { output, snapshot, durationUs } = this.evaluateRaw(key, context);
 
     if (!output) {
+      const traceId = crypto.randomUUID();
+      const evaluatedAt = new Date().toISOString();
       const result: EvaluationResult<T> = {
+        schemaVersion: 1,
         key,
         value: undefined as T,
         variationKey: undefined,
         reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
-        version: snapshot.version,
-        evaluatedAt: new Date().toISOString(),
+        flagVersion: snapshot.version,
+        evaluatedAt,
+        traceId,
       };
       this.trackEvent({
-        flagKey: key,
+        key,
         variationKey: undefined,
         value: undefined,
         reasons: result.reasons,
-        evaluatedAt: result.evaluatedAt,
+        evaluatedAt,
         context,
-        flagConfigVersion: snapshot.version,
+        flagVersion: snapshot.version,
+        schemaVersion: 1,
+        traceId,
       });
       return result;
     }
 
-    const result = this.buildResult<T>(key, output, snapshot.version);
+    const result = this.buildResult<T>(
+      key,
+      output,
+      snapshot.version,
+      durationUs
+    );
 
     this.trackEvent({
-      flagKey: key,
+      key,
       variationKey: output.variationKey,
       value: output.value,
       reasons: output.reasons,
@@ -459,9 +492,12 @@ class GradualClient implements Gradual {
       ruleId: result.ruleId,
       context,
       matchedTargetName: output.matchedTargetName,
-      flagConfigVersion: snapshot.version,
+      flagVersion: snapshot.version,
       errorDetail: output.errorDetail,
       evaluationDurationUs: durationUs,
+      schemaVersion: 1,
+      inputsUsed: output.inputsUsed,
+      traceId: result.traceId,
     });
 
     return result;
@@ -484,20 +520,23 @@ class GradualClient implements Gradual {
     options?: { context?: EvaluationContext }
   ): EvaluationResult<T> {
     const context = this.mergeContext(options);
-    const { output, snapshot } = this.evaluateRaw(key, context);
+    const { output, snapshot, durationUs } = this.evaluateRaw(key, context);
 
     if (!output) {
       return {
+        schemaVersion: 1,
         key,
         value: undefined as T,
         variationKey: undefined,
         reasons: [{ type: "error", detail: "FLAG_NOT_FOUND" }],
-        version: snapshot.version,
+        flagVersion: snapshot.version,
         evaluatedAt: new Date().toISOString(),
+        evaluationDurationUs: durationUs,
+        traceId: crypto.randomUUID(),
       };
     }
 
-    return this.buildResult<T>(key, output, snapshot.version);
+    return this.buildResult<T>(key, output, snapshot.version, durationUs);
   }
 
   private trackSync(
@@ -511,7 +550,7 @@ class GradualClient implements Gradual {
     );
 
     this.trackEvent({
-      flagKey: key,
+      key,
       variationKey: result.variationKey,
       value: result.value,
       reasons: result.reasons,
@@ -519,7 +558,12 @@ class GradualClient implements Gradual {
       ruleId: result.ruleId,
       context: this.mergeContext({ context }),
       matchedTargetName: ruleMatch?.ruleName,
-      flagConfigVersion: result.version,
+      flagVersion: result.flagVersion,
+      evaluationDurationUs: result.evaluationDurationUs,
+      schemaVersion: result.schemaVersion,
+      policyVersion: result.policyVersion,
+      inputsUsed: result.inputsUsed,
+      traceId: result.traceId,
     });
   }
 
@@ -582,7 +626,7 @@ class GradualClient implements Gradual {
  *
  * // Full structured result
  * const result = await gradual.evaluate('new-feature')
- * // result.value, result.reasons, result.ruleId, result.version
+ * // result.value, result.reasons, result.ruleId, result.flagVersion
  *
  * // With user context
  * gradual.identify({ userId: '123', plan: 'pro' })

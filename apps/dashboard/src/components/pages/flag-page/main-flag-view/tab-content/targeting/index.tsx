@@ -200,12 +200,10 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col px-2">
+    <div className="flex w-full flex-1 flex-col px-5 py-3">
       <div className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="mb-1 flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <Text className="ml-1" weight="plus">
-            Targeting rules for {environmentSlug}
-          </Text>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>

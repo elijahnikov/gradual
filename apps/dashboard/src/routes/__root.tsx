@@ -70,7 +70,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body
         className={cn(
-          "min-h-screen bg-ui-bg-base font-sans text-ui-fg-base antialiased"
+          "isolate min-h-screen bg-ui-bg-base font-sans text-ui-fg-base antialiased"
         )}
       >
         {children}

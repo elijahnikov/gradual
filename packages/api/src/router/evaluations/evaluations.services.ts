@@ -37,7 +37,7 @@ export async function ingestEvaluations({
     }
 
     // 1. Resolve flag keys to UUIDs
-    const uniqueFlagKeys = [...new Set(events.map((e) => e.flagKey))];
+    const uniqueFlagKeys = [...new Set(events.map((e) => e.key))];
     const flags = await ctx.db
       .select({ id: featureFlag.id, key: featureFlag.key })
       .from(featureFlag)
@@ -91,11 +91,15 @@ export async function ingestEvaluations({
       errorDetail: string | null;
       evaluationDurationUs: number | null;
       isAnonymous: boolean | null;
+      inputsUsed: string[] | null;
+      traceId: string | null;
+      schemaVersion: number | null;
+      policyVersion: number | null;
       createdAt: Date;
     }> = [];
 
     for (const event of events) {
-      const flagId = flagKeyToId.get(event.flagKey);
+      const flagId = flagKeyToId.get(event.key);
       if (!flagId) {
         continue;
       }
@@ -118,11 +122,15 @@ export async function ingestEvaluations({
         sdkKey: meta.sdkKey,
         sdkVersion: meta.sdkVersion,
         matchedTargetName: event.matchedTargetName ?? null,
-        flagConfigVersion: event.flagConfigVersion ?? null,
+        flagConfigVersion: event.flagVersion ?? null,
         sdkPlatform: meta.sdkPlatform ?? null,
         errorDetail: event.errorDetail ?? null,
         evaluationDurationUs: event.evaluationDurationUs ?? null,
         isAnonymous: event.isAnonymous ?? null,
+        inputsUsed: event.inputsUsed ?? null,
+        traceId: event.traceId ?? null,
+        schemaVersion: event.schemaVersion ?? null,
+        policyVersion: event.policyVersion ?? null,
         createdAt: new Date(event.timestamp),
       });
     }
@@ -150,6 +158,10 @@ export async function ingestEvaluations({
           errorDetail: featureFlagEvaluation.errorDetail,
           evaluationDurationUs: featureFlagEvaluation.evaluationDurationUs,
           isAnonymous: featureFlagEvaluation.isAnonymous,
+          inputsUsed: featureFlagEvaluation.inputsUsed,
+          traceId: featureFlagEvaluation.traceId,
+          schemaVersion: featureFlagEvaluation.schemaVersion,
+          policyVersion: featureFlagEvaluation.policyVersion,
         });
 
       for (const row of inserted) {

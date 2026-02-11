@@ -116,20 +116,25 @@ export type Reason =
   | { type: "percentage_rollout"; percentage: number; bucket: number }
   | { type: "default" }
   | { type: "off" }
-  | { type: "error"; detail: string };
+  | { type: "error"; detail: string; errorCode?: string };
 
 // ---------------------------------------------------------------------------
-// EvaluationResult — the core primitive
+// EvaluationResult — the canonical evaluation primitive
 // ---------------------------------------------------------------------------
 
 export interface EvaluationResult<T = unknown> {
+  schemaVersion: 1;
   key: string;
   value: T;
   variationKey?: string;
   reasons: Reason[];
   ruleId?: string;
-  version: number;
+  flagVersion: number;
+  policyVersion?: number;
   evaluatedAt: string;
+  evaluationDurationUs?: number;
+  inputsUsed?: string[];
+  traceId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,27 +147,21 @@ export interface EvalOutput {
   reasons: Reason[];
   matchedTargetName?: string;
   errorDetail?: string;
+  inputsUsed?: string[];
 }
 
 // ---------------------------------------------------------------------------
 // Evaluation events (wire format — SDK → Worker → API)
+// EvaluationEvent extends EvaluationResult with transport metadata.
 // ---------------------------------------------------------------------------
 
-export interface EvaluationEvent {
-  flagKey: string;
-  variationKey: string | undefined;
-  value: unknown;
-  reasons: Reason[];
+export interface EvaluationEvent<T = unknown> extends EvaluationResult<T> {
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
   timestamp: number;
-  evaluatedAt?: string;
-  matchedTargetName?: string;
-  ruleId?: string;
-  flagConfigVersion?: number;
-  errorDetail?: string;
-  evaluationDurationUs?: number;
   isAnonymous: boolean;
+  matchedTargetName?: string;
+  errorDetail?: string;
 }
 
 export interface EvaluationBatchPayload {

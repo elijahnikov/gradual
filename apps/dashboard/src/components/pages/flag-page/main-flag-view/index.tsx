@@ -128,7 +128,7 @@ function TabContentSkeleton({ tab }: { tab: FlagTab }) {
 
 function TargetingTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
+    <div className="flex w-full flex-1 flex-col px-5 py-3">
       <Card className="flex h-full w-full flex-1 flex-col p-0">
         {/* Header */}
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -163,7 +163,7 @@ function TargetingTabSkeleton() {
 
 function VariationsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-2 sm:p-2">
+    <div className="flex w-full flex-1 flex-col px-5 py-3">
       <div className="flex flex-col gap-3">
         <VariationCardSkeleton />
         <VariationCardSkeleton />
@@ -205,7 +205,7 @@ function VariationCardSkeleton() {
 
 function MetricsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col gap-3 p-2">
+    <div className="flex w-full flex-1 flex-col gap-3 px-5 py-3">
       {/* Header with date picker and variations filter */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-7 w-32 rounded-md" />
@@ -291,7 +291,7 @@ function EventsTabSkeleton() {
 
 function GenericTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col p-3">
+    <div className="flex w-full flex-1 flex-col px-5 py-3">
       <Card className="flex h-full w-full flex-1 flex-col p-4">
         <Skeleton className="h-6 w-48" />
         <div className="mt-4 flex flex-col gap-3">

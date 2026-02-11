@@ -5,7 +5,8 @@ interface SnapshotJobMessage {
 }
 
 interface EvaluationEvent {
-  flagKey: string;
+  schemaVersion?: number;
+  key: string;
   variationKey: string | undefined;
   value: unknown;
   reasons: unknown[];
@@ -15,10 +16,13 @@ interface EvaluationEvent {
   evaluatedAt?: string;
   matchedTargetName?: string;
   ruleId?: string;
-  flagConfigVersion?: number;
+  flagVersion?: number;
+  policyVersion?: number;
   errorDetail?: string;
   evaluationDurationUs?: number;
   isAnonymous?: boolean;
+  inputsUsed?: string[];
+  traceId?: string;
 }
 
 interface EvaluationQueueMessage {

@@ -664,6 +664,10 @@ export const featureFlagEvaluation = pgTable(
     errorDetail: text("error_detail"),
     evaluationDurationUs: integer("evaluation_duration_us"),
     isAnonymous: boolean("is_anonymous"),
+    inputsUsed: jsonb("inputs_used").$type<string[]>(),
+    traceId: text("trace_id"),
+    schemaVersion: integer("schema_version"),
+    policyVersion: bigint("policy_version", { mode: "number" }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

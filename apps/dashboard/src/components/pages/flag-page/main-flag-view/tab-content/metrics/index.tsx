@@ -83,7 +83,7 @@ function MetricsContent({
   }
 
   return (
-    <div className="flex w-full flex-1 flex-col gap-3 p-2">
+    <div className="flex w-full flex-1 flex-col gap-3 px-5 py-3">
       <MetricsHeader variations={data.variations} />
       <MetricsSummary
         previousTotals={data.previousTotals}

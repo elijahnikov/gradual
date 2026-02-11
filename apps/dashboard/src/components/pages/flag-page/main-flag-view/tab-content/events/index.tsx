@@ -29,6 +29,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { useTRPC } from "@/lib/trpc";
 import EmptyEventsList from "./empty-state";
+import EventDetailSheet from "./event-detail-sheet";
+import { isStructuredReason, summarizeReasons } from "./reason-utils";
 
 type Flag = RouterOutputs["featureFlags"]["getByKey"]["flag"];
 type EventItem = RouterOutputs["featureFlags"]["getEvents"]["items"][number];
@@ -40,47 +42,16 @@ interface FlagEventsProps {
   environmentId?: string;
 }
 
-interface StructuredReason {
-  type: string;
-  ruleId?: string;
-  ruleName?: string;
-  percentage?: number;
-  bucket?: number;
-  detail?: string;
-}
-
-function isStructuredReason(v: unknown): v is StructuredReason {
-  return typeof v === "object" && v !== null && "type" in v;
-}
-
-const structuredReasonVariants: Record<
-  string,
-  "secondary" | "success" | "warning" | "error" | "info" | "outline"
-> = {
-  rule_match: "success",
-  percentage_rollout: "info",
-  default: "outline",
-  off: "secondary",
-  error: "error",
-};
-
-function formatStructuredReason(reason: StructuredReason): string {
-  switch (reason.type) {
-    case "rule_match":
-      return reason.ruleName ? `Rule: ${reason.ruleName}` : "Rule match";
-    case "percentage_rollout":
-      return reason.percentage != null
-        ? `Rollout: ${(reason.percentage / 100).toFixed(1)}%`
-        : "Rollout";
-    case "default":
-      return "Default";
-    case "off":
-      return "Disabled";
-    case "error":
-      return reason.detail ? `Error: ${reason.detail}` : "Error";
-    default:
-      return reason.type;
+function formatValue(val: unknown): string {
+  if (val === null || val === undefined) {
+    return "-";
   }
+  if (typeof val === "object") {
+    const json = JSON.stringify(val);
+    // Truncate long JSON for table display
+    return json.length > 40 ? `${json.slice(0, 40)}...` : json;
+  }
+  return String(val);
 }
 
 function formatDuration(us: number): string {
@@ -119,8 +90,8 @@ const columns = [
     cell: (info) => {
       const val = info.getValue();
       return (
-        <span className="truncate font-mono text-xs">
-          {val !== null && val !== undefined ? String(val) : "-"}
+        <span className="max-w-[200px] truncate font-mono text-xs">
+          {formatValue(val)}
         </span>
       );
     },
@@ -135,47 +106,11 @@ const columns = [
         structuredReasons.length > 0 &&
         structuredReasons.every(isStructuredReason)
       ) {
+        const { label, variant } = summarizeReasons(structuredReasons);
         return (
-          <div className="flex flex-wrap items-center gap-1">
-            {structuredReasons.map((r, i) => {
-              const label = formatStructuredReason(r);
-              const variant = structuredReasonVariants[r.type] ?? "outline";
-
-              if (r.type === "error" && r.detail) {
-                return (
-                  <Tooltip key={i}>
-                    <TooltipTrigger>
-                      <Badge size="sm" variant={variant}>
-                        {label}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>{r.detail}</TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              if (r.type === "percentage_rollout" && r.bucket != null) {
-                return (
-                  <Tooltip key={i}>
-                    <TooltipTrigger>
-                      <Badge size="sm" variant={variant}>
-                        {label}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Bucket: {r.bucket.toLocaleString()}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return (
-                <Badge key={i} size="sm" variant={variant}>
-                  {label}
-                </Badge>
-              );
-            })}
-          </div>
+          <Badge size="sm" variant={variant}>
+            {label}
+          </Badge>
         );
       }
 
@@ -204,22 +139,6 @@ const columns = [
         </span>
       );
     },
-  }),
-  columnHelper.accessor("sdkPlatform", {
-    header: "Platform",
-    cell: (info) => (
-      <span className="font-mono text-ui-fg-muted text-xs">
-        {info.getValue() ?? "-"}
-      </span>
-    ),
-  }),
-  columnHelper.accessor("sdkVersion", {
-    header: "Version",
-    cell: (info) => (
-      <span className="font-mono text-ui-fg-muted text-xs">
-        {info.getValue() ?? "-"}
-      </span>
-    ),
   }),
   columnHelper.accessor("createdAt", {
     header: "Time",
@@ -283,6 +202,7 @@ function FlagEventsContent({
   const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
   const seenIdsRef = useRef(new Set<string>());
   const liveIdsRef = useRef(new Set<string>());
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(
@@ -386,10 +306,12 @@ function FlagEventsContent({
               const isLive = liveIdsRef.current.has(row.original.id);
               return (
                 <TableRow
+                  className="cursor-pointer transition-colors hover:bg-ui-bg-field-hover"
                   key={row.id}
                   onAnimationEnd={() => {
                     liveIdsRef.current.delete(row.original.id);
                   }}
+                  onClick={() => setSelectedEvent(row.original)}
                   style={
                     isLive
                       ? {
@@ -417,6 +339,15 @@ function FlagEventsContent({
           </div>
         )}
       </div>
+      <EventDetailSheet
+        event={selectedEvent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedEvent(null);
+          }
+        }}
+        open={selectedEvent !== null}
+      />
     </TooltipProvider>
   );
 }

@@ -478,6 +478,10 @@ export function getValidationErrors(
   for (const target of targets) {
     const targetErrors: string[] = [];
 
+    if (!target.name.trim()) {
+      targetErrors.push("Target name is required");
+    }
+
     if (!(target.variationId || target.rollout)) {
       targetErrors.push("A variation or rollout must be selected");
     }

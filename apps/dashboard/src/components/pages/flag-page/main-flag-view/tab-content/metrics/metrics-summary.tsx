@@ -100,8 +100,8 @@ export default function MetricsSummary({
             <Card className="p-1" key={stat.id}>
               <div className="rounded-sm border bg-ui-bg-subtle p-3">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="size-3 rounded-full"
+                  <span
+                    className="size-3 shrink-0 rounded-[4px]"
                     style={{ backgroundColor: stat.color }}
                   />
                   <Text className="text-ui-fg-muted" size="small">
