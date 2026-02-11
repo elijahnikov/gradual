@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.4
+
+### Patch Changes
+
+- [#64](https://github.com/elijahnikov/gradual/pull/64) [`0d51a12`](https://github.com/elijahnikov/gradual/commit/0d51a1221a607ba0b1410e8d5c16abaa3143aedf) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding gradual rollout support
+
+- Updated dependencies [[`0d51a12`](https://github.com/elijahnikov/gradual/commit/0d51a1221a607ba0b1410e8d5c16abaa3143aedf)]:
+  - @gradual-so/sdk@0.8.4
+
 ## 0.8.3
 
 ### Patch Changes
