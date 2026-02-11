@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.3
+
+### Patch Changes
+
+- [#61](https://github.com/elijahnikov/gradual/pull/61) [`0e8a03c`](https://github.com/elijahnikov/gradual/commit/0e8a03cf2c75f528a8637c8afadf4ed6631d6470) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding extra eval data returned to clients
+
 ## 0.8.2
 
 ### Patch Changes
