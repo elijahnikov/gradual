@@ -45,6 +45,8 @@ import EditableTitle from "@/components/common/editable-title";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 
+const NO_MAINTAINER_VALUE = "__none__";
+
 interface FlagSidebarProps {
   flag: RouterOutputs["featureFlags"]["getByKey"]["flag"];
   organizationSlug: string;
@@ -88,14 +90,18 @@ export default function FlagSidebar({
   });
 
   interface MemberItem {
-    value: string | null;
+    value: string;
     label: string;
     avatar: string | undefined;
   }
 
   const memberItems = useMemo(() => {
     const items: MemberItem[] = [
-      { value: null, label: "No maintainer", avatar: "no-maintainer" },
+      {
+        value: NO_MAINTAINER_VALUE,
+        label: "No maintainer",
+        avatar: "no-maintainer",
+      },
     ];
 
     if (!members?.length) {
@@ -115,6 +121,8 @@ export default function FlagSidebar({
     optimisticMaintainerId !== undefined
       ? optimisticMaintainerId
       : flag.maintainerId;
+
+  const comboboxValue = currentMaintainerId ?? NO_MAINTAINER_VALUE;
 
   const selectedMaintainer = useMemo(() => {
     if (!currentMaintainerId) {
@@ -141,11 +149,16 @@ export default function FlagSidebar({
           setSavingField("maintainer");
         }
       },
-      onError: () => {
+      onError: (error) => {
         setOptimisticName(undefined);
         setOptimisticDescription(undefined);
         setOptimisticMaintainerId(undefined);
         setSavingField(null);
+        toastManager.add({
+          type: "error",
+          title: "Failed to update flag",
+          description: error.message,
+        });
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries(
@@ -190,13 +203,16 @@ export default function FlagSidebar({
     }
   };
 
-  const handleMaintainerUpdate = (newMaintainerId: string | null) => {
-    if (newMaintainerId !== flag.maintainerId) {
+  const handleMaintainerUpdate = (newMaintainerId: string) => {
+    const resolved =
+      newMaintainerId === NO_MAINTAINER_VALUE ? null : newMaintainerId;
+    setMaintainerSearchTerm("");
+    if (resolved !== flag.maintainerId) {
       updateMutation.mutate({
         flagId: flag.id,
         projectSlug,
         organizationSlug,
-        maintainerId: newMaintainerId,
+        maintainerId: resolved,
       });
     }
   };
@@ -295,9 +311,12 @@ export default function FlagSidebar({
           disabled={!canUpdateFlags}
           items={memberItems}
           onValueChange={(value) => {
+            if (!value) {
+              return;
+            }
             handleMaintainerUpdate(value);
           }}
-          value={currentMaintainerId}
+          value={comboboxValue}
         >
           <ComboboxTrigger
             render={
@@ -309,23 +328,30 @@ export default function FlagSidebar({
             }
           >
             <ComboboxValue>
-              <div className="flex items-center gap-2">
-                <Avatar className="size-5 border">
-                  {selectedMaintainer ? (
-                    <>
-                      <AvatarImage src={selectedMaintainer.avatar} />
-                      <AvatarFallback>
-                        {selectedMaintainer.label?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <RiUserSmileLine className="size-3" />
-                  )}
-                </Avatar>
-                <Text size="small">
-                  {selectedMaintainer?.label ?? "Unassigned"}
-                </Text>
-              </div>
+              {isLoadingMembers && currentMaintainerId ? (
+                <div className="flex items-center gap-2">
+                  <Skeleton className="size-5 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-5 border">
+                    {selectedMaintainer ? (
+                      <>
+                        <AvatarImage src={selectedMaintainer.avatar} />
+                        <AvatarFallback>
+                          {selectedMaintainer.label?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </>
+                    ) : (
+                      <RiUserSmileLine className="size-3" />
+                    )}
+                  </Avatar>
+                  <Text size="small">
+                    {selectedMaintainer?.label ?? "Unassigned"}
+                  </Text>
+                </div>
+              )}
             </ComboboxValue>
             <RiArrowDownSLine className="ml-auto size-4 text-ui-fg-muted" />
           </ComboboxTrigger>

@@ -137,7 +137,7 @@ export function SegmentSelect({
       <ComboboxTrigger
         render={
           <Button
-            className="h-8 w-full justify-between sm:w-48"
+            className="h-7 w-full justify-between sm:w-48"
             size="small"
             variant="outline"
           />

@@ -71,7 +71,7 @@ export function VariationSelector({
         }}
         value={displayValue}
       >
-        <SelectTrigger className="w-full sm:w-48">
+        <SelectTrigger className="min-h-7! w-full sm:w-48">
           <SelectValue>
             {isGradual ? (
               <span className="flex items-center gap-1.5">

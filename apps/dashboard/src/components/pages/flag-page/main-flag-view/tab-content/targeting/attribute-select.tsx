@@ -154,7 +154,7 @@ export function AttributeSelect({
         disabled={isDisabled}
         render={
           <Button
-            className="h-8 w-full justify-between rounded-sm sm:w-36"
+            className="h-7 w-full justify-between rounded-sm sm:w-36"
             disabled={isDisabled}
             size="small"
             variant="outline"

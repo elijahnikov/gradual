@@ -31,7 +31,7 @@ export function formatStructuredReason(reason: StructuredReason): string {
         : "Matched a targeting rule";
     case "percentage_rollout":
       return reason.percentage != null
-        ? `Rolled out at ${(reason.percentage / 100).toFixed(1)}%`
+        ? `Rolled out at ${reason.percentage.toFixed(1)}%`
         : "Included in percentage rollout";
     case "default":
       return "Served default variation";

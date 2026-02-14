@@ -134,7 +134,7 @@ export function IndividualTargetCard({
             is
           </Text>
           <Input
-            className="h-8 flex-1"
+            className="h-7 flex-1"
             onChange={(e) => handleAttributeValueChange(e.target.value)}
             placeholder="Enter value"
             value={attributeValue}

@@ -43,7 +43,7 @@ export function ContextSelect({ value, onChange }: ContextSelectProps) {
       }}
       value={value}
     >
-      <SelectTrigger className="h-7.5 w-full sm:w-32">
+      <SelectTrigger className="min-h-7! w-full sm:w-32">
         <span className="flex w-full items-center gap-1.5">
           {Icon && <Icon className="size-3.5 text-ui-fg-muted" />}
           <SelectValue>

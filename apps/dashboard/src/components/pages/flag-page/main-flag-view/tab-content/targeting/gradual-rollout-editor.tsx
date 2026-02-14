@@ -245,7 +245,7 @@ export function GradualRolloutEditor({
                   </Text>
                 )}
                 {!isLast && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <DurationInput
                       onChange={(val) =>
                         handleDurationChange(stepIndex, val, duration.unit)

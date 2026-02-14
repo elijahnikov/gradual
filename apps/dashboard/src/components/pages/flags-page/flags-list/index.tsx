@@ -121,10 +121,6 @@ export default function FlagsList({
   useKeyPress("a", handleSelectAll);
   useKeyPress("Escape", handleClearSelection);
 
-  // const { mutateAsync: seedEvaluations } = useMutation(
-  //   trpc.featureFlags.seedEvaluations.mutationOptions()
-  // );
-
   if (allFlags.length === 0) {
     if (search) {
       return <NoResultsState />;
@@ -134,21 +130,7 @@ export default function FlagsList({
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* <Button
-        onClick={async () =>
-          await seedEvaluations({
-            flagId: allFlags[0]?.featureFlag.id ?? "",
-            organizationId: allFlags[0]?.featureFlag.organizationId ?? "",
-            projectId: allFlags[0]?.featureFlag.projectId ?? "",
-            count: 5000,
-          })
-        }
-        size="small"
-        variant="outline"
-      >
-        seed
-      </Button> */}
-      <div className="flex flex-col divide-y">
+      <div className="flex flex-col">
         {allFlags.map((item, _index) => (
           <React.Fragment key={item.featureFlag.id}>
             <FlagListItem flag={item} key={item.featureFlag.id} />
