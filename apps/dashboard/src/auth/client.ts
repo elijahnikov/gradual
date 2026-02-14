@@ -1,5 +1,6 @@
 import { polarClient } from "@polar-sh/better-auth/client";
 import {
+  deviceAuthorizationClient,
   emailOTPClient,
   lastLoginMethodClient,
   organizationClient,
@@ -12,5 +13,6 @@ export const authClient = createAuthClient({
     emailOTPClient(),
     organizationClient(),
     lastLoginMethodClient(),
+    deviceAuthorizationClient(),
   ],
 });

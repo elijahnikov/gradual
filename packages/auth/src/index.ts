@@ -5,11 +5,13 @@ import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
+  bearer,
   emailOTP,
   lastLoginMethod,
   oAuthProxy,
   organization,
 } from "better-auth/plugins";
+import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { Resend } from "resend";
 import { authEnv } from "../env";
 import { ac, admin, member, owner, viewer } from "./permissions";
@@ -92,6 +94,8 @@ export function initAuth<
         productionURL: options.productionUrl,
       }),
       expo(),
+      bearer(),
+      deviceAuthorization(),
       polar({
         client: polarClient,
         createCustomerOnSignUp: true,

@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.5
+
+### Patch Changes
+
+- Adding CLI support
+
+- Updated dependencies []:
+  - @gradual-so/sdk@0.8.5
+
 ## 0.8.4
 
 ### Patch Changes

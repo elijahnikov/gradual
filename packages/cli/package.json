@@ -1,0 +1,46 @@
+{
+  "name": "@gradual-so/cli",
+  "version": "0.1.0",
+  "description": "Gradual CLI for feature flag management",
+  "type": "module",
+  "bin": {
+    "gradual": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "keywords": [
+    "feature-flags",
+    "gradual",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elijahnikov/gradual",
+    "directory": "packages/cli"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && node -e \"const fs=require('fs');const f='dist/index.js';fs.writeFileSync(f,'#!/usr/bin/env node\\n'+fs.readFileSync(f,'utf8'))\"",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "bun build src/index.ts --outdir dist --target node --format esm --watch",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "chalk": "^5.4.0",
+    "commander": "^13.0.0",
+    "conf": "^13.0.0",
+    "@inquirer/prompts": "^7.0.0",
+    "open": "^10.1.0",
+    "superjson": "2.2.3"
+  },
+  "devDependencies": {
+    "@gradual/tsconfig": "*",
+    "@types/node": "catalog:",
+    "tsup": "^8.5.1",
+    "typescript": "catalog:"
+  }
+}

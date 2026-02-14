@@ -32,7 +32,11 @@ export const Route = createRootRouteWithContext<{
     const session = await queryClient.ensureQueryData(
       trpc.auth.getSession.queryOptions()
     );
-    if (!session?.user && location.pathname !== "/login") {
+    if (
+      !session?.user &&
+      location.pathname !== "/login" &&
+      !location.pathname.startsWith("/device/")
+    ) {
       throw redirect({ to: "/login" });
     }
     if (
