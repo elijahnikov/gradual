@@ -211,7 +211,7 @@ export function PercentageSlider({
   const disabled = variations.length < 2;
 
   return (
-    <div className="relative h-8 w-full" ref={trackRef}>
+    <div className="relative h-7 w-full" ref={trackRef}>
       <div className="flex h-full w-full overflow-hidden rounded-md border border-ui-border-base">
         {segments.map((segment) => (
           <div

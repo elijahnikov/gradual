@@ -149,7 +149,7 @@ function ConditionRow({
           }}
           value={condition.operator}
         >
-          <SelectTrigger className="h-8 w-full sm:w-40">
+          <SelectTrigger className="min-h-7! w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} className="pb-2">
@@ -162,7 +162,7 @@ function ConditionRow({
         </Select>
 
         <Input
-          className="h-8 w-full sm:flex-1"
+          className="h-7 w-full sm:flex-1"
           onChange={(e) => onChange({ value: e.target.value })}
           placeholder="Value"
           value={String(condition.value ?? "")}
