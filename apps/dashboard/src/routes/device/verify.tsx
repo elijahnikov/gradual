@@ -32,7 +32,7 @@ function DeviceVerifyPage() {
   async function handleApprove() {
     setLoading(true);
     try {
-      await authClient.deviceAuthorization.approve({
+      await authClient.device.approve({
         userCode: user_code,
       });
       setStatus("approved");
@@ -46,7 +46,7 @@ function DeviceVerifyPage() {
   async function handleDeny() {
     setLoading(true);
     try {
-      await authClient.deviceAuthorization.deny({
+      await authClient.device.deny({
         userCode: user_code,
       });
       setStatus("denied");
@@ -92,7 +92,7 @@ function DeviceVerifyPage() {
                 className="flex-1"
                 disabled={loading || !user_code}
                 onClick={handleApprove}
-                variant="primary"
+                variant="gradual"
               >
                 {loading ? "Authorizing..." : "Approve"}
               </Button>
