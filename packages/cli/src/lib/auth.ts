@@ -57,15 +57,18 @@ export async function deviceLogin(dashboardUrl: string): Promise<LoginResult> {
 
   const codeData = (await codeResponse.json()) as DeviceCodeResponse;
 
+  const verifyUrl =
+    codeData.verification_uri_complete || codeData.verification_uri;
+
   console.log();
   console.log(
     `  Your authorization code: ${chalk.bold.cyan(codeData.user_code)}`
   );
   console.log();
-  console.log(`  ${chalk.dim("Opening browser to verify...")}`);
+  console.log(`  ${chalk.dim(`Verify at: ${verifyUrl}`)}`);
   console.log();
 
-  await open(codeData.verification_uri_complete || codeData.verification_uri);
+  await open(verifyUrl);
 
   let pollInterval = codeData.interval * 1000;
   const deadline = Date.now() + codeData.expires_in * 1000;

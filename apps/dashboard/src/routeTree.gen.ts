@@ -9,10 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DeviceRouteImport } from './routes/device'
 import { Route as OrganizationRouteImport } from './routes/_organization'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DeviceVerifyRouteImport } from './routes/device/verify'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
@@ -34,6 +34,11 @@ import { Route as OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRo
 import { Route as OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/index'
 
+const DeviceRoute = DeviceRouteImport.update({
+  id: '/device',
+  path: '/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrganizationRoute = OrganizationRouteImport.update({
   id: '/_organization',
   getParentRoute: () => rootRouteImport,
@@ -45,11 +50,6 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DeviceVerifyRoute = DeviceVerifyRouteImport.update({
-  id: '/device/verify',
-  path: '/device/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
@@ -188,12 +188,12 @@ const OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugI
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/device': typeof DeviceRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugProjectRouteRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
-  '/device/verify': typeof DeviceVerifyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -211,11 +211,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/device': typeof DeviceRoute
   '/login': typeof AuthLoginRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
-  '/device/verify': typeof DeviceVerifyRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
@@ -235,12 +235,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_organization': typeof OrganizationRouteWithChildren
+  '/device': typeof DeviceRoute
   '/_organization/$organizationSlug': typeof OrganizationOrganizationSlugRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
-  '/device/verify': typeof DeviceVerifyRoute
   '/_organization/$organizationSlug/_project': typeof OrganizationOrganizationSlugProjectRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
@@ -261,12 +261,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/device'
     | '/$organizationSlug'
     | '/login'
     | '/onboarding'
     | '/api/files'
     | '/api/upload'
-    | '/device/verify'
     | '/api/auth/$'
     | '/api/files/$key'
     | '/api/trpc/$'
@@ -284,11 +284,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/device'
     | '/login'
     | '/onboarding'
     | '/api/files'
     | '/api/upload'
-    | '/device/verify'
     | '/$organizationSlug'
     | '/api/auth/$'
     | '/api/files/$key'
@@ -307,12 +307,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_organization'
+    | '/device'
     | '/_organization/$organizationSlug'
     | '/_auth/login'
     | '/_auth/onboarding'
     | '/api/files'
     | '/api/upload'
-    | '/device/verify'
     | '/_organization/$organizationSlug/_project'
     | '/api/auth/$'
     | '/api/files/$key'
@@ -334,15 +334,22 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   OrganizationRoute: typeof OrganizationRouteWithChildren
+  DeviceRoute: typeof DeviceRoute
   ApiFilesRoute: typeof ApiFilesRouteWithChildren
   ApiUploadRoute: typeof ApiUploadRoute
-  DeviceVerifyRoute: typeof DeviceVerifyRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/device': {
+      id: '/device'
+      path: '/device'
+      fullPath: '/device'
+      preLoaderRoute: typeof DeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_organization': {
       id: '/_organization'
       path: ''
@@ -362,13 +369,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/device/verify': {
-      id: '/device/verify'
-      path: '/device/verify'
-      fullPath: '/device/verify'
-      preLoaderRoute: typeof DeviceVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload': {
@@ -627,9 +627,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   OrganizationRoute: OrganizationRouteWithChildren,
+  DeviceRoute: DeviceRoute,
   ApiFilesRoute: ApiFilesRouteWithChildren,
   ApiUploadRoute: ApiUploadRoute,
-  DeviceVerifyRoute: DeviceVerifyRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

@@ -35,7 +35,7 @@ export const Route = createRootRouteWithContext<{
     if (
       !session?.user &&
       location.pathname !== "/login" &&
-      !location.pathname.startsWith("/device/")
+      !location.pathname.startsWith("/device")
     ) {
       throw redirect({ to: "/login" });
     }

@@ -95,7 +95,9 @@ export function initAuth<
       }),
       expo(),
       bearer(),
-      deviceAuthorization(),
+      deviceAuthorization({
+        verificationUri: "/device",
+      }),
       polar({
         client: polarClient,
         createCustomerOnSignUp: true,
