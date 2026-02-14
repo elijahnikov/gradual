@@ -1,0 +1,43 @@
+name: Publish TS SDK's
+
+on:
+  workflow_dispatch:
+
+concurrency: publish-sdk
+
+jobs:
+  publish:
+    name: Publish TS SDK's
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build SDK packages
+        run: |
+          bun run --filter=@gradual-so/sdk build
+          bun run --filter=@gradual-so/sdk-react build
+
+      - name: Setup npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
+      - name: Publish @gradual-so/sdk
+        working-directory: packages/sdk
+        run: npm publish --provenance --access public
+        continue-on-error: true
+
+      - name: Publish @gradual-so/sdk-react
+        working-directory: packages/sdk-react
+        run: npm publish --provenance --access public
+        continue-on-error: true

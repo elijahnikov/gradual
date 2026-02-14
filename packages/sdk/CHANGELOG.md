@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.5
+
+### Patch Changes
+
+- Adding CLI support
+
 ## 0.8.4
 
 ### Patch Changes
