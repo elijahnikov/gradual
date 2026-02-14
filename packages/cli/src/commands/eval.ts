@@ -4,10 +4,28 @@ import { requireAuth, requireProject } from "../lib/middleware.js";
 import * as output from "../lib/output.js";
 
 interface FlagResult {
-  id: string;
-  key: string;
-  name: string;
-  type: string;
+  flag: {
+    id: string;
+    key: string;
+    name: string;
+    type: string;
+  };
+  environments: {
+    environment: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+    enabled: boolean;
+  }[];
+}
+
+interface TargetingRules {
+  enabled: boolean;
+  defaultVariation: {
+    name: string;
+    value: unknown;
+  } | null;
 }
 
 interface Environment {
@@ -16,19 +34,12 @@ interface Environment {
   slug: string;
 }
 
-interface PreviewEvaluation {
-  environmentId: string;
-  value: unknown;
-  variationName: string;
-  reason: string;
-}
-
 export const evalCommand = new Command("eval")
   .description("Evaluate a feature flag")
   .argument("<flag-key>", "Flag key to evaluate")
   .option(
     "--env <environment>",
-    "Environment slug (defaults to first environment)"
+    "Environment slug (defaults to all environments)"
   )
   .option("--json", "Output as JSON")
   .action(
@@ -39,11 +50,12 @@ export const evalCommand = new Command("eval")
       const spinner = ora("Evaluating flag...").start();
 
       try {
-        const flag = await api.query<FlagResult>("featureFlags.getByKey", {
+        const result = await api.query<FlagResult>("featureFlags.getByKey", {
           key: flagKey,
           projectSlug: project.projectSlug,
           organizationSlug: project.organizationSlug,
         });
+        const { flag } = result;
 
         const environments = await api.query<Environment[]>(
           "environment.list",
@@ -63,23 +75,45 @@ export const evalCommand = new Command("eval")
           }
         }
 
-        const envIds = targetEnvs.map((e) => e.id).slice(0, 3);
+        const evalResults: {
+          environment: string;
+          enabled: boolean;
+          value: unknown | null;
+          variation: string;
+        }[] = [];
 
-        const evaluations = await api.query<PreviewEvaluation[]>(
-          "featureFlags.getPreviewEvaluations",
-          {
-            flagId: flag.id,
-            organizationId: project.organizationId,
-            projectId: project.projectId,
-            environmentIds: envIds,
-            organizationSlug: project.organizationSlug,
+        for (const env of targetEnvs) {
+          try {
+            const rules = await api.query<TargetingRules>(
+              "featureFlags.getTargetingRules",
+              {
+                flagId: flag.id,
+                environmentSlug: env.slug,
+                projectSlug: project.projectSlug,
+                organizationSlug: project.organizationSlug,
+              }
+            );
+
+            evalResults.push({
+              environment: env.name,
+              enabled: rules.enabled,
+              value: rules.defaultVariation?.value ?? null,
+              variation: rules.defaultVariation?.name ?? "-",
+            });
+          } catch {
+            evalResults.push({
+              environment: env.name,
+              enabled: false,
+              value: null,
+              variation: "not configured",
+            });
           }
-        );
+        }
 
         spinner.stop();
 
         if (options.json) {
-          output.json({ flag: flagKey, evaluations });
+          output.json({ flag: flagKey, evaluations: evalResults });
           return;
         }
 
@@ -91,13 +125,12 @@ export const evalCommand = new Command("eval")
         ]);
         console.log();
 
-        for (const evaluation of evaluations) {
-          const env = targetEnvs.find((e) => e.id === evaluation.environmentId);
+        for (const evalResult of evalResults) {
           output.keyValue([
-            ["Environment", env?.name ?? evaluation.environmentId],
-            ["Value", String(evaluation.value)],
-            ["Variation", evaluation.variationName],
-            ["Reason", evaluation.reason],
+            ["Environment", evalResult.environment],
+            ["Enabled", evalResult.enabled ? "ON" : "OFF"],
+            ["Value", String(evalResult.value)],
+            ["Variation", evalResult.variation],
           ]);
           console.log();
         }
