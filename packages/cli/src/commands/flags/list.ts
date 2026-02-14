@@ -13,8 +13,9 @@ interface Flag {
 }
 
 interface FlagListResponse {
-  data: Flag[];
-  nextCursor?: { value: string | number; id: string };
+  items: { featureFlag: Flag }[];
+  nextCursor: { value: string | number; id: string } | null;
+  total: number;
 }
 
 export const flagsListCommand = new Command("list")
@@ -42,19 +43,21 @@ export const flagsListCommand = new Command("list")
 
         spinner.stop();
 
+        const flags = result.items.map((item) => item.featureFlag);
+
         if (options.json) {
-          output.json(result.data);
+          output.json(flags);
           return;
         }
 
-        if (result.data.length === 0) {
+        if (flags.length === 0) {
           output.info("No flags found");
           return;
         }
 
         output.table(
           ["KEY", "NAME", "TYPE", "STATUS", "CREATED"],
-          result.data.map((flag) => [
+          flags.map((flag) => [
             flag.key,
             flag.name,
             flag.type,

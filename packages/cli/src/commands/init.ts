@@ -6,16 +6,28 @@ import { setProjectContext } from "../lib/config.js";
 import { requireAuth } from "../lib/middleware.js";
 import { error, success } from "../lib/output.js";
 
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  slug: string;
+interface OrganizationResult {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  projects: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
+interface OrganizationResult {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  projects: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
 }
 
 export const initCommand = new Command("init")
@@ -24,32 +36,26 @@ export const initCommand = new Command("init")
     const { api, dashboardUrl } = requireAuth();
 
     try {
-      const orgs = await api.query<Organization[]>(
+      const results = await api.query<OrganizationResult[]>(
         "organization.getAllByUserId",
         undefined
       );
 
-      if (orgs.length === 0) {
+      if (results.length === 0) {
         error("No organizations found. Create one in the dashboard first.");
         process.exit(1);
       }
 
       const orgChoice = await select({
         message: "Select an organization:",
-        choices: orgs.map((org) => ({
-          name: org.name,
-          value: org,
-          description: org.slug,
+        choices: results.map((r) => ({
+          name: r.organization.name,
+          value: r,
+          description: r.organization.slug,
         })),
       });
 
-      const projects = await api.query<Project[]>(
-        "project.getAllByOrganizationId",
-        {
-          organizationId: orgChoice.id,
-          organizationSlug: orgChoice.slug,
-        }
-      );
+      const projects = orgChoice.projects;
 
       if (projects.length === 0) {
         error(
@@ -68,8 +74,8 @@ export const initCommand = new Command("init")
       });
 
       const ctx = {
-        organizationSlug: orgChoice.slug,
-        organizationId: orgChoice.id,
+        organizationSlug: orgChoice.organization.slug,
+        organizationId: orgChoice.organization.id,
         projectSlug: projectChoice.slug,
         projectId: projectChoice.id,
         dashboardUrl,
@@ -95,7 +101,9 @@ export const initCommand = new Command("init")
         );
       }
 
-      success(`Project context set: ${orgChoice.slug}/${projectChoice.slug}`);
+      success(
+        `Project context set: ${orgChoice.organization.slug}/${projectChoice.slug}`
+      );
     } catch (err) {
       if ((err as { name?: string }).name === "ExitPromptError") {
         return;

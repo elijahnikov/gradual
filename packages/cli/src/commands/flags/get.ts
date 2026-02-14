@@ -11,14 +11,16 @@ interface Variation {
 }
 
 interface FlagDetail {
-  id: string;
-  key: string;
-  name: string;
-  type: string;
-  description: string | null;
-  archivedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  flag: {
+    id: string;
+    key: string;
+    name: string;
+    type: string;
+    description: string | null;
+    archivedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
   variations: Variation[];
 }
 
@@ -33,7 +35,7 @@ export const flagsGetCommand = new Command("get")
     const spinner = ora("Fetching flag...").start();
 
     try {
-      const flag = await api.query<FlagDetail>("featureFlags.getByKey", {
+      const result = await api.query<FlagDetail>("featureFlags.getByKey", {
         key,
         projectSlug: project.projectSlug,
         organizationSlug: project.organizationSlug,
@@ -42,9 +44,11 @@ export const flagsGetCommand = new Command("get")
       spinner.stop();
 
       if (options.json) {
-        output.json(flag);
+        output.json(result);
         return;
       }
+
+      const { flag, variations } = result;
 
       console.log();
       output.keyValue([
@@ -57,11 +61,11 @@ export const flagsGetCommand = new Command("get")
         ["Updated", new Date(flag.updatedAt).toLocaleDateString()],
       ]);
 
-      if (flag.variations.length > 0) {
+      if (variations.length > 0) {
         console.log();
         output.table(
           ["VARIATION", "VALUE", "DEFAULT"],
-          flag.variations.map((v) => [
+          variations.map((v) => [
             v.name,
             String(v.value),
             v.isDefault ? "yes" : "",

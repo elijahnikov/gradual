@@ -4,9 +4,11 @@ import { requireAuth, requireProject } from "../../lib/middleware.js";
 import { success } from "../../lib/output.js";
 
 interface FlagResult {
-  id: string;
-  key: string;
-  name: string;
+  flag: {
+    id: string;
+    key: string;
+    name: string;
+  };
 }
 
 interface TargetingRules {
@@ -28,7 +30,7 @@ export const flagsToggleCommand = new Command("toggle")
     const spinner = ora("Toggling flag...").start();
 
     try {
-      const flag = await api.query<FlagResult>("featureFlags.getByKey", {
+      const result = await api.query<FlagResult>("featureFlags.getByKey", {
         key,
         projectSlug: project.projectSlug,
         organizationSlug: project.organizationSlug,
@@ -37,7 +39,7 @@ export const flagsToggleCommand = new Command("toggle")
       const rules = await api.query<TargetingRules>(
         "featureFlags.getTargetingRules",
         {
-          flagId: flag.id,
+          flagId: result.flag.id,
           environmentSlug: options.env,
           projectSlug: project.projectSlug,
           organizationSlug: project.organizationSlug,
@@ -47,7 +49,7 @@ export const flagsToggleCommand = new Command("toggle")
       const newEnabled = !rules.enabled;
 
       await api.mutate("featureFlags.saveTargetingRules", {
-        flagId: flag.id,
+        flagId: result.flag.id,
         environmentSlug: options.env,
         projectSlug: project.projectSlug,
         organizationSlug: project.organizationSlug,
