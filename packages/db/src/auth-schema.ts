@@ -141,13 +141,7 @@ export const invitation = pgTable(
 );
 
 export const deviceCode = pgTable("device_code", {
-<<<<<<< Updated upstream
   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-=======
-  id: uuid("id")
-    .default(sql`pg_catalog.gen_random_uuid()`)
-    .primaryKey(),
->>>>>>> Stashed changes
   deviceCode: text("device_code").notNull(),
   userCode: text("user_code").notNull(),
   userId: text("user_id"),
@@ -157,7 +151,7 @@ export const deviceCode = pgTable("device_code", {
   pollingInterval: integer("polling_interval"),
   clientId: text("client_id"),
   scope: text("scope"),
-})
+});
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
