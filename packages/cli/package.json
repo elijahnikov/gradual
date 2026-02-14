@@ -1,6 +1,6 @@
 {
   "name": "@gradual-so/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Gradual CLI for feature flag management",
   "type": "module",
   "bin": {
