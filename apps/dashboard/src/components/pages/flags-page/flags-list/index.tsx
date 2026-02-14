@@ -1,10 +1,10 @@
 import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
-import { useKeyPress } from "@/lib/hooks/use-key-press";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
 import { useTRPC } from "@/lib/trpc";
 import EmptyFlagsList from "./empty-state";
@@ -118,8 +118,8 @@ export default function FlagsList({
     [selectedFlags.length, clearSelectedFlags]
   );
 
-  useKeyPress("a", handleSelectAll);
-  useKeyPress("Escape", handleClearSelection);
+  useHotkey("Mod+A", handleSelectAll);
+  useHotkey("Escape", handleClearSelection);
 
   if (allFlags.length === 0) {
     if (search) {
