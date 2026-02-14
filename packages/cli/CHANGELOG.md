@@ -1,5 +1,11 @@
 # @gradual-so/cli
 
+## 0.1.3
+
+### Patch Changes
+
+- [#73](https://github.com/elijahnikov/gradual/pull/73) [`ed1bf51`](https://github.com/elijahnikov/gradual/commit/ed1bf51dc4fa973d201b965222cddf972a0009ca) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Fixing auth
+
 ## 0.1.2
 
 ### Patch Changes
