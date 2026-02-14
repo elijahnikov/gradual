@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { authClient } from "@/auth/client";
 
-export const Route = createFileRoute("/device/verify")({
+export const Route = createFileRoute("/device")({
   validateSearch: (search: Record<string, unknown>) => ({
     user_code: (search.user_code as string) ?? "",
   }),
