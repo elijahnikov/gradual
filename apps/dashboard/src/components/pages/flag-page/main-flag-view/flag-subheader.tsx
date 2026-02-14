@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -57,21 +58,37 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
     (item) => item.value === environment
   );
 
+  useHotkey("1", () => {
+    setQueryStates({ tab: "targeting" });
+  });
+  useHotkey("2", () => {
+    setQueryStates({ tab: "variations" });
+  });
+  useHotkey("3", () => {
+    setQueryStates({ tab: "metrics" });
+  });
+  useHotkey("4", () => {
+    setQueryStates({ tab: "events" });
+  });
+  useHotkey("5", () => {
+    setQueryStates({ tab: "settings" });
+  });
+
   return (
     <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center justify-between border-b bg-ui-bg-subtle py-2 pr-2 pl-1">
       <div className="flex items-center gap-x-2">
         <TooltipProvider>
           <Tabs onValueChange={handleTabChange} value={tab}>
             <TabsList className="h-8 shadow-elevation-card-rest">
-              {tabList.map(({ tab: tabValue, icon }) => {
+              {tabList.map(({ tab: tabValue, icon, description, hotkey }) => {
                 const Icon = icon;
                 const isSettingsDisabled =
                   tabValue === "settings" && !canUpdateFlags && !canDeleteFlags;
+                const tooltipText = isSettingsDisabled
+                  ? "You don't have permission to access settings"
+                  : description;
                 return (
-                  <Tooltip
-                    key={tabValue}
-                    open={isSettingsDisabled ? undefined : false}
-                  >
+                  <Tooltip key={tabValue}>
                     <TooltipTrigger
                       render={
                         <TabsTab
@@ -84,9 +101,14 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
                       <Icon className="size-3.5" />
                       {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
                     </TooltipTrigger>
-                    {isSettingsDisabled && (
-                      <TooltipContent>
-                        You don't have permission to access settings
+                    {tooltipText && (
+                      <TooltipContent className="flex items-center">
+                        {tooltipText}
+                        {hotkey && (
+                          <kbd className="relative -top-0.25 ml-1.5 rounded border border-ui-border-base bg-ui-bg-base px-1 py-0.5 font-mono text-[10px] text-ui-fg-base">
+                            {hotkey}
+                          </kbd>
+                        )}
                       </TooltipContent>
                     )}
                   </Tooltip>

@@ -9,8 +9,9 @@ import {
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
 import { RiArrowGoBackFill } from "@remixicon/react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import DefaultVariation from "./default-variation";
@@ -166,6 +167,18 @@ function FlagTargetingContent({
   );
   const hasValidationErrors = validationErrors.size > 0;
 
+  const handleSaveHotkey = useCallback(
+    (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (hasChanges && !hasValidationErrors && canUpdateFlags) {
+        openReviewModal();
+      }
+    },
+    [hasChanges, hasValidationErrors, canUpdateFlags, openReviewModal]
+  );
+
+  useHotkey("Mod+S", handleSaveHotkey);
+
   const existingDefaultRollout = useMemo(() => {
     if (!flagEnvironment.defaultRollout) {
       return null;
@@ -272,11 +285,14 @@ function FlagTargetingContent({
                     Review and save
                   </Button>
                 </TooltipTrigger>
-                {hasChanges && hasValidationErrors && (
-                  <TooltipContent>
-                    {[...validationErrors.values()].flat()[0]}
-                  </TooltipContent>
-                )}
+                <TooltipContent className="flex items-center">
+                  {hasChanges && hasValidationErrors
+                    ? [...validationErrors.values()].flat()[0]
+                    : "Review and save"}
+                  <kbd className="relative -top-0.25 ml-1.5 rounded border border-ui-border-base bg-ui-bg-base px-1 py-0.5 font-mono text-[10px] text-ui-fg-base">
+                    {"⌘S"}
+                  </kbd>
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>

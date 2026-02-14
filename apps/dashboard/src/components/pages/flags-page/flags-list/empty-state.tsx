@@ -4,12 +4,18 @@ import { Heading } from "@gradual/ui/heading";
 import { Kbd } from "@gradual/ui/kbd";
 import { Text } from "@gradual/ui/text";
 import { RiFlagOffFill } from "@remixicon/react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useState } from "react";
 import CreateFlagDialog from "@/components/common/dialogs/create-flag-dialog";
 
 export default function EmptyFlagsList() {
   const [isCreateFlagDialogOpen, setIsCreateFlagDialogOpen] =
     useState<boolean>(false);
+
+  useHotkey("Mod+C", () => {
+    setIsCreateFlagDialogOpen(true);
+  });
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
       <Card className="flex size-12 items-center justify-center">
@@ -27,7 +33,7 @@ export default function EmptyFlagsList() {
       >
         Create flag
         <Badge className="bg-white px-0.5">
-          <Kbd>⌘J</Kbd>
+          <Kbd>⌘C</Kbd>
         </Badge>
       </CreateFlagDialog>
     </div>
