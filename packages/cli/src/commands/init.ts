@@ -17,17 +17,6 @@ interface OrganizationResult {
     name: string;
     slug: string;
   }[];
-interface OrganizationResult {
-  organization: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  projects: {
-    id: string;
-    name: string;
-    slug: string;
-  }[];
 }
 
 export const initCommand = new Command("init")
