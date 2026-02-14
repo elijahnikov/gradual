@@ -1,6 +1,12 @@
 name: Publish TS SDK's
 
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - "packages/sdk/package.json"
+      - "packages/sdk-react/package.json"
   workflow_dispatch:
 
 concurrency: publish-sdk
@@ -16,28 +22,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check versions
+        id: version-check
+        run: |
+          SDK_PUBLISHED=$(npm view @gradual-so/sdk version 2>/dev/null || echo "0.0.0")
+          SDK_CURRENT=$(node -p "require('./packages/sdk/package.json').version")
+          REACT_PUBLISHED=$(npm view @gradual-so/sdk-react version 2>/dev/null || echo "0.0.0")
+          REACT_CURRENT=$(node -p "require('./packages/sdk-react/package.json').version")
+          echo "sdk_skip=$( [ "$SDK_PUBLISHED" = "$SDK_CURRENT" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          echo "react_skip=$( [ "$REACT_PUBLISHED" = "$REACT_CURRENT" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          if [ "$SDK_PUBLISHED" = "$SDK_CURRENT" ] && [ "$REACT_PUBLISHED" = "$REACT_CURRENT" ]; then
+            echo "all_skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "all_skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Bun
+        if: steps.version-check.outputs.all_skip == 'false'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
       - name: Install dependencies
+        if: steps.version-check.outputs.all_skip == 'false'
         run: bun install --frozen-lockfile
 
       - name: Build SDK packages
+        if: steps.version-check.outputs.all_skip == 'false'
         run: |
           bun run --filter=@gradual-so/sdk build
           bun run --filter=@gradual-so/sdk-react build
 
       - name: Setup npm auth
+        if: steps.version-check.outputs.all_skip == 'false'
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Publish @gradual-so/sdk
+        if: steps.version-check.outputs.sdk_skip == 'false'
         working-directory: packages/sdk
         run: npm publish --provenance --access public
-        continue-on-error: true
 
       - name: Publish @gradual-so/sdk-react
+        if: steps.version-check.outputs.react_skip == 'false'
         working-directory: packages/sdk-react
         run: npm publish --provenance --access public
-        continue-on-error: true

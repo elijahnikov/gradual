@@ -1,6 +1,11 @@
 name: Publish CLI
 
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - "packages/cli/package.json"
   workflow_dispatch:
 
 concurrency: publish-cli
@@ -16,21 +21,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check if version changed
+        id: version-check
+        run: |
+          PUBLISHED=$(npm view @gradual-so/cli version 2>/dev/null || echo "0.0.0")
+          CURRENT=$(node -p "require('./packages/cli/package.json').version")
+          echo "published=$PUBLISHED" >> $GITHUB_OUTPUT
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          if [ "$PUBLISHED" = "$CURRENT" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Bun
+        if: steps.version-check.outputs.skip == 'false'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
       - name: Install dependencies
+        if: steps.version-check.outputs.skip == 'false'
         run: bun install --frozen-lockfile
 
       - name: Build CLI
+        if: steps.version-check.outputs.skip == 'false'
         working-directory: packages/cli
         run: bun run build
 
       - name: Setup npm auth
+        if: steps.version-check.outputs.skip == 'false'
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Publish @gradual-so/cli
+        if: steps.version-check.outputs.skip == 'false'
         working-directory: packages/cli
-        run: npm publish --provenance --access public
+        run: |
+          echo "Publishing ${{ steps.version-check.outputs.current }} (was ${{ steps.version-check.outputs.published }})"
+          npm publish --provenance --access public
