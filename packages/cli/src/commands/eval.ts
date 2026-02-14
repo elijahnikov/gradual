@@ -75,7 +75,12 @@ export const evalCommand = new Command("eval")
           }
         }
 
-        const evalResults = [];
+        const evalResults: {
+          environment: string;
+          enabled: boolean;
+          value: unknown | null;
+          variation: string;
+        }[] = [];
 
         for (const env of targetEnvs) {
           try {
