@@ -1,5 +1,11 @@
 # @gradual-so/cli
 
+## 0.1.4
+
+### Patch Changes
+
+- [#75](https://github.com/elijahnikov/gradual/pull/75) [`726b8f0`](https://github.com/elijahnikov/gradual/commit/726b8f01c9b7c7bb2d4ab2c7f93f03762664998a) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Bug fixes
+
 ## 0.1.3
 
 ### Patch Changes
