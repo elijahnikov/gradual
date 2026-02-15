@@ -76,6 +76,10 @@ export const featureFlagsRouter = {
     .input(schemas.getEventsSchema)
     .query((opts) => services.getEvents({ ...opts })),
 
+  getEventById: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.getEventByIdSchema)
+    .mutation((opts) => services.getEventById({ ...opts })),
+
   watchEvents: protectedOrganizationProcedure({ flags: ["read"] })
     .input(schemas.watchEventsSchema)
     .subscription((opts) => services.watchEvents({ ...opts })),
