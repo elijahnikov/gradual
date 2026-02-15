@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { envsCommand } from "./commands/envs/index.js";
 import { evalCommand } from "./commands/eval.js";
+import { evalsCommand } from "./commands/evals/index.js";
 import { flagsCommand } from "./commands/flags/index.js";
 import { initCommand } from "./commands/init.js";
 import { loginCommand } from "./commands/login.js";
@@ -22,6 +23,7 @@ program.addCommand(logoutCommand);
 program.addCommand(initCommand);
 program.addCommand(whoamiCommand);
 program.addCommand(evalCommand);
+program.addCommand(evalsCommand);
 program.addCommand(publishCommand);
 program.addCommand(flagsCommand);
 program.addCommand(orgsCommand);

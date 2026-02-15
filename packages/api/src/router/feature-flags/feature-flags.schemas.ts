@@ -376,3 +376,10 @@ export const getMetricsEvaluationsSchema = z.object({
 export type GetMetricsEvaluationsInput = z.infer<
   typeof getMetricsEvaluationsSchema
 >;
+
+export const getEventByIdSchema = z.object({
+  evaluationId: z.uuid(),
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+});
+export type GetEventByIdInput = z.infer<typeof getEventByIdSchema>;

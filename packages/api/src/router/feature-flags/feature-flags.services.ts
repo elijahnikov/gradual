@@ -14,6 +14,8 @@ import {
   sql,
 } from "@gradual/db";
 import {
+  contextAttribute,
+  environment,
   featureFlag,
   featureFlagDefaultRollout,
   featureFlagDefaultRolloutVariation,
@@ -41,6 +43,7 @@ import type {
   CreateCompleteFeatureFlagInput,
   DeleteFlagsInput,
   DeleteVariationInput,
+  GetEventByIdInput,
   GetEventsInput,
   GetFeatureFlagBreadcrumbInfoInput,
   GetFeatureFlagByKeyInput,
@@ -1952,3 +1955,108 @@ export async function* watchEvents({
     yield item;
   }
 }
+
+export const getEventById = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetEventByIdInput;
+}) => {
+  const { evaluationId, projectSlug } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq: e, isNull, and: a }) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  const [evaluation] = await ctx.db
+    .select({
+      id: featureFlagEvaluation.id,
+      featureFlagId: featureFlagEvaluation.featureFlagId,
+      environmentId: featureFlagEvaluation.environmentId,
+      variationId: featureFlagEvaluation.variationId,
+      context: featureFlagEvaluation.context,
+      value: featureFlagEvaluation.value,
+      reasons: featureFlagEvaluation.reasons,
+      evaluatedAt: featureFlagEvaluation.evaluatedAt,
+      ruleId: featureFlagEvaluation.ruleId,
+      sdkVersion: featureFlagEvaluation.sdkVersion,
+      sdkPlatform: featureFlagEvaluation.sdkPlatform,
+      userAgent: featureFlagEvaluation.userAgent,
+      createdAt: featureFlagEvaluation.createdAt,
+      matchedTargetName: featureFlagEvaluation.matchedTargetName,
+      flagConfigVersion: featureFlagEvaluation.flagConfigVersion,
+      errorDetail: featureFlagEvaluation.errorDetail,
+      evaluationDurationUs: featureFlagEvaluation.evaluationDurationUs,
+      isAnonymous: featureFlagEvaluation.isAnonymous,
+      inputsUsed: featureFlagEvaluation.inputsUsed,
+      traceId: featureFlagEvaluation.traceId,
+      schemaVersion: featureFlagEvaluation.schemaVersion,
+      policyVersion: featureFlagEvaluation.policyVersion,
+      flagKey: featureFlag.key,
+      flagName: featureFlag.name,
+      environmentName: environment.name,
+      environmentSlug: environment.slug,
+    })
+    .from(featureFlagEvaluation)
+    .innerJoin(
+      featureFlag,
+      eq(featureFlagEvaluation.featureFlagId, featureFlag.id)
+    )
+    .innerJoin(
+      environment,
+      eq(featureFlagEvaluation.environmentId, environment.id)
+    )
+    .where(
+      and(
+        eq(featureFlagEvaluation.id, evaluationId),
+        eq(featureFlag.projectId, foundProject.id),
+        eq(featureFlag.organizationId, ctx.organization.id)
+      )
+    )
+    .limit(1);
+
+  if (!evaluation) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Evaluation not found",
+    });
+  }
+
+  let variationName: string | null = null;
+  const evalVariationId = evaluation.variationId;
+  if (evalVariationId) {
+    const variation = await ctx.db.query.featureFlagVariation.findFirst({
+      where: ({ id }, { eq: e }) => e(id, evalVariationId),
+      columns: { name: true },
+    });
+    variationName = variation?.name ?? null;
+  }
+
+  const attributes = await ctx.db
+    .select({
+      key: contextAttribute.key,
+      value: contextAttribute.value,
+      valueJson: contextAttribute.valueJson,
+    })
+    .from(contextAttribute)
+    .where(eq(contextAttribute.evaluationId, evaluationId));
+
+  return {
+    ...evaluation,
+    variationName,
+    attributes,
+  };
+};

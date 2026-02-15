@@ -31,7 +31,7 @@ function isJsonValue(val: unknown): boolean {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="pb-1.5 font-medium font-mono text-[10px] text-ui-fg-muted uppercase tracking-wider">
+    <h4 className="pb-1.5 font-medium font-mono text-[11px] text-ui-fg-muted uppercase tracking-wider">
       {children}
     </h4>
   );
@@ -50,12 +50,12 @@ function DetailField({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <span className="shrink-0 font-medium text-[11px] text-ui-fg-muted">
+      <span className="shrink-0 font-medium text-ui-fg-muted text-xs">
         {label}
       </span>
       <div className="flex min-w-0 items-center gap-1">
         <span
-          className={`truncate rounded-sm border px-1 py-0 text-[11px] text-ui-fg-base ${mono ? "font-mono" : ""}`}
+          className={`truncate rounded-sm border px-1 py-0 text-ui-fg-base text-xs ${mono ? "font-mono" : ""}`}
         >
           {children}
         </span>
@@ -79,21 +79,21 @@ function ReasonCard({ reason }: { reason: StructuredReason }) {
           {_.upperFirst(reason.type.replace("_", " "))}
         </Badge>
         {reason.type === "rule_match" && reason.ruleId && (
-          <span className="truncate font-mono text-[10px] text-ui-fg-muted">
+          <span className="truncate font-mono text-[11px] text-ui-fg-muted">
             {reason.ruleId}
           </span>
         )}
       </div>
-      <Text className="text-[11px] leading-snug">
+      <Text className="text-xs leading-snug">
         {_.upperFirst(formatStructuredReason(reason))}
       </Text>
       {reason.type === "percentage_rollout" && reason.bucket != null && (
-        <span className="text-[10px] text-ui-fg-muted">
+        <span className="text-[11px] text-ui-fg-muted">
           Bucket: {reason.bucket.toLocaleString()} / 100,000
         </span>
       )}
       {reason.type === "error" && reason.detail && (
-        <span className="text-[10px] text-ui-fg-on-error">{reason.detail}</span>
+        <span className="text-[11px] text-ui-fg-on-error">{reason.detail}</span>
       )}
     </div>
   );
@@ -192,20 +192,20 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
                     <ReasonCard key={i} reason={r} />
                   ))}
                   {reasons.length === 0 && (
-                    <span className="text-[11px] text-ui-fg-muted">
+                    <span className="text-ui-fg-muted text-xs">
                       No reason recorded
                     </span>
                   )}
                 </div>
                 {inputsUsed.length > 0 && (
                   <div className="mt-2.5 border-t pt-2">
-                    <span className="mb-1 block text-[10px] text-ui-fg-muted">
+                    <span className="mb-1 block text-[11px] text-ui-fg-muted">
                       Inputs referenced
                     </span>
                     <div className="flex flex-wrap gap-1">
                       {inputsUsed.map((input) => (
                         <Badge
-                          className="font-mono text-[10px]"
+                          className="font-mono text-[11px]"
                           key={input}
                           size="sm"
                           variant="outline"
@@ -221,7 +221,7 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
               {event.errorDetail && (
                 <div className="rounded-md border border-ui-tag-red-border bg-ui-tag-red-bg p-2.5">
                   <SectionLabel>Error</SectionLabel>
-                  <code className="font-mono text-[11px] text-ui-tag-red-text">
+                  <code className="font-mono text-ui-tag-red-text text-xs">
                     {event.errorDetail}
                   </code>
                 </div>
@@ -236,7 +236,7 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
                 <SectionLabel>Returned Value</SectionLabel>
                 {isJson ? (
                   <div className="relative min-h-0 flex-1">
-                    <pre className="absolute inset-0 overflow-auto rounded-md border bg-ui-bg-field p-2 font-mono text-[11px] leading-relaxed">
+                    <pre className="absolute inset-0 overflow-auto rounded-md border bg-ui-bg-field p-2 font-mono text-xs leading-relaxed">
                       {valueStr}
                     </pre>
                     <div className="absolute top-1 right-1 z-10">
@@ -248,7 +248,7 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <code className="rounded-md border bg-ui-bg-field px-2 py-1 font-mono text-[11px]">
+                    <code className="rounded-md border bg-ui-bg-field px-2 py-1 font-mono text-xs">
                       {valueStr}
                     </code>
                     <CopyButton
