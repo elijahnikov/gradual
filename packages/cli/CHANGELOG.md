@@ -1,5 +1,11 @@
 # @gradual-so/cli
 
+## 0.1.5
+
+### Patch Changes
+
+- [#77](https://github.com/elijahnikov/gradual/pull/77) [`6322b56`](https://github.com/elijahnikov/gradual/commit/6322b5629624c799e3a6853360fb8ee5f30ee31d) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding eval command
+
 ## 0.1.4
 
 ### Patch Changes
