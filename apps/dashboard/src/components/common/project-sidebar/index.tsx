@@ -61,11 +61,11 @@ function useNavigationItems() {
       },
       {
         icon: RiFolder2Fill,
-        title: "Audiences",
-        url: `${projectPath}/audiences`,
+        title: "Segments",
+        url: `${projectPath}/segments`,
         isActive:
-          pathname === `${projectPath}/audiences` ||
-          pathname.startsWith(`${projectPath}/audience/`),
+          pathname === `${projectPath}/segments` ||
+          pathname.startsWith(`${projectPath}/segments/`),
         shortcutKeys: ["G", "A"],
       },
       {
@@ -189,7 +189,7 @@ function useNavigationHotkeys() {
 
   useHotkeySequence(["G", "H"], () => goTo(`${projectPath}/`));
   useHotkeySequence(["G", "F"], () => goTo(`${projectPath}/flags`));
-  useHotkeySequence(["G", "A"], () => goTo(`${projectPath}/audiences`));
+  useHotkeySequence(["G", "A"], () => goTo(`${projectPath}/segments`));
   useHotkeySequence(["G", "E"], () => goTo(`${projectPath}/environments`));
   useHotkeySequence(["G", "N"], () => goTo(`${projectPath}/analytics`));
   useHotkeySequence(["G", "L"], () => goTo(`${projectPath}/audit-log`));

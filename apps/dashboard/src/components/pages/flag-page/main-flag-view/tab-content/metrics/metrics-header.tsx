@@ -83,7 +83,7 @@ export default function MetricsHeader({ variations }: MetricsHeaderProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b p-2.5">
       <Popover onOpenChange={setIsOpen} open={isOpen}>
         <PopoverTrigger render={<Button size="small" variant="outline" />}>
           <RiCalendarLine className="size-4" />

@@ -14,7 +14,7 @@ import {
 const topItems = [
   { icon: RiHome2Fill, title: "Home", active: false },
   { icon: RiTimer2Fill, title: "Flags", active: true },
-  { icon: RiFolder2Fill, title: "Audiences", active: false },
+  { icon: RiFolder2Fill, title: "Segments", active: false },
   { icon: RiBookmark2Fill, title: "Environments", active: false },
   { icon: RiLineChartFill, title: "Analytics", active: false },
 ];

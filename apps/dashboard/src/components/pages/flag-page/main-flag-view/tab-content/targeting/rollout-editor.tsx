@@ -365,7 +365,7 @@ export function RolloutEditor({
       )}
 
       {rollout.variations.length > 0 && (
-        <div className="px-3 sm:px-4">
+        <div className="px-2.5 sm:px-3">
           <PercentageSlider
             onChange={handleSliderChange}
             variations={sliderVariations}
@@ -380,7 +380,7 @@ export function RolloutEditor({
 
           return (
             <div
-              className="flex items-center gap-2 px-3 sm:px-4"
+              className="flex items-center gap-2 px-2.5 sm:px-3"
               key={rv.variationId}
             >
               <div
@@ -419,7 +419,7 @@ export function RolloutEditor({
       {availableVariations.length > 0 && (
         <>
           <Separator />
-          <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4">
+          <div className="flex flex-wrap items-center gap-2 px-2.5 sm:px-3">
             <div className="flex flex-wrap items-center gap-2">
               {availableVariations.map((v) => (
                 <Button
@@ -450,7 +450,7 @@ export function RolloutEditor({
       )}
 
       <Separator />
-      <div className="flex items-center gap-2 px-3 pb-4 sm:px-4">
+      <div className="flex items-center gap-2 px-2.5 pb-3 sm:px-3">
         <div className="flex flex-col gap-1">
           <Text className="text-ui-fg-subtle" size="xsmall">
             Bucket by

@@ -131,9 +131,9 @@ export default function FlagVariations({
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col px-5 py-3">
+    <div className="flex w-full flex-1 flex-col pt-2.5">
       {flagType !== "boolean" && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex justify-end px-2.5">
           <Button
             disabled={addMutation.isPending || !canUpdateFlags}
             onClick={handleAddVariation}
@@ -145,7 +145,7 @@ export default function FlagVariations({
           </Button>
         </div>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col divide-y border-t">
         {variations.map((variation, index) => {
           const isLast = index === variations.length - 1;
           return (

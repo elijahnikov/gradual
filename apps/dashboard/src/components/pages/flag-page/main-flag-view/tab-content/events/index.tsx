@@ -413,7 +413,7 @@ function FlagEventsContent({
             return (
               <Fragment key={row.id}>
                 <TableRow
-                  className={`cursor-pointer transition-colors hover:bg-ui-bg-field-hover ${isSelected ? "bg-ui-bg-field" : ""}`}
+                  className={`h-10 cursor-pointer transition-colors hover:bg-ui-bg-field-hover ${isSelected ? "bg-ui-bg-field" : ""}`}
                   onAnimationEnd={() => {
                     liveIdsRef.current.delete(row.original.id);
                   }}

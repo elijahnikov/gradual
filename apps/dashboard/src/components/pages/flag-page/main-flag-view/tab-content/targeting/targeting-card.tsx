@@ -66,11 +66,11 @@ export default function TargetingCard({
   return (
     <Card
       className={cn(
-        "flex w-full max-w-3xl flex-col p-0",
+        "flex w-full max-w-2xl flex-col p-0",
         hasError && "border-destructive/50"
       )}
     >
-      <div className="flex flex-col gap-3 p-3 sm:p-4">
+      <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
         <div className="flex items-center gap-2">
           <Input
             className="h-7 w-full text-sm"
@@ -112,8 +112,8 @@ export default function TargetingCard({
       </div>
 
       <div className="flex w-full flex-col border-t">
-        <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex w-full flex-col gap-2.5 px-2.5 py-2.5 sm:px-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
             <VariationSelector
               isGradual={isGradual}
               isRollout={isRollout}

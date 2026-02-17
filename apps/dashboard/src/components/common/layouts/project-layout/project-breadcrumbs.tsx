@@ -14,7 +14,7 @@ import { useTRPC } from "@/lib/trpc";
 
 const segmentMap: Record<string, string> = {
   flags: "Flags",
-  audiences: "Audiences",
+  segments: "Segments",
   environments: "Environments",
   analytics: "Analytics",
   "audit-log": "Audit Log",

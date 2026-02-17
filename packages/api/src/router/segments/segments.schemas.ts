@@ -6,6 +6,16 @@ export type ListSegmentsInput = z.infer<typeof listSegmentsSchema>;
 export const listSegmentsSchema = z.object({
   projectSlug: z.string(),
   organizationSlug: z.string(),
+  limit: z.number().int().positive().max(100).default(20),
+  cursor: z
+    .object({
+      value: z.union([z.number(), z.string()]),
+      id: z.string(),
+    })
+    .optional(),
+  sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("name"),
+  sortOrder: z.enum(["asc", "desc"]).default("asc"),
+  search: z.string().optional(),
 });
 
 const segmentConditionSchema = z.object({
