@@ -239,6 +239,12 @@ export async function buildEnvironmentSnapshot({
         operator: c.operator as TargetingOperator,
         value: c.value,
       })),
+      ...(seg.includedIndividuals?.length && {
+        included: seg.includedIndividuals,
+      }),
+      ...(seg.excludedIndividuals?.length && {
+        excluded: seg.excludedIndividuals,
+      }),
     };
   }
 

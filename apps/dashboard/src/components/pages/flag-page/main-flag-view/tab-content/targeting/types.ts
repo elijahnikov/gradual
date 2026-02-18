@@ -59,4 +59,4 @@ export type Context = RouterOutputs["attributes"]["listContexts"][number];
 
 export type ContextKind = string;
 
-export type Segment = RouterOutputs["segments"]["list"][number];
+export type Segment = RouterOutputs["segments"]["list"]["items"][number];

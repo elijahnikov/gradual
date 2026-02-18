@@ -127,7 +127,7 @@ export default function FlagSubheader({ environments }: FlagSubheaderProps) {
         }}
         value={currentEnvironment?.value ?? ""}
       >
-        <SelectTrigger className="h-6! min-h-6! w-40 text-xs! sm:max-h-6!">
+        <SelectTrigger className="h-7! min-h-7! w-40 text-xs! sm:max-h-6!">
           <SelectValue>
             <div className="flex items-center gap-x-0.5">
               <div

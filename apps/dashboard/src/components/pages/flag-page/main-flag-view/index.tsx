@@ -129,42 +129,42 @@ function TabContentSkeleton({ tab }: { tab: FlagTab }) {
 
 function TargetingTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col px-5 py-3">
-      <Card className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <Skeleton className="h-5 w-48" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="size-6 rounded-md" />
-            <Skeleton className="h-7 w-28 rounded-md" />
-          </div>
+    <div className="flex w-full flex-1 flex-col pt-2.5">
+      <div className="mb-3 flex flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <Skeleton className="h-5 w-48" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-6 rounded-md" />
+          <Skeleton className="h-7 w-28 rounded-md" />
         </div>
-        <div className="flex h-full w-full flex-1 flex-col rounded-md border-t bg-ui-bg-base p-1 sm:p-2">
-          <div className="flex h-full w-full flex-1 flex-col rounded-md border bg-ui-bg-base p-1 sm:p-2">
-            <div className="flex min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start gap-3 px-2 py-4 sm:px-0">
-              <TargetCardSkeleton />
-              <TargetCardSkeleton />
-              <div className="flex w-full max-w-3xl items-center justify-between rounded-lg border bg-ui-bg-base p-3">
+      </div>
+      <div className="flex h-full w-full flex-1 flex-col border-t bg-ui-bg-base">
+        <div className="relative flex h-full min-h-[calc(100vh-15rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
+          <div className="flex w-full flex-col items-center gap-3 px-2 py-3 sm:px-0 sm:py-5">
+            <TargetCardSkeleton />
+            <TargetCardSkeleton />
+            <Card className="flex w-full max-w-2xl flex-col gap-3 p-0">
+              <div className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-2">
                   <Skeleton className="size-4 rounded" />
                   <Skeleton className="h-4 w-24" />
                 </div>
                 <Skeleton className="h-7 w-32 rounded-md" />
               </div>
-            </div>
+            </Card>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
 function VariationsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col px-5 py-3">
-      <div className="flex flex-col gap-3">
-        <VariationCardSkeleton />
-        <VariationCardSkeleton />
-        <VariationCardSkeleton />
+    <div className="flex w-full flex-1 flex-col pt-2.5">
+      <div className="mb-3 flex justify-end px-2.5">
+        <Skeleton className="h-7 w-32 rounded-md" />
+      </div>
+      <div className="flex flex-col divide-y border-t">
         <VariationCardSkeleton />
         <VariationCardSkeleton />
         <VariationCardSkeleton />
@@ -175,87 +175,73 @@ function VariationsTabSkeleton() {
 
 function VariationCardSkeleton() {
   return (
-    <Card className="flex flex-col p-0">
-      <div className="p-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-14 rounded-md" />
-          </div>
-        </div>
-        <div className="mt-2">
-          <Skeleton className="h-6 w-16 rounded-md" />
+    <div className="flex flex-col p-3 pt-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-5 rounded-full" />
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-5 w-14 rounded-md" />
         </div>
       </div>
-      <div className="flex items-center border-t px-2 pt-2 pb-2">
-        <div className="flex items-center gap-1">
-          <Skeleton className="size-4 rounded" />
-          <Skeleton className="h-4 w-28" />
-        </div>
+      <div className="mt-2">
+        <Skeleton className="h-6 w-16 rounded-md" />
       </div>
-    </Card>
+      <div className="mt-2 flex items-center gap-0.5">
+        <Skeleton className="size-4 rounded" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+    </div>
   );
 }
 
 function MetricsTabSkeleton() {
   return (
-    <div className="flex w-full flex-1 flex-col gap-3 px-5 py-3">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-7 w-32 rounded-md" />
-        <Skeleton className="h-7 w-28 rounded-md" />
+    <div className="flex w-full flex-1 flex-col">
+      {/* Header bar */}
+      <div className="flex items-center justify-between border-b p-2.5">
+        <Skeleton className="h-7 w-40 rounded-md" />
+        <Skeleton className="h-7 w-36 rounded-md" />
       </div>
-      <div className="grid grid-cols-4 gap-3">
-        <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="mt-2 h-7 w-16" />
-            <Skeleton className="mt-1 h-3 w-32" />
-          </div>
-        </Card>
-        <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="mt-2 h-7 w-20" />
-            <Skeleton className="mt-1 h-3 w-28" />
-          </div>
-        </Card>
-        <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="mt-2 h-7 w-20" />
-            <Skeleton className="mt-1 h-3 w-28" />
-          </div>
-        </Card>
-        <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-base p-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="mt-2 h-7 w-20" />
-            <Skeleton className="mt-1 h-3 w-28" />
-          </div>
-        </Card>
+      {/* Summary cards */}
+      <div className="flex flex-wrap divide-x">
+        <div className="flex-1 bg-ui-bg-base p-3">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="mt-2 h-7 w-16" />
+          <Skeleton className="mt-1 h-3 w-36" />
+        </div>
+        <div className="flex-1 bg-ui-bg-base p-3">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="mt-2 h-7 w-20" />
+          <Skeleton className="mt-1 h-3 w-28" />
+        </div>
+        <div className="flex-1 bg-ui-bg-base p-3">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="mt-2 h-7 w-20" />
+          <Skeleton className="mt-1 h-3 w-28" />
+        </div>
       </div>
-      <Card className="min-h-[400px] flex-1 p-1">
-        <div className="h-full rounded-sm border bg-ui-bg-base p-2">
+      {/* Chart area */}
+      <div className="h-full min-h-[400px] border-t">
+        <div className="h-full bg-ui-bg-base py-2 pt-4 pr-4 pb-2">
           <Skeleton className="h-full w-full rounded-md" />
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
 function EventsTabSkeleton() {
-  const columnWidths = [
-    "w-20",
-    "w-14",
-    "w-16",
-    "w-14",
-    "w-16",
-    "w-16",
-    "w-12",
-    "w-24",
-  ];
+  const columnWidths = ["w-20", "w-14", "w-16", "w-14", "w-16", "w-12"];
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+      {/* Filter bar */}
+      <div className="flex items-center gap-1.5 border-b bg-ui-bg-subtle px-2 py-1.5">
+        <Skeleton className="h-6 w-20 rounded-md" />
+        <Skeleton className="h-6 w-18 rounded-md" />
+        <Skeleton className="h-6 w-18 rounded-md" />
+        <Skeleton className="h-6 w-36 rounded-sm" />
+      </div>
+      {/* Table header */}
       <div className="flex border-b bg-ui-bg-subtle">
         {columnWidths.map((w, i) => (
           <div className="flex-1 px-3 py-2" key={i}>
@@ -263,8 +249,9 @@ function EventsTabSkeleton() {
           </div>
         ))}
       </div>
+      {/* Table rows */}
       <div className="flex flex-1 flex-col">
-        {Array.from({ length: 30 }).map((_, rowIdx) => (
+        {Array.from({ length: 20 }).map((_, rowIdx) => (
           <div className="flex border-b" key={rowIdx}>
             {columnWidths.map((w, colIdx) => (
               <div className="flex-1 px-3 py-2.5" key={colIdx}>
@@ -295,8 +282,8 @@ function GenericTabSkeleton() {
 
 function TargetCardSkeleton() {
   return (
-    <Card className="flex w-full max-w-3xl flex-col p-0">
-      <div className="flex flex-col gap-3 p-3 sm:p-4">
+    <Card className="flex w-full max-w-2xl flex-col p-0">
+      <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
         {/* Name input */}
         <Skeleton className="h-7 w-full rounded-md" />
         {/* Condition row */}
@@ -307,13 +294,10 @@ function TargetCardSkeleton() {
         </div>
       </div>
       {/* Footer */}
-      <div className="flex w-full items-center border-t px-3 py-3 sm:px-4">
-        <div className="flex w-full items-center justify-between gap-2">
-          <Skeleton className="size-6 rounded-md" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-7 w-32 rounded-md" />
-          </div>
+      <div className="flex w-full items-center border-t px-2.5 py-2.5 sm:px-3">
+        <div className="flex w-full items-center justify-end gap-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-7 w-32 rounded-md" />
         </div>
       </div>
     </Card>

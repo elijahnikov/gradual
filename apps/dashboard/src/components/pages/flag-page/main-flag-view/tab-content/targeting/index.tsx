@@ -1,6 +1,5 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Button } from "@gradual/ui/button";
-import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
 import {
   Tooltip,
@@ -38,13 +37,13 @@ interface FlagTargetingProps {
 const DOTTED_BACKGROUND_STYLE_LIGHT = {
   backgroundImage:
     "radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.35) 1px, transparent 0)",
-  backgroundSize: "20px 20px",
+  backgroundSize: "16px 16px",
 } as const;
 
 const DOTTED_BACKGROUND_STYLE_DARK = {
   backgroundImage:
     "radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0)",
-  backgroundSize: "20px 20px",
+  backgroundSize: "16px 16px",
 } as const;
 
 export default function FlagTargeting(props: FlagTargetingProps) {
@@ -85,12 +84,13 @@ function FlagTargetingContent({
     })
   );
 
-  const { data: segments = [] } = useQuery(
+  const { data: segmentsData } = useQuery(
     trpc.segments.list.queryOptions({
       projectSlug,
       organizationSlug,
     })
   );
+  const segments = segmentsData?.items ?? [];
 
   const defaultVariationId = flag.variations[0]?.id ?? "";
 
@@ -245,9 +245,9 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col px-5 py-3">
+    <div className="flex w-full flex-1 flex-col pt-2.5">
       <div className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-3 flex flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -297,41 +297,40 @@ function FlagTargetingContent({
             </TooltipProvider>
           </div>
         </div>
-        <Card className="mb-2 flex h-full w-full flex-1 flex-col rounded-md bg-ui-bg-subtle p-1 sm:p-2">
-          <div className="flex h-full w-full flex-1 flex-col rounded-md border bg-ui-bg-base p-1 sm:p-2">
-            <div className="relative flex h-full min-h-[calc(100vh-14rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
-              <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
-                <TargetingList
-                  collapsed={!enabled}
-                  disabled={!(canUpdateFlags && enabled)}
-                  footer={
-                    (flagEnvironment.defaultVariation ||
-                      flagEnvironment.defaultRollout) && (
-                      <DefaultVariation disabled={!canUpdateFlags} />
-                    )
-                  }
-                  onAddTarget={addTarget}
-                >
-                  {targets.map((target) => (
-                    <TargetCard
-                      hasError={validationErrors.has(target.id)}
-                      key={target.id}
-                      target={target}
-                    />
-                  ))}
-                </TargetingList>
-              </div>
-              <div
-                className="absolute inset-0 z-0 hidden translate-x-2 translate-y-2 opacity-50 sm:block dark:hidden"
-                style={DOTTED_BACKGROUND_STYLE_LIGHT}
-              />
-              <div
-                className="absolute inset-0 z-0 hidden translate-x-2 translate-y-2 opacity-50 sm:dark:block"
-                style={DOTTED_BACKGROUND_STYLE_DARK}
-              />
+
+        <div className="flex h-full w-full flex-1 flex-col border-t bg-ui-bg-base">
+          <div className="relative flex h-full min-h-[calc(100vh-15rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
+            <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
+              <TargetingList
+                collapsed={!enabled}
+                disabled={!(canUpdateFlags && enabled)}
+                footer={
+                  (flagEnvironment.defaultVariation ||
+                    flagEnvironment.defaultRollout) && (
+                    <DefaultVariation disabled={!canUpdateFlags} />
+                  )
+                }
+                onAddTarget={addTarget}
+              >
+                {targets.map((target) => (
+                  <TargetCard
+                    hasError={validationErrors.has(target.id)}
+                    key={target.id}
+                    target={target}
+                  />
+                ))}
+              </TargetingList>
             </div>
+            <div
+              className="absolute inset-0 z-0 hidden translate-x-2 translate-y-2 opacity-50 sm:block dark:hidden"
+              style={DOTTED_BACKGROUND_STYLE_LIGHT}
+            />
+            <div
+              className="absolute inset-0 z-0 hidden translate-x-2 translate-y-2 opacity-50 sm:dark:block"
+              style={DOTTED_BACKGROUND_STYLE_DARK}
+            />
           </div>
-        </Card>
+        </div>
       </div>
       <ReviewChangesModal />
     </div>

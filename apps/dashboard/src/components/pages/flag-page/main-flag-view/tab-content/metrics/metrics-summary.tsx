@@ -1,6 +1,5 @@
 import { getVariationColorByIndex } from "@gradual/api/utils";
 import { Button } from "@gradual/ui/button";
-import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
 import {
   RiArrowDownSLine,
@@ -80,10 +79,10 @@ export default function MetricsSummary({
   );
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-4 gap-3">
-        <Card className="p-1">
-          <div className="rounded-sm border bg-ui-bg-subtle p-3">
+    <div className="flex flex-col">
+      <div className="flex flex-wrap divide-x">
+        <div className="flex-1">
+          <div className="flex-1 bg-ui-bg-base p-3">
             <Text className="text-ui-fg-muted" size="small">
               Total Evaluations
             </Text>
@@ -92,13 +91,13 @@ export default function MetricsSummary({
             </Text>
             <ChangeIndicator change={totalChange} />
           </div>
-        </Card>
+        </div>
 
         {visibleStats.map((stat) => {
           const change = calculateChange(stat.count, stat.previousCount);
           return (
-            <Card className="p-1" key={stat.id}>
-              <div className="rounded-sm border bg-ui-bg-subtle p-3">
+            <div className="flex-1" key={stat.id}>
+              <div className="flex-1 bg-ui-bg-base p-3">
                 <div className="flex items-center gap-2">
                   <span
                     className="size-3 shrink-0 rounded-[4px]"
@@ -118,7 +117,7 @@ export default function MetricsSummary({
                 </div>
                 <ChangeIndicator change={change} />
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>

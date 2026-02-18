@@ -6,9 +6,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@gradual/ui/dialog";
-import CreateFlagForm from "./create-flag-form";
+import CreateSegmentForm from "./create-segment-form";
 
-export default function CreateFlagDialog({
+export default function CreateSegmentDialog({
   children,
   open,
   onOpenChange,
@@ -28,13 +28,13 @@ export default function CreateFlagDialog({
           {children}
         </DialogTrigger>
       ) : null}
-      <DialogContent className="relative top-8 flex min-h-[80vh] min-w-[70vw] flex-col">
+      <DialogContent className="flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-medium text-[14px]">
-            Create a new flag
+            Create a new segment
           </DialogTitle>
         </DialogHeader>
-        <CreateFlagForm isDialogOpen={open} />
+        <CreateSegmentForm onSuccess={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

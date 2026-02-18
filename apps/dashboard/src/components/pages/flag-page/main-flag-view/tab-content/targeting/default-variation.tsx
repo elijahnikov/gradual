@@ -86,8 +86,8 @@ export default function DefaultVariation({
   );
 
   return (
-    <Card className="flex w-full max-w-3xl flex-col gap-3 p-0">
-      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="flex w-full max-w-2xl flex-col gap-3 p-0">
+      <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Switch
             checked={enabled}

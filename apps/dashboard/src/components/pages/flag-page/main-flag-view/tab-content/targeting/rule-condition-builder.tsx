@@ -74,7 +74,7 @@ export function RuleConditionBuilder({
         ))}
       </div>
       <Button
-        className="mt-3 w-fit gap-x-0.5 sm:ml-6"
+        className="mt-2.5 w-fit gap-x-0.5 sm:ml-6"
         onClick={handleAddCondition}
         size="xsmall"
         variant="outline"
@@ -108,7 +108,7 @@ function ConditionRow({
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-ui-border-base bg-ui-bg-subtle p-2 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:pl-8">
+    <div className="flex flex-col gap-2 rounded-md border border-ui-border-base bg-ui-bg-subtle p-2 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:pl-6">
       <div className="flex items-center justify-between sm:contents">
         <Text
           className="w-10 shrink-0 font-mono text-sm text-ui-fg-muted"

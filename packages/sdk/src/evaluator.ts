@@ -3,6 +3,7 @@ import type {
   EvaluationContext,
   Reason,
   SnapshotFlag,
+  SnapshotIndividualEntry,
   SnapshotRollout,
   SnapshotRolloutVariation,
   SnapshotRuleCondition,
@@ -231,11 +232,44 @@ function evaluateConditions(
   );
 }
 
+function matchesIndividual(
+  entries: SnapshotIndividualEntry[],
+  context: EvaluationContext,
+  inputsUsed: Set<string>
+): boolean {
+  for (const entry of entries) {
+    inputsUsed.add(`${entry.contextKind}.${entry.attributeKey}`);
+    if (
+      context[entry.contextKind]?.[entry.attributeKey] === entry.attributeValue
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function evaluateSegment(
   segment: SnapshotSegment,
   context: EvaluationContext,
   inputsUsed: Set<string>
 ): boolean {
+  // Priority 1: Excluded individuals never match
+  if (
+    segment.excluded?.length &&
+    matchesIndividual(segment.excluded, context, inputsUsed)
+  ) {
+    return false;
+  }
+
+  // Priority 2: Included individuals always match
+  if (
+    segment.included?.length &&
+    matchesIndividual(segment.included, context, inputsUsed)
+  ) {
+    return true;
+  }
+
+  // Priority 3: Evaluate conditions
   return evaluateConditions(segment.conditions, context, inputsUsed);
 }
 

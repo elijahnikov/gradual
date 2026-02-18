@@ -62,11 +62,11 @@ export default function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem
-            onSelect={() =>
+            onClick={() =>
               setTheme(resolvedTheme === "dark" ? "light" : "dark")
             }
           >
-            {resolvedTheme !== "dark" ? <MoonIcon /> : <SunIcon />}
+            {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
             {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -74,7 +74,7 @@ export default function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="text-ui-fg-error [&_svg]:text-ui-fg-error"
-            onSelect={() => {
+            onClick={() => {
               handleSignOut();
             }}
           >

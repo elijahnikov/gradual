@@ -41,7 +41,7 @@ export default function FlagSettings({
 
   return (
     <TooltipProvider>
-      <div className="flex w-full flex-1 flex-col gap-4 px-5 py-3">
+      <div className="flex w-full flex-col gap-4 border-b">
         <DangerZone
           flag={flagData}
           organizationSlug={organizationSlug}
@@ -56,7 +56,7 @@ type Flag = FlagData["flag"];
 
 function _GeneralSection({ flag }: { flag: Flag }) {
   return (
-    <Card className="flex flex-col p-0">
+    <div className="flex flex-col p-0">
       <div className="p-3">
         <Text size="small" weight="plus">
           General
@@ -98,7 +98,7 @@ function _GeneralSection({ flag }: { flag: Flag }) {
           </Text>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -259,7 +259,7 @@ function DangerZone({
   };
 
   return (
-    <Card className="flex flex-col border-destructive/40 p-0">
+    <div className="flex flex-col border-destructive/40 p-0">
       <div className="p-3">
         <Text size="base" weight="plus">
           Danger zone
@@ -334,6 +334,6 @@ function DangerZone({
         onOpenChange={setDeleteDialogOpen}
         open={deleteDialogOpen}
       />
-    </Card>
+    </div>
   );
 }

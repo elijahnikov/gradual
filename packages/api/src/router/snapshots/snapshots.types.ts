@@ -21,9 +21,17 @@ export interface SnapshotRuleCondition {
   value: unknown;
 }
 
+export interface SnapshotIndividualEntry {
+  contextKind: string;
+  attributeKey: string;
+  attributeValue: string;
+}
+
 export interface SnapshotSegment {
   key: string;
   conditions: SnapshotRuleCondition[];
+  included?: SnapshotIndividualEntry[];
+  excluded?: SnapshotIndividualEntry[];
 }
 
 export interface SnapshotRolloutVariation {

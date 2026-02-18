@@ -28,7 +28,7 @@ export function TargetingList({
   }, []);
 
   return (
-    <div className="flex w-full flex-col items-center py-4 sm:py-8">
+    <div className="flex w-full flex-col items-center py-3 sm:py-5">
       <div
         className={cn(
           "grid w-full",
@@ -73,7 +73,7 @@ export function TargetingList({
 function TargetConnector() {
   return (
     <Separator
-      className="h-8 border-[0.5px] border-ui-fg-muted/75"
+      className="h-5 border-[0.5px] border-ui-fg-muted/75"
       orientation="vertical"
     />
   );

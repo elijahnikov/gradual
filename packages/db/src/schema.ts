@@ -584,6 +584,26 @@ export const segment = pgTable(
         value: unknown;
       }>
     >(),
+    includedIndividuals: jsonb("included_individuals")
+      .notNull()
+      .default([])
+      .$type<
+        Array<{
+          contextKind: string;
+          attributeKey: string;
+          attributeValue: string;
+        }>
+      >(),
+    excludedIndividuals: jsonb("excluded_individuals")
+      .notNull()
+      .default([])
+      .$type<
+        Array<{
+          contextKind: string;
+          attributeKey: string;
+          attributeValue: string;
+        }>
+      >(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
