@@ -1,5 +1,10 @@
 import { and, eq, isNull } from "@gradual/db";
-import { featureFlag, organization, project } from "@gradual/db/schema";
+import {
+  featureFlag,
+  organization,
+  project,
+  segment,
+} from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
@@ -206,7 +211,7 @@ export const getBreadcrumbs = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: GetBreadcrumbsInput;
 }) => {
-  const { projectSlug, flagSlug } = input;
+  const { projectSlug, flagSlug, segmentSlug } = input;
 
   // Get project name
   const [foundProject] = await ctx.db
@@ -255,8 +260,33 @@ export const getBreadcrumbs = async ({
     flagName = foundFlag?.name ?? null;
   }
 
+  // Optionally get segment name if segmentSlug is provided
+  let segmentName: string | null = null;
+  if (segmentSlug) {
+    const [foundSegment] = await ctx.db
+      .select({
+        name: segment.name,
+      })
+      .from(segment)
+      .innerJoin(project, eq(segment.projectId, project.id))
+      .innerJoin(organization, eq(segment.organizationId, organization.id))
+      .where(
+        and(
+          eq(segment.key, segmentSlug),
+          eq(project.slug, projectSlug),
+          eq(organization.slug, ctx.organization.slug),
+          eq(segment.organizationId, ctx.organization.id),
+          isNull(segment.deletedAt)
+        )
+      )
+      .limit(1);
+
+    segmentName = foundSegment?.name ?? null;
+  }
+
   return {
     projectName: foundProject.name,
     flagName,
+    segmentName,
   };
 };

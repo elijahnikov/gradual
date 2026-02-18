@@ -2,6 +2,7 @@ import type { RouterOutputs } from "@gradual/api";
 import { cn } from "@gradual/ui";
 import { Checkbox } from "@gradual/ui/checkbox";
 import { Text } from "@gradual/ui/text";
+import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import { useSelectedSegmentsStore } from "@/lib/stores/selected-segments-store";
 import SegmentListItemStats from "./stats";
@@ -13,6 +14,10 @@ export default function SegmentListItem({
 }: {
   segment: SegmentListItemData;
 }) {
+  const { organizationSlug, projectSlug } = useParams({
+    from: "/_organization/$organizationSlug/_project/$projectSlug/segments/",
+  });
+
   const selectedSegments = useSelectedSegmentsStore(
     (state) => state.selectedSegments
   );
@@ -71,9 +76,23 @@ export default function SegmentListItem({
         />
       </div>
       <div className="flex flex-col gap-y-0.5">
-        <Text className="text-[14px]" weight="plus">
-          {segment.name}
-        </Text>
+        <Link
+          params={{
+            organizationSlug,
+            projectSlug,
+            segmentSlug: segment.key,
+          }}
+          preload="intent"
+          search={{}}
+          to="/$organizationSlug/$projectSlug/segments/$segmentSlug"
+        >
+          <Text
+            className="cursor-pointer text-[14px] hover:underline"
+            weight="plus"
+          >
+            {segment.name}
+          </Text>
+        </Link>
         <SegmentListItemStats
           conditionCount={segment.conditions?.length ?? 0}
           createdAt={segment.createdAt}

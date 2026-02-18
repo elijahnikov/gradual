@@ -1,5 +1,6 @@
 import type { RouterOutputs } from "@gradual/api";
 import { getVariationColorByIndex } from "@gradual/api/utils";
+import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
 import { toastManager } from "@gradual/ui/toast";
 import { RiAddLine } from "@remixicon/react";
@@ -131,7 +132,12 @@ export default function FlagVariations({
   };
 
   return (
-    <div className="flex w-full flex-1 flex-col pt-2.5">
+    <div
+      className={cn(
+        "flex w-full flex-1 flex-col",
+        flagType !== "boolean" && "pt-2.5"
+      )}
+    >
       {flagType !== "boolean" && (
         <div className="mb-3 flex justify-end px-2.5">
           <Button
@@ -145,7 +151,12 @@ export default function FlagVariations({
           </Button>
         </div>
       )}
-      <div className="flex flex-col divide-y border-t">
+      <div
+        className={cn(
+          "flex flex-col divide-y",
+          flagType === "boolean" ? "border-b" : "border-y"
+        )}
+      >
         {variations.map((variation, index) => {
           const isLast = index === variations.length - 1;
           return (

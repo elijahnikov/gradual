@@ -51,4 +51,5 @@ export const getBreadcrumbsSchema = z.object({
   organizationSlug: z.string(),
   projectSlug: z.string(),
   flagSlug: z.string().optional(),
+  segmentSlug: z.string().optional(),
 });

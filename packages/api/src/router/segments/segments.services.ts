@@ -20,7 +20,70 @@ import {
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
-import type { CreateSegmentInput, ListSegmentsInput } from "./segments.schemas";
+import type {
+  CreateSegmentInput,
+  GetSegmentByKeyInput,
+  ListSegmentsInput,
+  UpdateSegmentInput,
+} from "./segments.schemas";
+
+export const getSegmentByKey = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetSegmentByKeyInput;
+}) => {
+  const { projectSlug, key } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: ({ slug, organizationId, deletedAt }, { eq, isNull, and: a }) =>
+      a(
+        eq(slug, projectSlug),
+        eq(organizationId, ctx.organization.id),
+        isNull(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const found = await ctx.db.query.segment.findFirst({
+    where: (table, { eq: e, and: a, isNull: n }) =>
+      a(
+        e(table.key, key),
+        e(table.projectId, foundProject.id),
+        e(table.organizationId, ctx.organization.id),
+        n(table.deletedAt)
+      ),
+  });
+
+  if (!found) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Segment not found" });
+  }
+
+  // Count distinct flags using this segment
+  const flagCounts = await ctx.db
+    .select({
+      flagCount: countDistinct(featureFlagEnvironment.featureFlagId),
+    })
+    .from(featureFlagSegmentTarget)
+    .innerJoin(
+      featureFlagTarget,
+      eq(featureFlagSegmentTarget.targetId, featureFlagTarget.id)
+    )
+    .innerJoin(
+      featureFlagEnvironment,
+      eq(featureFlagTarget.featureFlagEnvironmentId, featureFlagEnvironment.id)
+    )
+    .where(eq(featureFlagSegmentTarget.segmentId, found.id));
+
+  return {
+    ...found,
+    flagCount: flagCounts[0]?.flagCount ?? 0,
+  };
+};
 
 export const listSegments = async ({
   ctx,
@@ -209,4 +272,81 @@ export const createSegment = async ({
     .returning();
 
   return createdSegment;
+};
+
+export const updateSegment = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: UpdateSegmentInput;
+}) => {
+  const {
+    segmentId,
+    projectSlug,
+    name,
+    description,
+    conditions,
+    includedIndividuals,
+    excludedIndividuals,
+  } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: (
+      { slug, organizationId, deletedAt },
+      { eq: e, isNull: n, and: a }
+    ) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        n(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const existing = await ctx.db.query.segment.findFirst({
+    where: (table, { eq: e, and: a, isNull: n }) =>
+      a(
+        e(table.id, segmentId),
+        e(table.projectId, foundProject.id),
+        e(table.organizationId, ctx.organization.id),
+        n(table.deletedAt)
+      ),
+  });
+
+  if (!existing) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Segment not found" });
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (name !== undefined) {
+    updates.name = name;
+  }
+  if (description !== undefined) {
+    updates.description = description;
+  }
+  if (conditions !== undefined) {
+    updates.conditions = conditions;
+  }
+  if (includedIndividuals !== undefined) {
+    updates.includedIndividuals = includedIndividuals;
+  }
+  if (excludedIndividuals !== undefined) {
+    updates.excludedIndividuals = excludedIndividuals;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return existing;
+  }
+
+  const [updated] = await ctx.db
+    .update(segment)
+    .set(updates)
+    .where(eq(segment.id, segmentId))
+    .returning();
+
+  return updated;
 };

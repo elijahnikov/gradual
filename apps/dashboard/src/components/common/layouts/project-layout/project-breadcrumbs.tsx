@@ -27,6 +27,7 @@ export default function ProjectBreadcrumbs() {
   const organizationSlug = params.organizationSlug as string;
   const projectSlug = params.projectSlug as string;
   const flagSlug = params.flagSlug as string | undefined;
+  const segmentSlug = params.segmentSlug as string | undefined;
 
   const trpc = useTRPC();
   const { data: breadcrumbs } = useSuspenseQuery(
@@ -34,6 +35,7 @@ export default function ProjectBreadcrumbs() {
       organizationSlug,
       projectSlug,
       flagSlug,
+      segmentSlug,
     })
   );
 
@@ -49,6 +51,17 @@ export default function ProjectBreadcrumbs() {
         )
     );
   }, [pathname, organizationSlug, projectSlug, flagSlug]);
+
+  const isSegmentDetailPage = useMemo(() => {
+    return Boolean(
+      segmentSlug &&
+        organizationSlug &&
+        projectSlug &&
+        pathname.includes(
+          `/${organizationSlug}/${projectSlug}/segments/${segmentSlug}`
+        )
+    );
+  }, [pathname, organizationSlug, projectSlug, segmentSlug]);
 
   const currentSegment = useMemo(() => {
     if (!organizationSlug) {
@@ -89,6 +102,62 @@ export default function ProjectBreadcrumbs() {
     return currentSegment.charAt(0).toUpperCase() + currentSegment.slice(1);
   }, [currentSegment]);
 
+  const renderDetailBreadcrumb = () => {
+    if (isFlagDetailPage && breadcrumbs.flagName) {
+      return (
+        <>
+          <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-xs hover:bg-ui-bg-subtle">
+            <BreadcrumbLink
+              render={
+                <Link
+                  params={{ organizationSlug, projectSlug }}
+                  search={{}}
+                  to="/$organizationSlug/$projectSlug/flags"
+                />
+              }
+            >
+              {segmentDisplayName}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
+            <BreadcrumbPage>{breadcrumbs.flagName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </>
+      );
+    }
+
+    if (isSegmentDetailPage && breadcrumbs.segmentName) {
+      return (
+        <>
+          <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-xs hover:bg-ui-bg-subtle">
+            <BreadcrumbLink
+              render={
+                <Link
+                  params={{ organizationSlug, projectSlug }}
+                  search={{}}
+                  to="/$organizationSlug/$projectSlug/segments"
+                />
+              }
+            >
+              {segmentDisplayName}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
+            <BreadcrumbPage>{breadcrumbs.segmentName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </>
+      );
+    }
+
+    return (
+      <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
+        <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
+      </BreadcrumbItem>
+    );
+  };
+
   return (
     <Breadcrumb className="sticky top-0 z-50 flex h-9 w-full items-center border-b bg-ui-bg-base px-2.5">
       <BreadcrumbList>
@@ -108,31 +177,7 @@ export default function ProjectBreadcrumbs() {
         {segmentDisplayName && (
           <>
             <BreadcrumbSeparator />
-            {isFlagDetailPage && breadcrumbs.flagName ? (
-              <>
-                <BreadcrumbItem className="rounded-[4px] px-1 py-0.5 font-medium text-xs hover:bg-ui-bg-subtle">
-                  <BreadcrumbLink
-                    render={
-                      <Link
-                        params={{ organizationSlug, projectSlug }}
-                        search={{}}
-                        to="/$organizationSlug/$projectSlug/flags"
-                      />
-                    }
-                  >
-                    {segmentDisplayName}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
-                  <BreadcrumbPage>{breadcrumbs.flagName}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            ) : (
-              <BreadcrumbItem className="px-1 py-0.5 font-medium text-xs">
-                <BreadcrumbPage>{segmentDisplayName}</BreadcrumbPage>
-              </BreadcrumbItem>
-            )}
+            {renderDetailBreadcrumb()}
           </>
         )}
       </BreadcrumbList>

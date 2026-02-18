@@ -7,7 +7,7 @@ export default function CreateNewMenu() {
 
   return (
     <Button
-      className="h-7 w-full justify-start bg-ui-bg-subtle text-left dark:bg-ui-button-neutral"
+      className="mt-0.5 h-7 w-full justify-start rounded-sm bg-ui-bg-subtle text-left dark:bg-ui-button-neutral"
       onClick={open}
       size="small"
       variant="outline"

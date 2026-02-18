@@ -36,6 +36,7 @@ import {
 } from "react";
 import CreateEnvironmentDialog from "../dialogs/create-environment-dialog";
 import CreateFlagDialog from "../dialogs/create-flag-dialog";
+import CreateSegmentDialog from "../dialogs/create-segment-dialog";
 
 interface CommandPaletteContextValue {
   open: () => void;
@@ -73,6 +74,7 @@ export default function CommandPalette({
   const [open, setOpen] = useState(false);
   const [createFlagOpen, setCreateFlagOpen] = useState(false);
   const [createEnvOpen, setCreateEnvOpen] = useState(false);
+  const [createSegmentOpen, setCreateSegmentOpen] = useState(false);
   const navigate = useNavigate();
   const params = useParams({ strict: false });
 
@@ -151,6 +153,12 @@ export default function CommandPalette({
           action: () => setCreateFlagOpen(true),
         },
         {
+          value: "create-segment",
+          label: "Create segment",
+          icon: RiFolder2Fill,
+          action: () => setCreateSegmentOpen(true),
+        },
+        {
           value: "create-environment",
           label: "Create environment",
           icon: RiEarthFill,
@@ -198,16 +206,20 @@ export default function CommandPalette({
         onOpenChange={setCreateEnvOpen}
         open={createEnvOpen}
       />
+      <CreateSegmentDialog
+        onOpenChange={setCreateSegmentOpen}
+        open={createSegmentOpen}
+      />
       <CommandDialog onOpenChange={setOpen} open={open}>
         <CommandDialogPopup className="relative top-24">
           <Command items={groupedItems}>
             <CommandInput placeholder="Search pages and actions..." />
             <CommandPanel>
               <CommandEmpty>No results found.</CommandEmpty>
-              <CommandList>
+              <CommandList className="mb-2 overflow-x-hidden p-0!">
                 {(group: Group) => (
                   <Fragment key={group.value}>
-                    <CommandGroup items={group.items}>
+                    <CommandGroup className="px-2" items={group.items}>
                       <CommandGroupLabel>{group.value}</CommandGroupLabel>
                       <CommandCollection>
                         {(item: Item) => {
@@ -222,7 +234,7 @@ export default function CommandPalette({
                               {Icon && (
                                 <Icon className="size-4 text-ui-fg-muted" />
                               )}
-                              <span className="flex-1 font-medium text-xs">
+                              <span className="flex-1 text-[13px]">
                                 {item.label}
                               </span>
                             </CommandItem>
@@ -230,7 +242,7 @@ export default function CommandPalette({
                         }}
                       </CommandCollection>
                     </CommandGroup>
-                    <CommandSeparator />
+                    <CommandSeparator className="-mx-1" />
                   </Fragment>
                 )}
               </CommandList>
