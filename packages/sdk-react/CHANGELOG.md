@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.6
+
+### Patch Changes
+
+- [#79](https://github.com/elijahnikov/gradual/pull/79) [`ab71536`](https://github.com/elijahnikov/gradual/commit/ab71536d85f017c73a73db92830b6f59df96f9c6) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Segment support
+
+- Updated dependencies [[`ab71536`](https://github.com/elijahnikov/gradual/commit/ab71536d85f017c73a73db92830b6f59df96f9c6)]:
+  - @gradual-so/sdk@0.8.6
+
 ## 0.8.5
 
 ### Patch Changes
