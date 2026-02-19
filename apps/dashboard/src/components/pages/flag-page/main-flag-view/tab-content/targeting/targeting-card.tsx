@@ -1,19 +1,12 @@
 import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@gradual/ui/dropdown-menu";
 import { Input } from "@gradual/ui/input";
 import { Text } from "@gradual/ui/text";
 import {
   RiArrowDownLine,
   RiArrowUpLine,
   RiDeleteBinLine,
-  RiMore2Fill,
 } from "@remixicon/react";
 import type { ReactNode } from "react";
 import { GradualRolloutEditor } from "./gradual-rollout-editor";
@@ -64,85 +57,86 @@ export default function TargetingCard({
     selectedVariationId ?? defaultVariationId ?? variations[0]?.id ?? "";
 
   return (
-    <Card
-      className={cn(
-        "flex w-full max-w-2xl flex-col p-0",
-        hasError && "border-destructive/50"
-      )}
-    >
-      <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
-        <div className="flex items-center gap-2">
+    <div className="group/card relative flex w-full max-w-2xl justify-center">
+      <Card
+        className={cn(
+          "flex w-full flex-col p-0",
+          hasError && "border-destructive/50"
+        )}
+      >
+        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
           <Input
             className="h-7 w-full text-sm"
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Target name"
             value={name}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button className="size-7" size="small" variant="outline" />
-              }
-            >
-              <RiMore2Fill className="size-4 shrink-0" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled={isFirst} onClick={onMoveUp}>
-                <RiArrowUpLine className={cn(isFirst && "text-ui-fg-muted!")} />
-                Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isLast} onClick={onMoveDown}>
-                <RiArrowDownLine
-                  className={cn(isLast && "text-ui-fg-muted!")}
-                />
-                Move down
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-ui-fg-error!"
-                onClick={onDelete}
-              >
-                <RiDeleteBinLine className="size-4 shrink-0 text-ui-fg-error! focus:text-ui-fg-error!" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+          <div className="flex flex-col gap-2">{children}</div>
         </div>
 
-        <div className="flex flex-col gap-2">{children}</div>
-      </div>
-
-      <div className="flex w-full flex-col border-t">
-        <div className="flex w-full flex-col gap-2.5 px-2.5 py-2.5 sm:px-3">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
-            <VariationSelector
-              isGradual={isGradual}
-              isRollout={isRollout}
-              label="Serve"
-              onChange={onVariationChange}
-              onGradualSelect={() => onModeChange("gradual")}
-              onRolloutSelect={() => onModeChange("rollout")}
-              value={effectiveVariationId}
+        <div className="flex w-full flex-col border-t">
+          <div className="flex w-full flex-col gap-2.5 px-2.5 py-2.5 sm:px-3">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+              <VariationSelector
+                isGradual={isGradual}
+                isRollout={isRollout}
+                label="Serve"
+                onChange={onVariationChange}
+                onGradualSelect={() => onModeChange("gradual")}
+                onRolloutSelect={() => onModeChange("rollout")}
+                value={effectiveVariationId}
+                variations={variations}
+              />
+            </div>
+          </div>
+          {isGradual && rollout && (
+            <GradualRolloutEditor
+              onRolloutChange={onRolloutChange}
+              rollout={rollout}
               variations={variations}
             />
-          </div>
+          )}
+          {isRollout && rollout && (
+            <RolloutEditor
+              label=""
+              onRolloutChange={onRolloutChange}
+              rollout={rollout}
+              variations={variations}
+            />
+          )}
         </div>
-        {isGradual && rollout && (
-          <GradualRolloutEditor
-            onRolloutChange={onRolloutChange}
-            rollout={rollout}
-            variations={variations}
-          />
-        )}
-        {isRollout && rollout && (
-          <RolloutEditor
-            label=""
-            onRolloutChange={onRolloutChange}
-            rollout={rollout}
-            variations={variations}
-          />
-        )}
+      </Card>
+
+      <div className="absolute top-1 right-0 hidden translate-x-full flex-col gap-1 pl-2 opacity-0 transition-opacity group-hover/card:opacity-100 sm:flex">
+        <Button
+          className="size-6"
+          disabled={isFirst}
+          onClick={onMoveUp}
+          size="small"
+          variant="outline"
+        >
+          <RiArrowUpLine className="size-3.5 shrink-0" />
+        </Button>
+        <Button
+          className="size-6"
+          disabled={isLast}
+          onClick={onMoveDown}
+          size="small"
+          variant="outline"
+        >
+          <RiArrowDownLine className="size-3.5 shrink-0" />
+        </Button>
+        <Button
+          className="size-6"
+          onClick={onDelete}
+          size="small"
+          variant="outline"
+        >
+          <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 

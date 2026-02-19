@@ -37,7 +37,14 @@ import {
 } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import EditableDescription from "@/components/common/editable-description";
 import EditableTitle from "@/components/common/editable-title";
 import { AttributeSelect } from "@/components/pages/flag-page/main-flag-view/tab-content/targeting/attribute-select";
@@ -71,6 +78,44 @@ interface IndividualEntry {
   contextKind: string;
   attributeKey: string;
   attributeValue: string;
+}
+
+function getSegmentValidationErrors(
+  conditions: RuleCondition[],
+  includedIndividuals: IndividualEntry[],
+  excludedIndividuals: IndividualEntry[]
+): string[] {
+  const errors: string[] = [];
+
+  for (const entry of [...includedIndividuals, ...excludedIndividuals]) {
+    if (!entry.attributeKey?.trim()) {
+      errors.push("All individuals must have an attribute selected");
+      break;
+    }
+    if (!entry.attributeValue?.trim()) {
+      errors.push("All individual values must be filled in");
+      break;
+    }
+  }
+
+  for (const condition of conditions) {
+    if (!condition.attributeKey?.trim()) {
+      errors.push("All conditions must have an attribute selected");
+      break;
+    }
+    if (
+      condition.operator !== "exists" &&
+      condition.operator !== "not_exists"
+    ) {
+      const val = condition.value;
+      if (val === undefined || val === null || String(val).trim() === "") {
+        errors.push("All condition values must be filled in");
+        break;
+      }
+    }
+  }
+
+  return errors;
 }
 
 export default function SegmentPageComponent() {
@@ -195,6 +240,17 @@ function SegmentConditionsEditor({
   >(() => initialExcluded.current);
   const [hasChanges, setHasChanges] = useState(false);
 
+  const validationErrors = useMemo(
+    () =>
+      getSegmentValidationErrors(
+        conditions,
+        includedIndividuals,
+        excludedIndividuals
+      ),
+    [conditions, includedIndividuals, excludedIndividuals]
+  );
+  const hasValidationErrors = validationErrors.length > 0;
+
   const handleConditionsChange = useCallback(
     (newConditions: RuleCondition[]) => {
       setConditions(newConditions);
@@ -299,7 +355,7 @@ function SegmentConditionsEditor({
             <RiArrowGoBackFill className="size-4 shrink-0" />
           </Button>
           <Button
-            disabled={!hasChanges}
+            disabled={!hasChanges || hasValidationErrors}
             onClick={handleSave}
             size="small"
             variant="gradual"
@@ -380,7 +436,7 @@ function AddSegmentEntryButton({
 function SegmentChainConnector() {
   return (
     <Separator
-      className="h-5 border-[0.5px] border-ui-fg-muted/75"
+      className="h-8 border-[0.5px] border-ui-fg-muted/75"
       orientation="vertical"
     />
   );
@@ -412,7 +468,6 @@ function SegmentTargetingChain({
   organizationSlug: string;
   projectSlug: string;
 }) {
-  // Build a flat list of chain items in priority order: exclude → include → conditions
   const chainItems: ChainItem[] = [
     ...excludedIndividuals.map((_, i) => ({
       type: "exclude" as const,
@@ -585,68 +640,73 @@ function IndividualEntryCard({
   projectSlug: string;
 }) {
   return (
-    <Card className="flex w-full max-w-2xl flex-col p-0">
-      <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
-        <div className="flex items-center justify-between">
-          <Text size="small" weight="plus">
-            {label} individual
-          </Text>
-          <Button
-            className="size-6"
-            onClick={onDelete}
-            size="small"
-            variant="outline"
-          >
-            <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
-          </Button>
+    <div className="group/entry relative flex w-full max-w-2xl flex-col">
+      <Text
+        className="absolute bottom-full left-0.5 mb-0.5 bg-ui-bg-base font-mono text-ui-fg-subtle uppercase"
+        size="xsmall"
+      >
+        {label} individual
+      </Text>
+      <Card className="flex w-full flex-col p-0">
+        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
+          {isLoading ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-10" />
+                <Skeleton className="h-7 w-32 rounded-sm" />
+                <Skeleton className="h-7 w-36 rounded-sm" />
+              </div>
+              <div className="flex flex-1 items-center gap-2">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-7 flex-1 rounded-sm" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <Text className="shrink-0 text-ui-fg-muted" size="small">
+                  Where
+                </Text>
+                <ContextSelect
+                  onChange={(kind: ContextKind) =>
+                    onUpdate({ contextKind: kind, attributeKey: "" })
+                  }
+                  value={entry.contextKind as ContextKind | undefined}
+                />
+                <AttributeSelect
+                  contextKind={entry.contextKind as ContextKind | undefined}
+                  onChange={(key: string) => onUpdate({ attributeKey: key })}
+                  organizationSlug={organizationSlug}
+                  projectSlug={projectSlug}
+                  value={entry.attributeKey}
+                />
+              </div>
+              <div className="flex flex-1 items-center gap-2">
+                <Text className="shrink-0 text-ui-fg-muted" size="small">
+                  is
+                </Text>
+                <Input
+                  className="h-7 flex-1"
+                  onChange={(e) => onUpdate({ attributeValue: e.target.value })}
+                  placeholder="Enter value"
+                  value={entry.attributeValue}
+                />
+              </div>
+            </div>
+          )}
         </div>
-        {isLoading ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 w-10" />
-              <Skeleton className="h-7 w-32 rounded-sm" />
-              <Skeleton className="h-7 w-36 rounded-sm" />
-            </div>
-            <div className="flex flex-1 items-center gap-2">
-              <Skeleton className="h-4 w-4" />
-              <Skeleton className="h-7 flex-1 rounded-sm" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <Text className="shrink-0 text-ui-fg-muted" size="small">
-                Where
-              </Text>
-              <ContextSelect
-                onChange={(kind: ContextKind) =>
-                  onUpdate({ contextKind: kind, attributeKey: "" })
-                }
-                value={entry.contextKind as ContextKind | undefined}
-              />
-              <AttributeSelect
-                contextKind={entry.contextKind as ContextKind | undefined}
-                onChange={(key: string) => onUpdate({ attributeKey: key })}
-                organizationSlug={organizationSlug}
-                projectSlug={projectSlug}
-                value={entry.attributeKey}
-              />
-            </div>
-            <div className="flex flex-1 items-center gap-2">
-              <Text className="shrink-0 text-ui-fg-muted" size="small">
-                is
-              </Text>
-              <Input
-                className="h-7 flex-1"
-                onChange={(e) => onUpdate({ attributeValue: e.target.value })}
-                placeholder="Enter value"
-                value={entry.attributeValue}
-              />
-            </div>
-          </div>
-        )}
+      </Card>
+      <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
+        <Button
+          className="size-6"
+          onClick={onDelete}
+          size="small"
+          variant="outline"
+        >
+          <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -669,7 +729,6 @@ function ConditionEntryCard({
   organizationSlug: string;
   projectSlug: string;
 }) {
-  // Render just this single condition using RuleConditionBuilder with a single-item array
   const singleCondition = [condition];
 
   const handleSingleChange = (updated: RuleCondition[]) => {
@@ -684,38 +743,43 @@ function ConditionEntryCard({
   };
 
   return (
-    <Card className="flex w-full max-w-2xl flex-col p-0">
-      <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
-        <div className="flex items-center justify-between">
-          <Text size="small" weight="plus">
-            Condition rule
-          </Text>
-          <Button
-            className="size-6"
-            onClick={onDelete}
-            size="small"
-            variant="outline"
-          >
-            <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
-          </Button>
+    <div className="group/entry relative flex w-full max-w-2xl flex-col">
+      <Text
+        className="absolute bottom-full left-0.5 mb-0.5 font-mono text-ui-fg-subtle"
+        size="xsmall"
+      >
+        Condition rule
+      </Text>
+      <Card className="flex w-full flex-col p-0">
+        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-32 rounded-sm" />
+              <Skeleton className="h-7 w-36 rounded-sm" />
+              <Skeleton className="h-7 w-28 rounded-sm" />
+              <Skeleton className="h-7 flex-1 rounded-sm" />
+            </div>
+          ) : (
+            <RuleConditionBuilder
+              conditions={singleCondition}
+              onChange={handleSingleChange}
+              organizationSlug={organizationSlug}
+              projectSlug={projectSlug}
+            />
+          )}
         </div>
-        {isLoading ? (
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-7 w-32 rounded-sm" />
-            <Skeleton className="h-7 w-36 rounded-sm" />
-            <Skeleton className="h-7 w-28 rounded-sm" />
-            <Skeleton className="h-7 flex-1 rounded-sm" />
-          </div>
-        ) : (
-          <RuleConditionBuilder
-            conditions={singleCondition}
-            onChange={handleSingleChange}
-            organizationSlug={organizationSlug}
-            projectSlug={projectSlug}
-          />
-        )}
+      </Card>
+      <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
+        <Button
+          className="size-6"
+          onClick={onDelete}
+          size="small"
+          variant="outline"
+        >
+          <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 }
 
