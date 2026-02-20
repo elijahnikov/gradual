@@ -1,4 +1,8 @@
-import { createGradual, type PollingOptions } from "@gradual-so/sdk";
+import {
+  createGradual,
+  type PollingOptions,
+  type RealtimeOptions,
+} from "@gradual-so/sdk";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { GradualContext } from "./context";
 
@@ -7,6 +11,7 @@ export interface GradualProviderProps {
   environment: string;
   baseUrl?: string;
   polling?: PollingOptions;
+  realtime?: RealtimeOptions;
   children: ReactNode;
 }
 
@@ -15,14 +20,15 @@ export function GradualProvider({
   environment,
   baseUrl,
   polling,
+  realtime,
   children,
 }: GradualProviderProps) {
   const [isReady, setIsReady] = useState(false);
   const [version, setVersion] = useState(0);
 
   const gradual = useMemo(
-    () => createGradual({ apiKey, environment, baseUrl, polling }),
-    [apiKey, environment, baseUrl, polling]
+    () => createGradual({ apiKey, environment, baseUrl, polling, realtime }),
+    [apiKey, environment, baseUrl, polling, realtime]
   );
 
   useEffect(() => {
@@ -33,7 +39,6 @@ export function GradualProvider({
       }
     });
 
-    // Subscribe to snapshot updates from polling
     const unsubscribe = gradual.onUpdate(() => {
       if (mounted) {
         setVersion((v) => v + 1);
@@ -43,6 +48,7 @@ export function GradualProvider({
     return () => {
       mounted = false;
       unsubscribe();
+      gradual.close();
     };
   }, [gradual]);
 

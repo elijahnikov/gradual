@@ -1,3 +1,5 @@
+export { SnapshotRoom } from "./snapshot-room";
+
 interface SnapshotJobMessage {
   orgId: string;
   projectId: string;
@@ -48,6 +50,7 @@ interface Env {
   GRADUAL_SNAPSHOT: KVNamespace;
   SNAPSHOT_QUEUE: Queue<SnapshotJobMessage>;
   EVALUATION_QUEUE: Queue<EvaluationQueueMessage>;
+  SNAPSHOT_ROOM: DurableObjectNamespace;
   CLOUDFLARE_WORKERS_ADMIN_KEY: string;
   API_INTERNAL_URL: string;
 }
@@ -160,6 +163,67 @@ async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
   });
 }
 
+async function sdkConnect(request: Request, env: Env): Promise<Response> {
+  if (request.headers.get("Upgrade") !== "websocket") {
+    return new Response("Expected WebSocket upgrade", { status: 426 });
+  }
+
+  const url = new URL(request.url);
+
+  const apiKey = url.searchParams.get("apiKey");
+  if (!apiKey) {
+    return Response.json(
+      { error: "Missing apiKey parameter" },
+      { status: 401 }
+    );
+  }
+
+  const metadata = await getApiKeyMetadata(apiKey, env);
+  if (!metadata) {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  }
+
+  const environment = url.searchParams.get("environment");
+  if (!environment) {
+    return Response.json(
+      { error: "Missing environment parameter" },
+      { status: 400 }
+    );
+  }
+
+  const snapshotKey = `snapshot:${metadata.orgId}:${metadata.projectId}:${environment}`;
+  const roomName = `${metadata.orgId}:${metadata.projectId}:${environment}`;
+  const id = env.SNAPSHOT_ROOM.idFromName(roomName);
+  const stub = env.SNAPSHOT_ROOM.get(id);
+
+  // Forward the WebSocket upgrade to the Durable Object
+  const doUrl = new URL(request.url);
+  doUrl.searchParams.set("snapshotKey", snapshotKey);
+  return stub.fetch(new Request(doUrl.toString(), request));
+}
+
+async function notifySnapshotRoom(
+  env: Env,
+  orgId: string,
+  projectId: string,
+  environmentSlug: string,
+  snapshot: string
+): Promise<void> {
+  try {
+    const roomName = `${orgId}:${projectId}:${environmentSlug}`;
+    const id = env.SNAPSHOT_ROOM.idFromName(roomName);
+    const stub = env.SNAPSHOT_ROOM.get(id);
+    await stub.fetch(
+      new Request("http://internal/notify", {
+        method: "POST",
+        body: snapshot,
+      })
+    );
+  } catch (err) {
+    console.error("notifySnapshotRoom error:", err);
+  }
+}
+
 async function adminGetSnapshot(request: Request, env: Env): Promise<Response> {
   if (!verifyAdminAuth(request, env)) {
     return new Response("Unauthorized", { status: 401 });
@@ -244,7 +308,16 @@ async function adminPublishSnapshot(
       });
     }
 
-    await env.GRADUAL_SNAPSHOT.put(body.key, JSON.stringify(body.snapshot));
+    const snapshotJson = JSON.stringify(body.snapshot);
+    await env.GRADUAL_SNAPSHOT.put(body.key, snapshotJson);
+
+    // Notify connected clients via Durable Object
+    // Key format: snapshot:{orgId}:{projectId}:{environmentSlug}
+    const parts = body.key.split(":");
+    if (parts.length === 4) {
+      await notifySnapshotRoom(env, parts[1], parts[2], parts[3], snapshotJson);
+    }
+
     return Response.json({ success: true, key: body.key });
   } catch (err) {
     console.error("adminPublishSnapshot error:", err);
@@ -303,8 +376,17 @@ async function adminBuildSnapshotSync(
     };
     const snapshot = result.result.data.json;
     const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
+    const snapshotJson = JSON.stringify(snapshot);
 
-    await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));
+    await env.GRADUAL_SNAPSHOT.put(key, snapshotJson);
+    await notifySnapshotRoom(
+      env,
+      orgId,
+      projectId,
+      environmentSlug,
+      snapshotJson
+    );
+
     return Response.json({ success: true, key });
   } catch (err) {
     console.error("adminBuildSnapshotSync error:", err);
@@ -577,8 +659,17 @@ async function processSnapshotQueue(
       };
       const snapshot = result.result.data.json;
       const key = `snapshot:${orgId}:${projectId}:${environmentSlug}`;
+      const snapshotJson = JSON.stringify(snapshot);
 
-      await env.GRADUAL_SNAPSHOT.put(key, JSON.stringify(snapshot));
+      await env.GRADUAL_SNAPSHOT.put(key, snapshotJson);
+      await notifySnapshotRoom(
+        env,
+        orgId,
+        projectId,
+        environmentSlug,
+        snapshotJson
+      );
+
       msg.ack();
     } catch (err) {
       console.error("processSnapshotQueue error:", err);
@@ -593,7 +684,8 @@ export default {
     const isSDKRoute =
       pathname === "/api/v1/sdk/init" ||
       pathname === "/api/v1/sdk/snapshot" ||
-      pathname === "/api/v1/sdk/evaluations";
+      pathname === "/api/v1/sdk/evaluations" ||
+      pathname === "/api/v1/sdk/connect";
 
     if (isSDKRoute && request.method === "OPTIONS") {
       return new Response(null, {
@@ -619,6 +711,8 @@ export default {
       case "/api/v1/sdk/evaluations":
         response = await sdkIngestEvaluations(request, env);
         break;
+      case "/api/v1/sdk/connect":
+        return sdkConnect(request, env);
       case "/api/v1/snapshot":
         return adminGetSnapshot(request, env);
       case "/api/v1/queue-snapshot":

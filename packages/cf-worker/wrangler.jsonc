@@ -17,6 +17,20 @@
       "preview_id": "f949cdc323dd45d8b70842f6d261de13"
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SNAPSHOT_ROOM",
+        "class_name": "SnapshotRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["SnapshotRoom"]
+    }
+  ],
   "queues": {
     "producers": [
       {
