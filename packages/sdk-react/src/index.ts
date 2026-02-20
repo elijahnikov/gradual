@@ -3,6 +3,7 @@ export type {
   EvaluationContext,
   EvaluationResult,
   GradualOptions,
+  RealtimeOptions,
 } from "@gradual-so/sdk";
 export { GradualContext, type GradualContextValue } from "./context";
 export {

@@ -12,6 +12,8 @@ import type {
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://worker.gradual.so/api/v1";
+const HTTPS_RE = /^https:\/\//;
+const HTTP_RE = /^http:\/\//;
 
 type SdkPlatform = "browser" | "node" | "react-native" | "edge" | "unknown";
 
@@ -144,6 +146,13 @@ class GradualClient implements Gradual {
   private readonly eventsEnabled: boolean;
   private readonly eventsFlushIntervalMs: number;
   private readonly eventsMaxBatchSize: number;
+  private readonly realtimeEnabled: boolean;
+  private readonly pollingEnabled: boolean;
+  private readonly pollingIntervalMs: number;
+  private pollingTimer: ReturnType<typeof setInterval> | null = null;
+  private ws: WebSocket | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
 
   readonly sync: GradualSync;
 
@@ -154,6 +163,12 @@ class GradualClient implements Gradual {
     this.eventsEnabled = options.events?.enabled ?? true;
     this.eventsFlushIntervalMs = options.events?.flushIntervalMs ?? 30_000;
     this.eventsMaxBatchSize = options.events?.maxBatchSize ?? 100;
+
+    const hasWebSocket = typeof globalThis.WebSocket !== "undefined";
+    this.realtimeEnabled = options.realtime?.enabled ?? hasWebSocket;
+    this.pollingEnabled = options.polling?.enabled ?? true;
+    this.pollingIntervalMs = options.polling?.intervalMs ?? 10_000;
+
     this.initPromise = this.init();
 
     this.sync = {
@@ -162,27 +177,6 @@ class GradualClient implements Gradual {
       evaluate: this.evaluateSync.bind(this),
       track: this.trackSync.bind(this),
     };
-
-    const pollingEnabled = options.polling?.enabled ?? true;
-    const pollingIntervalMs = options.polling?.intervalMs ?? 10_000;
-
-    if (pollingEnabled) {
-      this.initPromise.then(() => {
-        setInterval(async () => {
-          try {
-            const previousVersion = this.snapshot?.version;
-            await this.refresh();
-            if (this.snapshot && this.snapshot.version !== previousVersion) {
-              for (const cb of this.updateListeners) {
-                cb();
-              }
-            }
-          } catch (error) {
-            console.warn("Gradual: Polling refresh failed", error);
-          }
-        }, pollingIntervalMs);
-      });
-    }
   }
 
   private async init(): Promise<void> {
@@ -210,25 +204,18 @@ class GradualClient implements Gradual {
       );
     }
 
-    const snapshotResponse = await fetch(
-      `${this.baseUrl}/sdk/snapshot?environment=${encodeURIComponent(this.environment)}`,
-      { headers: { Authorization: `Bearer ${this.apiKey}` } }
-    );
-
-    if (!snapshotResponse.ok) {
-      const error = await snapshotResponse.json().catch(() => ({}));
-      throw new Error(
-        `Gradual: Failed to fetch snapshot - ${(error as { error?: string }).error ?? snapshotResponse.statusText}`
-      );
+    if (this.realtimeEnabled) {
+      await this.connectWebSocket();
+    } else {
+      await this.fetchSnapshot();
+      this.startPolling();
     }
 
-    const initialEtag = snapshotResponse.headers.get("ETag");
-    if (initialEtag) {
-      this.etag = initialEtag;
-    }
-    this.snapshot = (await snapshotResponse.json()) as EnvironmentSnapshot;
+    this.initializeEventBuffer();
+  }
 
-    if (this.eventsEnabled && this.snapshot.meta) {
+  private initializeEventBuffer(): void {
+    if (this.eventsEnabled && this.snapshot?.meta) {
       this.eventBuffer = new EventBuffer({
         baseUrl: this.baseUrl,
         apiKey: this.apiKey,
@@ -242,6 +229,184 @@ class GradualClient implements Gradual {
         maxBatchSize: this.eventsMaxBatchSize,
       });
     }
+  }
+
+  private async fetchSnapshot(): Promise<void> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.etag) {
+      headers["If-None-Match"] = this.etag;
+    }
+
+    const response = await fetch(
+      `${this.baseUrl}/sdk/snapshot?environment=${encodeURIComponent(this.environment)}`,
+      { headers }
+    );
+
+    if (response.status === 304) {
+      return;
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(
+        `Gradual: Failed to fetch snapshot - ${(error as { error?: string }).error ?? response.statusText}`
+      );
+    }
+
+    const etag = response.headers.get("ETag");
+    if (etag) {
+      this.etag = etag;
+    }
+    this.snapshot = (await response.json()) as EnvironmentSnapshot;
+  }
+
+  private startPolling(): void {
+    if (!this.pollingEnabled) {
+      return;
+    }
+    this.pollingTimer = setInterval(async () => {
+      try {
+        const previousVersion = this.snapshot?.version;
+        await this.fetchSnapshot();
+        if (this.snapshot && this.snapshot.version !== previousVersion) {
+          for (const cb of this.updateListeners) {
+            cb();
+          }
+        }
+      } catch (error) {
+        console.warn("Gradual: Polling refresh failed", error);
+      }
+    }, this.pollingIntervalMs);
+  }
+
+  private connectWebSocket(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const wsBase = this.baseUrl
+        .replace(HTTPS_RE, "wss://")
+        .replace(HTTP_RE, "ws://");
+      const wsUrl = `${wsBase}/sdk/connect?apiKey=${encodeURIComponent(this.apiKey)}&environment=${encodeURIComponent(this.environment)}`;
+
+      const ws = new WebSocket(wsUrl);
+      this.ws = ws;
+      let resolved = false;
+
+      ws.onmessage = (event: MessageEvent) => {
+        try {
+          const newSnapshot = JSON.parse(
+            typeof event.data === "string" ? event.data : ""
+          ) as EnvironmentSnapshot;
+          const previousVersion = this.snapshot?.version;
+          this.snapshot = newSnapshot;
+
+          if (newSnapshot.version) {
+            this.etag = `"${newSnapshot.version}"`;
+          }
+
+          if (!resolved) {
+            resolved = true;
+            this.reconnectAttempts = 0;
+            resolve();
+          } else if (newSnapshot.version !== previousVersion) {
+            for (const cb of this.updateListeners) {
+              cb();
+            }
+          }
+        } catch (err) {
+          console.warn("Gradual: Failed to parse WebSocket message", err);
+          if (!resolved) {
+            resolved = true;
+            this.fallbackToPolling(resolve, reject);
+          }
+        }
+      };
+
+      ws.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          ws.close();
+          this.ws = null;
+          this.fallbackToPolling(resolve, reject);
+        }
+      };
+
+      ws.onclose = () => {
+        if (!resolved) {
+          resolved = true;
+          this.ws = null;
+          this.fallbackToPolling(resolve, reject);
+          return;
+        }
+        // Already connected — schedule reconnect
+        this.ws = null;
+        this.scheduleReconnect();
+      };
+    });
+  }
+
+  private fallbackToPolling(
+    resolve: () => void,
+    reject: (err: Error) => void
+  ): void {
+    console.warn("Gradual: WebSocket failed, falling back to polling");
+    this.fetchSnapshot()
+      .then(() => {
+        this.startPolling();
+        resolve();
+      })
+      .catch(reject);
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) {
+      return;
+    }
+    const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30_000);
+    this.reconnectAttempts++;
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.reconnectWebSocket();
+    }, delay);
+  }
+
+  private reconnectWebSocket(): void {
+    const wsBase = this.baseUrl
+      .replace(HTTPS_RE, "wss://")
+      .replace(HTTP_RE, "ws://");
+    const wsUrl = `${wsBase}/sdk/connect?apiKey=${encodeURIComponent(this.apiKey)}&environment=${encodeURIComponent(this.environment)}`;
+
+    const ws = new WebSocket(wsUrl);
+    this.ws = ws;
+
+    ws.onmessage = (event: MessageEvent) => {
+      try {
+        const newSnapshot = JSON.parse(
+          typeof event.data === "string" ? event.data : ""
+        ) as EnvironmentSnapshot;
+        const previousVersion = this.snapshot?.version;
+        this.snapshot = newSnapshot;
+        this.reconnectAttempts = 0;
+
+        if (newSnapshot.version !== previousVersion) {
+          for (const cb of this.updateListeners) {
+            cb();
+          }
+        }
+      } catch (err) {
+        console.warn("Gradual: Failed to parse WebSocket message", err);
+      }
+    };
+
+    ws.onerror = () => {
+      // onclose will fire after this
+    };
+
+    ws.onclose = () => {
+      this.ws = null;
+      this.scheduleReconnect();
+    };
   }
 
   private ensureReady(): EnvironmentSnapshot {
@@ -581,34 +746,7 @@ class GradualClient implements Gradual {
   }
 
   async refresh(): Promise<void> {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${this.apiKey}`,
-    };
-    if (this.etag) {
-      headers["If-None-Match"] = this.etag;
-    }
-
-    const response = await fetch(
-      `${this.baseUrl}/sdk/snapshot?environment=${encodeURIComponent(this.environment)}`,
-      { headers }
-    );
-
-    if (response.status === 304) {
-      return;
-    }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(
-        `Gradual: Failed to refresh - ${(error as { error?: string }).error ?? response.statusText}`
-      );
-    }
-
-    const etag = response.headers.get("ETag");
-    if (etag) {
-      this.etag = etag;
-    }
-    this.snapshot = (await response.json()) as EnvironmentSnapshot;
+    await this.fetchSnapshot();
   }
 
   getSnapshot(): EnvironmentSnapshot | null {
@@ -621,6 +759,18 @@ class GradualClient implements Gradual {
   }
 
   close(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
     if (this.eventBuffer) {
       this.eventBuffer.destroy();
       this.eventBuffer = null;

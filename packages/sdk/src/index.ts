@@ -12,6 +12,7 @@ export type {
   GradualOptions,
   IsEnabledOptions,
   PollingOptions,
+  RealtimeOptions,
   Reason,
   SnapshotFlag,
   SnapshotRollout,

@@ -105,11 +105,16 @@ export interface PollingOptions {
   intervalMs?: number;
 }
 
+export interface RealtimeOptions {
+  enabled?: boolean;
+}
+
 export interface GradualOptions {
   apiKey: string;
   environment: string;
   baseUrl?: string;
   polling?: PollingOptions;
+  realtime?: RealtimeOptions;
   events?: EventsOptions;
 }
 
