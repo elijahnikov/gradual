@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.7
+
+### Patch Changes
+
+- [#81](https://github.com/elijahnikov/gradual/pull/81) [`92f2af4`](https://github.com/elijahnikov/gradual/commit/92f2af44ca174120a5e52aa8dbcdfad155607238) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adjust etag
+
+- Updated dependencies [[`92f2af4`](https://github.com/elijahnikov/gradual/commit/92f2af44ca174120a5e52aa8dbcdfad155607238)]:
+  - @gradual-so/sdk@0.8.7
+
 ## 0.8.6
 
 ### Patch Changes
