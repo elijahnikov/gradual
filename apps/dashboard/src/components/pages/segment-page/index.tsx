@@ -413,10 +413,10 @@ function AddSegmentEntryButton({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button className="size-6 bg-ui-bg-base" variant="outline">
-          <RiAddFill className="size-4 shrink-0" />
-        </Button>
+      <DropdownMenuTrigger
+        render={<Button className="size-6 bg-ui-bg-base" variant="outline" />}
+      >
+        <RiAddFill className="size-4 shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center">
         {SEGMENT_ENTRY_OPTIONS.map((option) => (
@@ -477,7 +477,9 @@ function SegmentTargetingChain({
       type: "include" as const,
       index: i,
     })),
-    ...conditions.map((_, i) => ({ type: "condition" as const, index: i })),
+    ...(conditions.length > 0
+      ? [{ type: "condition" as const, index: 0 }]
+      : []),
   ];
 
   const handleAdd = (type: SegmentEntryType) => {
@@ -512,10 +514,6 @@ function SegmentTargetingChain({
     onIncludedChange(includedIndividuals.filter((_, i) => i !== index));
   };
 
-  const handleDeleteCondition = (index: number) => {
-    onConditionsChange(conditions.filter((_, i) => i !== index));
-  };
-
   const handleUpdateExcluded = (
     index: number,
     updated: Partial<IndividualEntry>
@@ -546,7 +544,6 @@ function SegmentTargetingChain({
       {chainItems.map((item, chainIndex) => {
         const excludeEntry = excludedIndividuals[item.index];
         const includeEntry = includedIndividuals[item.index];
-        const conditionEntry = conditions[item.index];
 
         return (
           <div
@@ -580,14 +577,12 @@ function SegmentTargetingChain({
                   projectSlug={projectSlug}
                 />
               )}
-              {item.type === "condition" && conditionEntry && (
+              {item.type === "condition" && (
                 <ConditionEntryCard
-                  condition={conditionEntry}
-                  conditionIndex={item.index}
                   conditions={conditions}
                   isLoading={isLoading}
                   onChange={onConditionsChange}
-                  onDelete={() => handleDeleteCondition(item.index)}
+                  onDelete={() => onConditionsChange([])}
                   organizationSlug={organizationSlug}
                   projectSlug={projectSlug}
                 />
@@ -712,8 +707,6 @@ function IndividualEntryCard({
 
 function ConditionEntryCard({
   conditions,
-  conditionIndex,
-  condition,
   isLoading,
   onChange,
   onDelete,
@@ -721,25 +714,18 @@ function ConditionEntryCard({
   projectSlug,
 }: {
   conditions: RuleCondition[];
-  conditionIndex: number;
-  condition: RuleCondition;
   isLoading: boolean;
   onChange: (conditions: RuleCondition[]) => void;
   onDelete: () => void;
   organizationSlug: string;
   projectSlug: string;
 }) {
-  const singleCondition = [condition];
-
-  const handleSingleChange = (updated: RuleCondition[]) => {
-    const first = updated[0];
-    if (updated.length === 0 || !first) {
+  const handleChange = (updated: RuleCondition[]) => {
+    if (updated.length === 0) {
       onDelete();
       return;
     }
-    const newConditions = [...conditions];
-    newConditions[conditionIndex] = first;
-    onChange(newConditions);
+    onChange(updated);
   };
 
   return (
@@ -748,7 +734,7 @@ function ConditionEntryCard({
         className="absolute bottom-full left-0.5 mb-0.5 font-mono text-ui-fg-subtle"
         size="xsmall"
       >
-        Condition rule
+        Condition rules
       </Text>
       <Card className="flex w-full flex-col p-0">
         <div className="flex flex-col gap-2.5 p-2.5 sm:p-3">
@@ -761,8 +747,8 @@ function ConditionEntryCard({
             </div>
           ) : (
             <RuleConditionBuilder
-              conditions={singleCondition}
-              onChange={handleSingleChange}
+              conditions={conditions}
+              onChange={handleChange}
               organizationSlug={organizationSlug}
               projectSlug={projectSlug}
             />
