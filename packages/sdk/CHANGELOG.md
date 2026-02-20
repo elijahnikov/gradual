@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.8
+
+### Patch Changes
+
+- [#83](https://github.com/elijahnikov/gradual/pull/83) [`6f48888`](https://github.com/elijahnikov/gradual/commit/6f4888813cac04357962b9320a0220895f23ebce) Thanks [@elijahnikov](https://github.com/elijahnikov)! - adding durable object websocket functionality
+
 ## 0.8.7
 
 ### Patch Changes
