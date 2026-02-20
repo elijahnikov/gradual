@@ -25,9 +25,10 @@ import {
   RiLink,
   RiMoreFill,
   RiRulerLine,
-  RiSubtractLine,
   RiTimeFill,
-  RiUserLine,
+  RiUserAddLine,
+  type RiUserLine,
+  RiUserMinusLine,
 } from "@remixicon/react";
 import {
   useMutation,
@@ -35,7 +36,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import {
   Suspense,
@@ -45,6 +46,7 @@ import {
   useRef,
   useState,
 } from "react";
+import DeleteSegmentDialog from "@/components/common/dialogs/delete-segment-dialog";
 import EditableDescription from "@/components/common/editable-description";
 import EditableTitle from "@/components/common/editable-title";
 import { AttributeSelect } from "@/components/pages/flag-page/main-flag-view/tab-content/targeting/attribute-select";
@@ -401,8 +403,8 @@ const SEGMENT_ENTRY_OPTIONS: {
   label: string;
   icon: typeof RiUserLine;
 }[] = [
-  { type: "exclude", label: "Exclude Individual", icon: RiSubtractLine },
-  { type: "include", label: "Include Individual", icon: RiUserLine },
+  { type: "exclude", label: "Exclude Individual", icon: RiUserMinusLine },
+  { type: "include", label: "Include Individual", icon: RiUserAddLine },
   { type: "condition", label: "Condition Rule", icon: RiRulerLine },
 ];
 
@@ -414,7 +416,7 @@ function AddSegmentEntryButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button className="size-6 bg-ui-bg-base" variant="outline" />}
+        render={<Button className="size-6 bg-ui-bg-base" variant="default" />}
       >
         <RiAddFill className="size-4 shrink-0" />
       </DropdownMenuTrigger>
@@ -436,7 +438,7 @@ function AddSegmentEntryButton({
 function SegmentChainConnector() {
   return (
     <Separator
-      className="h-8 border-[0.5px] border-ui-fg-muted/75"
+      className="h-6 border-[0.5px] border-ui-fg-muted/75"
       orientation="vertical"
     />
   );
@@ -696,7 +698,7 @@ function IndividualEntryCard({
           className="size-6"
           onClick={onDelete}
           size="small"
-          variant="outline"
+          variant="default"
         >
           <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
         </Button>
@@ -731,7 +733,7 @@ function ConditionEntryCard({
   return (
     <div className="group/entry relative flex w-full max-w-2xl flex-col">
       <Text
-        className="absolute bottom-full left-0.5 mb-0.5 font-mono text-ui-fg-subtle"
+        className="absolute bottom-full left-0.5 mb-0.5 font-mono text-ui-fg-subtle uppercase"
         size="xsmall"
       >
         Condition rules
@@ -760,7 +762,7 @@ function ConditionEntryCard({
           className="size-6"
           onClick={onDelete}
           size="small"
-          variant="outline"
+          variant="default"
         >
           <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
         </Button>
@@ -789,6 +791,8 @@ function SegmentSidebar({
   const [savingField, setSavingField] = useState<"name" | "description" | null>(
     null
   );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -876,7 +880,6 @@ function SegmentSidebar({
 
   return (
     <div className="flex h-full w-64 min-w-64 flex-col border-l bg-ui-bg-subtle">
-      {/* Title & Description */}
       <div className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <EditableTitle
@@ -900,12 +903,26 @@ function SegmentSidebar({
                 Copy link
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-ui-fg-error [&_svg]:text-ui-fg-error">
+              <DropdownMenuItem
+                className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
                 <RiDeleteBinLine />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DeleteSegmentDialog
+            onDeleted={() => {
+              navigate({
+                to: "/$organizationSlug/$projectSlug/segments",
+                params: { organizationSlug, projectSlug },
+              });
+            }}
+            onOpenChange={setDeleteDialogOpen}
+            open={deleteDialogOpen}
+            segment={segment}
+          />
         </div>
         <EditableDescription
           description={displayDescription}

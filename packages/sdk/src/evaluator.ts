@@ -269,7 +269,10 @@ function evaluateSegment(
     return true;
   }
 
-  // Priority 3: Evaluate conditions
+  // Priority 3: Evaluate conditions (empty conditions = no match)
+  if (segment.conditions.length === 0) {
+    return false;
+  }
   return evaluateConditions(segment.conditions, context, inputsUsed);
 }
 

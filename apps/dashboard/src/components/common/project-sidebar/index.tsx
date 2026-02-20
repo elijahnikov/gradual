@@ -187,7 +187,9 @@ function useNavigationHotkeys() {
     [navigate]
   );
 
-  useHotkeySequence(["G", "H"], () => goTo(`${projectPath}/`));
+  useHotkeySequence(["G", "H"], () => goTo(`${projectPath}/`), {
+    ignoreInputs: false,
+  });
   useHotkeySequence(["G", "F"], () => goTo(`${projectPath}/flags`));
   useHotkeySequence(["G", "A"], () => goTo(`${projectPath}/segments`));
   useHotkeySequence(["G", "E"], () => goTo(`${projectPath}/environments`));

@@ -34,7 +34,7 @@ export default function AddNewTargetButton({
 }: AddNewTargetButtonProps) {
   if (disabled) {
     return (
-      <Button className="size-6 bg-ui-bg-base" disabled variant="outline">
+      <Button className="size-6 bg-ui-bg-base" disabled variant="default">
         <RiAddFill className="size-4 shrink-0" />
       </Button>
     );
@@ -43,7 +43,7 @@ export default function AddNewTargetButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button className="size-6 bg-ui-bg-base" variant="outline">
+        <Button className="size-6 bg-ui-bg-base" variant="default">
           <RiAddFill className="size-4 shrink-0" />
         </Button>
       </DropdownMenuTrigger>

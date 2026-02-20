@@ -4,6 +4,7 @@ import { Checkbox } from "@gradual/ui/checkbox";
 import { Text } from "@gradual/ui/text";
 import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
+import SegmentContextMenu from "@/components/common/context-menus/segment-context-menu";
 import { useSelectedSegmentsStore } from "@/lib/stores/selected-segments-store";
 import SegmentListItemStats from "./stats";
 
@@ -50,56 +51,58 @@ export default function SegmentListItem({
   );
 
   return (
-    <div
-      className="group/segment flex h-16 items-center border-0 px-4 data-[selected=true]:bg-ui-button-recall/10"
-      data-selected={isSelected}
-    >
-      {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
-      {/** biome-ignore lint/a11y/useKeyWithClickEvents: <> */}
-      {/** biome-ignore lint/a11y/noStaticElementInteractions: <> */}
+    <SegmentContextMenu segment={segment}>
       <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
+        className="group/segment flex h-16 items-center border-0 px-4 data-[selected=true]:bg-ui-button-recall/10"
+        data-selected={isSelected}
       >
-        <Checkbox
-          checked={isSelected}
-          className={cn(
-            "mt-[3.5px] mr-3 opacity-0 transition-opacity duration-200 ease-in-out group-hover/segment:opacity-100",
-            isSelected && "opacity-100"
-          )}
-          data-checked={isSelected}
-          onCheckedChange={() => handleSelectSegment(segment.id)}
-        />
-      </div>
-      <div className="flex flex-col gap-y-0.5">
-        <Link
-          params={{
-            organizationSlug,
-            projectSlug,
-            segmentSlug: segment.key,
+        {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
+        {/** biome-ignore lint/a11y/useKeyWithClickEvents: <> */}
+        {/** biome-ignore lint/a11y/noStaticElementInteractions: <> */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
           }}
-          preload="intent"
-          search={{}}
-          to="/$organizationSlug/$projectSlug/segments/$segmentSlug"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
         >
-          <Text
-            className="cursor-pointer text-[14px] hover:underline"
-            weight="plus"
+          <Checkbox
+            checked={isSelected}
+            className={cn(
+              "mt-[3.5px] mr-3 opacity-0 transition-opacity duration-200 ease-in-out group-hover/segment:opacity-100",
+              isSelected && "opacity-100"
+            )}
+            data-checked={isSelected}
+            onCheckedChange={() => handleSelectSegment(segment.id)}
+          />
+        </div>
+        <div className="flex flex-col gap-y-0.5">
+          <Link
+            params={{
+              organizationSlug,
+              projectSlug,
+              segmentSlug: segment.key,
+            }}
+            preload="intent"
+            search={{}}
+            to="/$organizationSlug/$projectSlug/segments/$segmentSlug"
           >
-            {segment.name}
-          </Text>
-        </Link>
-        <SegmentListItemStats
-          conditionCount={segment.conditions?.length ?? 0}
-          createdAt={segment.createdAt}
-          flagCount={segment.flagCount}
-          segmentKey={segment.key}
-        />
+            <Text
+              className="cursor-pointer text-[14px] hover:underline"
+              weight="plus"
+            >
+              {segment.name}
+            </Text>
+          </Link>
+          <SegmentListItemStats
+            conditionCount={segment.conditions?.length ?? 0}
+            createdAt={segment.createdAt}
+            flagCount={segment.flagCount}
+            segmentKey={segment.key}
+          />
+        </div>
       </div>
-    </div>
+    </SegmentContextMenu>
   );
 }

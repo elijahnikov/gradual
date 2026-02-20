@@ -99,7 +99,6 @@ export default function TargetingCard({
           )}
           {isRollout && rollout && (
             <RolloutEditor
-              label=""
               onRolloutChange={onRolloutChange}
               rollout={rollout}
               variations={variations}
@@ -114,7 +113,7 @@ export default function TargetingCard({
           disabled={isFirst}
           onClick={onMoveUp}
           size="small"
-          variant="outline"
+          variant="default"
         >
           <RiArrowUpLine className="size-3.5 shrink-0" />
         </Button>
@@ -123,7 +122,7 @@ export default function TargetingCard({
           disabled={isLast}
           onClick={onMoveDown}
           size="small"
-          variant="outline"
+          variant="default"
         >
           <RiArrowDownLine className="size-3.5 shrink-0" />
         </Button>
@@ -131,7 +130,7 @@ export default function TargetingCard({
           className="size-6"
           onClick={onDelete}
           size="small"
-          variant="outline"
+          variant="default"
         >
           <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
         </Button>
