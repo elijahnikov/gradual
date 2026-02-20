@@ -299,7 +299,7 @@ function FlagTargetingContent({
         </div>
 
         <div className="flex h-full w-full flex-1 flex-col border-t bg-ui-bg-base">
-          <div className="relative flex h-full min-h-[calc(100vh-15rem)] w-full flex-col items-center justify-start overflow-hidden bg-white dark:bg-ui-bg-base">
+          <div className="relative flex h-full min-h-[calc(100vh-15rem)] w-full flex-col items-center justify-start overflow-hidden bg-ui-bg-base">
             <div className="relative z-20 flex h-full w-full flex-col items-center px-2 sm:px-0">
               <TargetingList
                 collapsed={!enabled}

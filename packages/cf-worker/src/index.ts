@@ -138,6 +138,23 @@ async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
     return Response.json({ error: "Snapshot not found" }, { status: 404 });
   }
 
+  // Extract version for ETag
+  try {
+    const parsed = JSON.parse(snapshot) as { version?: number };
+    if (parsed.version) {
+      const etag = `"${parsed.version}"`;
+      const ifNoneMatch = request.headers.get("If-None-Match");
+      if (ifNoneMatch === etag) {
+        return new Response(null, { status: 304, headers: { ETag: etag } });
+      }
+      return new Response(snapshot, {
+        headers: { "Content-Type": "application/json", ETag: etag },
+      });
+    }
+  } catch {
+    // Fall through to return raw snapshot
+  }
+
   return new Response(snapshot, {
     headers: { "Content-Type": "application/json" },
   });

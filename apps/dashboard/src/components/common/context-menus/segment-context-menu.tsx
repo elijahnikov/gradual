@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@gradual/api";
 import { ContextMenu } from "@gradual/ui/context-menu";
 import { toastManager } from "@gradual/ui/toast";
 import {
@@ -10,28 +9,28 @@ import {
 import { Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import DeleteFlagDialog from "../dialogs/delete-flag-dialog";
+import DeleteSegmentDialog from "../dialogs/delete-segment-dialog";
 
-export default function FlagContextMenu({
+export default function SegmentContextMenu({
   children,
-  flag,
+  segment,
 }: {
   children: React.ReactNode;
-  flag: RouterOutputs["featureFlags"]["getAll"]["items"][number]["featureFlag"];
+  segment: { id: string; name: string; key: string };
 }) {
   const { organizationSlug, projectSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/flags/",
+    from: "/_organization/$organizationSlug/_project/$projectSlug/segments/",
   });
-  const { canDeleteFlags } = usePermissions();
+  const { canDeleteSegments } = usePermissions();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText(flag.key);
-    toastManager.add({ title: "Flag key copied", type: "success" });
+    navigator.clipboard.writeText(segment.key);
+    toastManager.add({ title: "Segment key copied", type: "success" });
   };
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/${organizationSlug}/${projectSlug}/flags/${flag.key}`;
+    const url = `${window.location.origin}/${organizationSlug}/${projectSlug}/segments/${segment.key}`;
     navigator.clipboard.writeText(url);
     toastManager.add({ title: "Link copied", type: "success" });
   };
@@ -49,10 +48,14 @@ export default function FlagContextMenu({
           <ContextMenu.Item
             render={
               <Link
-                params={{ organizationSlug, projectSlug, flagSlug: flag.key }}
+                params={{
+                  organizationSlug,
+                  projectSlug,
+                  segmentSlug: segment.key,
+                }}
                 preload="intent"
                 search={{}}
-                to="/$organizationSlug/$projectSlug/flags/$flagSlug"
+                to="/$organizationSlug/$projectSlug/segments/$segmentSlug"
               />
             }
           >
@@ -70,7 +73,7 @@ export default function FlagContextMenu({
           <ContextMenu.Separator />
           <ContextMenu.Item
             className="text-ui-fg-error [&_svg]:text-ui-fg-error"
-            disabled={!canDeleteFlags}
+            disabled={!canDeleteSegments}
             onClick={(e) => {
               e.preventDefault();
               setDeleteDialogOpen(true);
@@ -81,10 +84,10 @@ export default function FlagContextMenu({
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>
-      <DeleteFlagDialog
-        flag={flag}
+      <DeleteSegmentDialog
         onOpenChange={setDeleteDialogOpen}
         open={deleteDialogOpen}
+        segment={segment}
       />
     </>
   );

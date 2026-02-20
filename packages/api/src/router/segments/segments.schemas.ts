@@ -75,6 +75,20 @@ const individualEntrySchema = z.object({
   attributeValue: z.string(),
 });
 
+export type DeleteSegmentInput = z.infer<typeof deleteSegmentSchema>;
+export const deleteSegmentSchema = z.object({
+  segmentId: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+
+export type ListFlagsBySegmentInput = z.infer<typeof listFlagsBySegmentSchema>;
+export const listFlagsBySegmentSchema = z.object({
+  segmentId: z.string(),
+  projectSlug: z.string(),
+  organizationSlug: z.string(),
+});
+
 export type CreateSegmentInput = z.infer<typeof createSegmentSchema>;
 export const createSegmentSchema = createInsertSchema(segment)
   .omit({

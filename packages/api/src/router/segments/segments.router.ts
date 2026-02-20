@@ -20,4 +20,12 @@ export const segmentsRouter = {
   update: protectedOrganizationProcedure({ flags: ["update"] })
     .input(schemas.updateSegmentSchema)
     .mutation((opts) => services.updateSegment({ ...opts })),
+
+  listFlagsBySegment: protectedOrganizationProcedure({ flags: ["read"] })
+    .input(schemas.listFlagsBySegmentSchema)
+    .query((opts) => services.listFlagsBySegment({ ...opts })),
+
+  delete: protectedOrganizationProcedure({ flags: ["delete"] })
+    .input(schemas.deleteSegmentSchema)
+    .mutation((opts) => services.deleteSegment({ ...opts })),
 } satisfies TRPCRouterRecord;

@@ -1,6 +1,13 @@
 import { cn } from "@gradual/ui";
 import { Separator } from "@gradual/ui/separator";
-import { type ReactNode, useEffect, useState } from "react";
+import { LayoutGroup, motion } from "motion/react";
+import {
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import AddNewTargetButton from "./add-new-target-button";
 import type { TargetType } from "./types";
 
@@ -44,24 +51,39 @@ export function TargetingList({
           />
           <TargetConnector />
 
-          {children.map((child, index) => (
-            <div className="flex w-full flex-col items-center" key={index}>
-              <div
-                className={cn(
-                  "flex w-full justify-center",
-                  disabled && "pointer-events-none"
-                )}
-              >
-                {child}
-              </div>
-              <TargetConnector />
-              <AddNewTargetButton
-                disabled={disabled}
-                onAddTarget={(type) => onAddTarget(type, index + 1)}
-              />
-              <TargetConnector />
-            </div>
-          ))}
+          <LayoutGroup>
+            {children.map((child, index) => {
+              const key = isValidElement(child)
+                ? (child as ReactElement).key
+                : index;
+
+              return (
+                <motion.div
+                  className="flex w-full flex-col items-center"
+                  key={key ?? index}
+                  layout
+                  transition={{
+                    layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+                  }}
+                >
+                  <div
+                    className={cn(
+                      "flex w-full justify-center",
+                      disabled && "pointer-events-none"
+                    )}
+                  >
+                    {child}
+                  </div>
+                  <TargetConnector />
+                  <AddNewTargetButton
+                    disabled={disabled}
+                    onAddTarget={(type) => onAddTarget(type, index + 1)}
+                  />
+                  <TargetConnector />
+                </motion.div>
+              );
+            })}
+          </LayoutGroup>
         </div>
       </div>
 

@@ -11,8 +11,11 @@ import {
   isNull,
   lt,
   or,
+  sql,
 } from "@gradual/db";
 import {
+  environment,
+  featureFlag,
   featureFlagEnvironment,
   featureFlagSegmentTarget,
   featureFlagTarget,
@@ -22,7 +25,9 @@ import { TRPCError } from "@trpc/server";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateSegmentInput,
+  DeleteSegmentInput,
   GetSegmentByKeyInput,
+  ListFlagsBySegmentInput,
   ListSegmentsInput,
   UpdateSegmentInput,
 } from "./segments.schemas";
@@ -349,4 +354,171 @@ export const updateSegment = async ({
     .returning();
 
   return updated;
+};
+
+function getFlagsUsingSegment(
+  db: ProtectedOrganizationTRPCContext["db"],
+  segmentId: string
+) {
+  return db
+    .selectDistinctOn([featureFlag.id], {
+      id: featureFlag.id,
+      name: featureFlag.name,
+      key: featureFlag.key,
+    })
+    .from(featureFlagSegmentTarget)
+    .innerJoin(
+      featureFlagTarget,
+      eq(featureFlagSegmentTarget.targetId, featureFlagTarget.id)
+    )
+    .innerJoin(
+      featureFlagEnvironment,
+      eq(featureFlagTarget.featureFlagEnvironmentId, featureFlagEnvironment.id)
+    )
+    .innerJoin(
+      featureFlag,
+      eq(featureFlagEnvironment.featureFlagId, featureFlag.id)
+    )
+    .where(eq(featureFlagSegmentTarget.segmentId, segmentId));
+}
+
+export const listFlagsBySegment = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: ListFlagsBySegmentInput;
+}) => {
+  const { segmentId, projectSlug } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: (
+      { slug, organizationId, deletedAt },
+      { eq: e, isNull: n, and: a }
+    ) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        n(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const rows = await ctx.db
+    .select({
+      flagId: featureFlag.id,
+      flagName: featureFlag.name,
+      flagKey: featureFlag.key,
+      environmentName: environment.name,
+      environmentSlug: environment.slug,
+      environmentColor: environment.color,
+    })
+    .from(featureFlagSegmentTarget)
+    .innerJoin(
+      featureFlagTarget,
+      eq(featureFlagSegmentTarget.targetId, featureFlagTarget.id)
+    )
+    .innerJoin(
+      featureFlagEnvironment,
+      eq(featureFlagTarget.featureFlagEnvironmentId, featureFlagEnvironment.id)
+    )
+    .innerJoin(
+      featureFlag,
+      eq(featureFlagEnvironment.featureFlagId, featureFlag.id)
+    )
+    .innerJoin(
+      environment,
+      eq(featureFlagEnvironment.environmentId, environment.id)
+    )
+    .where(eq(featureFlagSegmentTarget.segmentId, segmentId));
+
+  const flagMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      key: string;
+      environments: { name: string; slug: string; color: string | null }[];
+    }
+  >();
+
+  for (const row of rows) {
+    let flag = flagMap.get(row.flagId);
+    if (!flag) {
+      flag = {
+        id: row.flagId,
+        name: row.flagName,
+        key: row.flagKey,
+        environments: [],
+      };
+      flagMap.set(row.flagId, flag);
+    }
+    flag.environments.push({
+      name: row.environmentName,
+      slug: row.environmentSlug,
+      color: row.environmentColor,
+    });
+  }
+
+  return [...flagMap.values()];
+};
+
+export const deleteSegment = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: DeleteSegmentInput;
+}) => {
+  const { segmentId, projectSlug } = input;
+
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: (
+      { slug, organizationId, deletedAt },
+      { eq: e, isNull: n, and: a }
+    ) =>
+      a(
+        e(slug, projectSlug),
+        e(organizationId, ctx.organization.id),
+        n(deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const existing = await ctx.db.query.segment.findFirst({
+    where: (table, { eq: e, and: a, isNull: n }) =>
+      a(
+        e(table.id, segmentId),
+        e(table.projectId, foundProject.id),
+        e(table.organizationId, ctx.organization.id),
+        n(table.deletedAt)
+      ),
+  });
+
+  if (!existing) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Segment not found" });
+  }
+
+  const flagsUsingSegment = await getFlagsUsingSegment(ctx.db, existing.id);
+
+  if (flagsUsingSegment.length > 0) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Segment is in use by flags",
+    });
+  }
+
+  // Soft delete
+  await ctx.db
+    .update(segment)
+    .set({ deletedAt: sql`now()` })
+    .where(eq(segment.id, segmentId));
+
+  return { success: true };
 };

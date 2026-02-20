@@ -140,6 +140,7 @@ class GradualClient implements Gradual {
   private identifiedContext: EvaluationContext = {};
   private readonly updateListeners: Set<() => void> = new Set();
   private eventBuffer: EventBuffer | null = null;
+  private etag: string | null = null;
   private readonly eventsEnabled: boolean;
   private readonly eventsFlushIntervalMs: number;
   private readonly eventsMaxBatchSize: number;
@@ -221,6 +222,10 @@ class GradualClient implements Gradual {
       );
     }
 
+    const initialEtag = snapshotResponse.headers.get("ETag");
+    if (initialEtag) {
+      this.etag = initialEtag;
+    }
     this.snapshot = (await snapshotResponse.json()) as EnvironmentSnapshot;
 
     if (this.eventsEnabled && this.snapshot.meta) {
@@ -576,10 +581,21 @@ class GradualClient implements Gradual {
   }
 
   async refresh(): Promise<void> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.etag) {
+      headers["If-None-Match"] = this.etag;
+    }
+
     const response = await fetch(
       `${this.baseUrl}/sdk/snapshot?environment=${encodeURIComponent(this.environment)}`,
-      { headers: { Authorization: `Bearer ${this.apiKey}` } }
+      { headers }
     );
+
+    if (response.status === 304) {
+      return;
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -588,6 +604,10 @@ class GradualClient implements Gradual {
       );
     }
 
+    const etag = response.headers.get("ETag");
+    if (etag) {
+      this.etag = etag;
+    }
     this.snapshot = (await response.json()) as EnvironmentSnapshot;
   }
 
