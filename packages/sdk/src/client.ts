@@ -168,6 +168,7 @@ class GradualClient implements Gradual {
   private snapshot: EnvironmentSnapshot | null = null;
   private identifiedContext: EvaluationContext = {};
   private identityHash: string | null = null;
+  private identityHashSent = false;
   private mauLimitReached = false;
   private readonly updateListeners: Set<() => void> = new Set();
   private eventBuffer: EventBuffer | null = null;
@@ -634,13 +635,21 @@ class GradualClient implements Gradual {
       traceId: params.traceId,
       contextKinds,
       contextKeys,
-      contextIdentityHash: this.identityHash ?? undefined,
+      contextIdentityHash: this.getAndMarkIdentityHash(),
       timestamp: Date.now(),
       matchedTargetName: params.matchedTargetName,
       errorDetail: params.errorDetail,
       evaluationDurationUs: params.evaluationDurationUs,
       isAnonymous,
     });
+  }
+
+  private getAndMarkIdentityHash(): string | undefined {
+    if (this.identityHash && !this.identityHashSent) {
+      this.identityHashSent = true;
+      return this.identityHash;
+    }
+    return undefined;
   }
 
   async ready(): Promise<void> {
@@ -794,11 +803,13 @@ class GradualClient implements Gradual {
   identify(context: EvaluationContext): void {
     this.identifiedContext = { ...context };
     this.identityHash = hashContext(context);
+    this.identityHashSent = false;
   }
 
   reset(): void {
     this.identifiedContext = {};
     this.identityHash = null;
+    this.identityHashSent = false;
   }
 
   async refresh(): Promise<void> {
