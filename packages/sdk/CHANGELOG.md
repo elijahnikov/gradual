@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.10
+
+### Patch Changes
+
+- [#87](https://github.com/elijahnikov/gradual/pull/87) [`ea4eda1`](https://github.com/elijahnikov/gradual/commit/ea4eda152e05cf59e497f27410ae9a7547a71225) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Only identify context on init
+
 ## 0.8.9
 
 ### Patch Changes
