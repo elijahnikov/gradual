@@ -77,6 +77,7 @@ export function PlanSelectionStep({
     ...trpc.auth.listSubscriptionsByOrganizationId.queryOptions({
       organizationId: createdOrganizationId ?? "",
     }),
+    enabled: !!createdOrganizationId,
   });
 
   // biome-ignore lint/suspicious/noExplicitAny: <>
