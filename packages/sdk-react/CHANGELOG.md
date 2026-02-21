@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.9
+
+### Patch Changes
+
+- [#85](https://github.com/elijahnikov/gradual/pull/85) [`fceb72a`](https://github.com/elijahnikov/gradual/commit/fceb72aa3f039a98713d2d34c3a09a1f9633f785) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Adding metered billing
+
+- Updated dependencies [[`fceb72a`](https://github.com/elijahnikov/gradual/commit/fceb72aa3f039a98713d2d34c3a09a1f9633f785)]:
+  - @gradual-so/sdk@0.8.9
+
 ## 0.8.8
 
 ### Patch Changes
