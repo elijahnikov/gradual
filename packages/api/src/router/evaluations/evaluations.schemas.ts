@@ -28,6 +28,7 @@ const evaluationEventSchema = z.object({
   reasons: z.array(reasonSchema),
   contextKinds: z.array(z.string()),
   contextKeys: z.record(z.string(), z.array(z.string())),
+  contextIdentityHash: z.string().optional(),
   timestamp: z.number(),
   evaluatedAt: z.string().optional(),
   matchedTargetName: z.string().optional(),

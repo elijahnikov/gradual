@@ -14,6 +14,7 @@ interface EvaluationEvent {
   reasons: unknown[];
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
+  contextIdentityHash?: string;
   timestamp: number;
   evaluatedAt?: string;
   matchedTargetName?: string;
@@ -97,7 +98,18 @@ async function sdkInit(request: Request, env: Env): Promise<Response> {
       );
     }
 
-    return Response.json({ valid: true, ...metadata }, { status: 200 });
+    const mauStatusRaw = await env.GRADUAL_API_KEY.get(
+      `mau-status:${metadata.orgId}`
+    );
+    const mauLimitReached = mauStatusRaw
+      ? (JSON.parse(mauStatusRaw) as { mauLimitReached?: boolean })
+          .mauLimitReached === true
+      : false;
+
+    return Response.json(
+      { valid: true, ...metadata, mauLimitReached },
+      { status: 200 }
+    );
   } catch (err) {
     console.error("sdkInit error:", err);
     return Response.json(
@@ -141,7 +153,6 @@ async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
     return Response.json({ error: "Snapshot not found" }, { status: 404 });
   }
 
-  // Extract version for ETag
   try {
     const parsed = JSON.parse(snapshot) as { version?: number };
     if (parsed.version) {
@@ -196,7 +207,6 @@ async function sdkConnect(request: Request, env: Env): Promise<Response> {
   const id = env.SNAPSHOT_ROOM.idFromName(roomName);
   const stub = env.SNAPSHOT_ROOM.get(id);
 
-  // Forward the WebSocket upgrade to the Durable Object
   const doUrl = new URL(request.url);
   doUrl.searchParams.set("snapshotKey", snapshotKey);
   return stub.fetch(new Request(doUrl.toString(), request));
@@ -311,8 +321,6 @@ async function adminPublishSnapshot(
     const snapshotJson = JSON.stringify(body.snapshot);
     await env.GRADUAL_SNAPSHOT.put(body.key, snapshotJson);
 
-    // Notify connected clients via Durable Object
-    // Key format: snapshot:{orgId}:{projectId}:{environmentSlug}
     const parts = body.key.split(":");
     if (parts.length === 4) {
       await notifySnapshotRoom(env, parts[1], parts[2], parts[3], snapshotJson);
@@ -499,6 +507,43 @@ async function adminRevokeApiKey(
     console.error("adminRevokeApiKey error:", err);
     return new Response(
       err instanceof Error ? err.message : "Error revoking API key",
+      { status: 500 }
+    );
+  }
+}
+
+async function adminUpdateMauStatus(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (!verifyAdminAuth(request, env)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as {
+      orgId?: string;
+      mauLimitReached?: boolean;
+    };
+
+    if (!body.orgId) {
+      return new Response("Missing required field: orgId", { status: 400 });
+    }
+
+    await env.GRADUAL_API_KEY.put(
+      `mau-status:${body.orgId}`,
+      JSON.stringify({ mauLimitReached: body.mauLimitReached ?? false })
+    );
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error("adminUpdateMauStatus error:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error updating MAU status",
       { status: 500 }
     );
   }
@@ -727,6 +772,8 @@ export default {
         return adminVerifyApiKey(request, env);
       case "/api/v1/revoke-api-key":
         return adminRevokeApiKey(request, env);
+      case "/api/v1/update-mau-status":
+        return adminUpdateMauStatus(request, env);
       default:
         return new Response("Not found", { status: 404 });
     }

@@ -39,6 +39,10 @@ export default function OnboardingPageComponent() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const { data: session } = useSuspenseQuery(
+    trpc.auth.getSession.queryOptions()
+  );
+
   const { data: onboardingStatus } = useSuspenseQuery({
     ...trpc.auth.getUserOnboardingStatus.queryOptions(),
     gcTime: 0,
@@ -52,6 +56,9 @@ export default function OnboardingPageComponent() {
     setCreatedProjectId,
     setOrganizationSlug,
     organizationSlug,
+    userId: storedUserId,
+    setUserId,
+    reset: resetOnboarding,
   } = useOnboardingStore();
 
   const resetPreview = useOnboardingPreviewStore((s) => s.reset);
@@ -187,6 +194,15 @@ export default function OnboardingPageComponent() {
       setOrganizationSlug,
     ]
   );
+
+  // Reset onboarding state when a different user logs in
+  useEffect(() => {
+    const currentUserId = session?.user?.id;
+    if (currentUserId && currentUserId !== storedUserId) {
+      resetOnboarding();
+      setUserId(currentUserId);
+    }
+  }, [session?.user?.id, storedUserId, resetOnboarding, setUserId]);
 
   useEffect(() => {
     if (onboardingStatus?.onboardingStep !== undefined) {

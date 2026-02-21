@@ -24,46 +24,46 @@ const PLANS = [
     name: "Free",
     description: "Perfect for getting started",
     features: [
-      "One project",
-      "Unlimited feature flags",
-      "Up to two environments",
-      "100k evaluations per month",
+      "1 project",
+      "2 environments",
+      "1 team member",
+      "Up to 1,000 monthly active users",
       "Basic analytics",
       "Community support",
     ],
     price: "$0",
-    productId: "fa8a8c64-d3ce-41f8-a28c-88073097e152",
+    productId: "89d57bae-1a06-45bf-9f6a-bf437862e775",
   },
   {
     slug: "Pro",
     name: "Pro",
     description: "For growing teams",
     features: [
-      "Everything in Free",
       "Unlimited projects",
       "Unlimited environments",
-      "1 million evaluations per month",
+      "10 team members",
+      "Up to 25,000 monthly active users",
       "Advanced analytics",
       "Priority support",
     ],
-    price: "$15",
-    productId: "4e1c7974-4814-4d97-a117-aa72aad58771",
+    price: "$29",
+    productId: "9dabe3e7-ef5c-48ba-a1fa-c0446ff99864",
   },
   {
     slug: "Enterprise",
     name: "Enterprise",
     description: "For large organizations",
     features: [
-      "Everything in Pro",
       "Unlimited projects",
       "Unlimited environments",
-      "20 million evaluations per month",
+      "Unlimited team members",
+      "Unlimited monthly active users",
       "Dedicated support",
       "Custom integrations",
       "Advanced security",
     ],
-    price: "$39",
-    productId: "d9376414-2b89-48a8-bdec-7a97ba70e1c4",
+    price: "$99",
+    productId: "702b22c1-f1f7-4aa8-828b-56e322f9a7c2",
   },
 ];
 
@@ -92,14 +92,20 @@ export function PlanSelectionStep({
 
   const handleSelectPlan = useCallback(
     async (productId: string, planName: string) => {
+      console.log("[checkout] clicked", {
+        productId,
+        planName,
+        createdOrganizationId,
+      });
       previewStore.getState().setSelectedPlan(planName);
       try {
-        await authClient.checkout({
+        const result = await authClient.checkout({
           products: [productId],
           referenceId: createdOrganizationId,
         });
+        console.log("[checkout] result", result);
       } catch (error) {
-        console.error("Error initiating checkout:", error);
+        console.error("[checkout] error", error);
       }
     },
     [createdOrganizationId, previewStore]

@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./middleware": "./src/middleware.ts",
     "./client": "./src/client.ts",
-    "./env": "./env.ts"
+    "./env": "./env.ts",
+    "./polar": "./src/polar.ts"
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",

@@ -107,15 +107,15 @@ export function initAuth<
           checkout({
             products: [
               {
-                productId: "d9376414-2b89-48a8-bdec-7a97ba70e1c4",
+                productId: "702b22c1-f1f7-4aa8-828b-56e322f9a7c2",
                 slug: "Enterprise",
               },
               {
-                productId: "4e1c7974-4814-4d97-a117-aa72aad58771",
+                productId: "9dabe3e7-ef5c-48ba-a1fa-c0446ff99864",
                 slug: "Pro",
               },
               {
-                productId: "fa8a8c64-d3ce-41f8-a28c-88073097e152",
+                productId: "89d57bae-1a06-45bf-9f6a-bf437862e775",
                 slug: "Free",
               },
             ],

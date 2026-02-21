@@ -5,10 +5,12 @@ export type OnboardingStep = 0 | 1 | 2 | 3;
 
 interface OnboardingState {
   currentStep: OnboardingStep;
+  userId: string | undefined;
   createdOrganizationId: string | undefined;
   createdProjectId: string | undefined;
   selectedPlanId: string | undefined;
   setCurrentStep: (step: OnboardingStep) => void;
+  setUserId: (id: string) => void;
   setCreatedOrganizationId: (id: string) => void;
   setCreatedProjectId: (id: string) => void;
   setSelectedPlanId: (id: string) => void;
@@ -19,6 +21,7 @@ interface OnboardingState {
 
 const initialState = {
   currentStep: 0 as OnboardingStep,
+  userId: undefined as string | undefined,
   createdOrganizationId: undefined as string | undefined,
   createdProjectId: undefined as string | undefined,
   selectedPlanId: undefined as string | undefined,
@@ -30,6 +33,7 @@ export const useOnboardingStore = create<OnboardingState>()(
     (set) => ({
       ...initialState,
       setCurrentStep: (step) => set({ currentStep: step }),
+      setUserId: (id) => set({ userId: id }),
       setCreatedOrganizationId: (id) => set({ createdOrganizationId: id }),
       setCreatedProjectId: (id) => set({ createdProjectId: id }),
       setSelectedPlanId: (id) => set({ selectedPlanId: id }),
