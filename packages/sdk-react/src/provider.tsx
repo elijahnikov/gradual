@@ -1,9 +1,10 @@
 import {
   createGradual,
+  type EvaluationContext,
   type PollingOptions,
   type RealtimeOptions,
 } from "@gradual-so/sdk";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { GradualContext } from "./context";
 
 export interface GradualProviderProps {
@@ -12,6 +13,8 @@ export interface GradualProviderProps {
   baseUrl?: string;
   polling?: PollingOptions;
   realtime?: RealtimeOptions;
+  /** Identify the current user for flag evaluation and MAU tracking. Pass null/undefined to reset. */
+  identity?: EvaluationContext | null;
   children: ReactNode;
 }
 
@@ -21,6 +24,7 @@ export function GradualProvider({
   baseUrl,
   polling,
   realtime,
+  identity,
   children,
 }: GradualProviderProps) {
   const [isReady, setIsReady] = useState(false);
@@ -51,6 +55,22 @@ export function GradualProvider({
       gradual.close();
     };
   }, [gradual]);
+
+  // Identify/reset when user prop changes
+  const prevIdentityRef = useRef<string | null>(null);
+  useEffect(() => {
+    const serialized = identity ? JSON.stringify(identity) : null;
+    if (serialized === prevIdentityRef.current) {
+      return;
+    }
+    prevIdentityRef.current = serialized;
+
+    if (identity) {
+      gradual.identify(identity);
+    } else {
+      gradual.reset();
+    }
+  }, [identity, gradual]);
 
   const value = useMemo(
     () => ({ gradual, isReady, version }),

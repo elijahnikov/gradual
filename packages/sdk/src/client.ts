@@ -15,6 +15,33 @@ const DEFAULT_BASE_URL = "https://worker.gradual.so/api/v1";
 const HTTPS_RE = /^https:\/\//;
 const HTTP_RE = /^http:\/\//;
 
+/**
+ * Deterministic hash of context passed to identify().
+ * Hashes all fields the user explicitly provides for MAU counting.
+ */
+function hashContext(context: EvaluationContext): string {
+  const parts: string[] = [];
+  const kinds = Object.keys(context).sort();
+  for (const kind of kinds) {
+    const attrs = context[kind] ?? {};
+    const keys = Object.keys(attrs).sort();
+    for (const key of keys) {
+      parts.push(`${kind}.${key}:${String(attrs[key])}`);
+    }
+  }
+  const str = parts.join("|");
+  let h1 = 5381;
+  let h2 = 52_711;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1, 33) + c;
+    h2 = Math.imul(h2, 31) + c;
+  }
+  const a = Math.abs(h1);
+  const b = Math.abs(h2);
+  return `${a.toString(36)}${b.toString(36)}`;
+}
+
 type SdkPlatform = "browser" | "node" | "react-native" | "edge" | "unknown";
 
 function detectPlatform(): SdkPlatform {
@@ -140,6 +167,8 @@ class GradualClient implements Gradual {
   private readonly initPromise: Promise<void>;
   private snapshot: EnvironmentSnapshot | null = null;
   private identifiedContext: EvaluationContext = {};
+  private identityHash: string | null = null;
+  private mauLimitReached = false;
   private readonly updateListeners: Set<() => void> = new Set();
   private eventBuffer: EventBuffer | null = null;
   private etag: string | null = null;
@@ -196,12 +225,17 @@ class GradualClient implements Gradual {
     const initData = (await initResponse.json()) as {
       valid: boolean;
       error?: string;
+      mauLimitReached?: boolean;
     };
 
     if (!initData.valid) {
       throw new Error(
         `Gradual: Invalid API key - ${initData.error ?? "Unknown error"}`
       );
+    }
+
+    if (initData.mauLimitReached) {
+      this.mauLimitReached = true;
     }
 
     if (this.realtimeEnabled) {
@@ -452,6 +486,25 @@ class GradualClient implements Gradual {
       return { output: null, snapshot, durationUs: 0 };
     }
 
+    // If MAU limit reached and user not identified, return off variation
+    if (this.mauLimitReached && !this.identityHash) {
+      const offVariation = flag.variations[flag.offVariationKey];
+      return {
+        output: {
+          value: offVariation?.value,
+          variationKey: flag.offVariationKey,
+          reasons: [
+            {
+              type: "error",
+              detail: "MAU_LIMIT_REACHED",
+            },
+          ],
+        },
+        snapshot,
+        durationUs: 0,
+      };
+    }
+
     const startTime = nowNs();
     let output: EvalOutput;
     try {
@@ -581,6 +634,7 @@ class GradualClient implements Gradual {
       traceId: params.traceId,
       contextKinds,
       contextKeys,
+      contextIdentityHash: this.identityHash ?? undefined,
       timestamp: Date.now(),
       matchedTargetName: params.matchedTargetName,
       errorDetail: params.errorDetail,
@@ -739,10 +793,12 @@ class GradualClient implements Gradual {
 
   identify(context: EvaluationContext): void {
     this.identifiedContext = { ...context };
+    this.identityHash = hashContext(context);
   }
 
   reset(): void {
     this.identifiedContext = {};
+    this.identityHash = null;
   }
 
   async refresh(): Promise<void> {

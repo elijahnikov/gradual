@@ -184,6 +184,7 @@ export interface EvalOutput {
 export interface EvaluationEvent<T = unknown> extends EvaluationResult<T> {
   contextKinds: string[];
   contextKeys: Record<string, string[]>;
+  contextIdentityHash?: string;
   timestamp: number;
   isAnonymous: boolean;
   matchedTargetName?: string;
