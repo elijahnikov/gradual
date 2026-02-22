@@ -24,9 +24,9 @@ function hashContext(context: EvaluationContext): string {
   const kinds = Object.keys(context).sort();
   for (const kind of kinds) {
     const attrs = context[kind] ?? {};
-    const keys = Object.keys(attrs).sort();
-    for (const key of keys) {
-      parts.push(`${kind}.${key}:${String(attrs[key])}`);
+    const id = attrs.id ?? attrs.key;
+    if (id !== undefined) {
+      parts.push(`${kind}:${String(id)}`);
     }
   }
   const str = parts.join("|");

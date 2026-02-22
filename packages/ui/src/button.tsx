@@ -15,7 +15,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          "after:button-inverted-gradient bg-ui-button-inverted text-ui-contrast-fg-primary shadow-buttons-neutral",
+          "after:button-inverted-gradient bg-ui-button-inverted text-ui-fg-base shadow-buttons-neutral",
           "hover:bg-ui-button-inverted-hover",
           "active:bg-ui-button-inverted-pressed",
           "focus-visible:shadow-buttons-inverted-focus!"
