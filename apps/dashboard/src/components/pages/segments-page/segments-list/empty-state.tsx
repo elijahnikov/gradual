@@ -1,12 +1,18 @@
 import { Card } from "@gradual/ui/card";
 import { Heading } from "@gradual/ui/heading";
+import { Kbd } from "@gradual/ui/kbd";
 import { Text } from "@gradual/ui/text";
 import { RiFolder2Fill } from "@remixicon/react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useState } from "react";
 import CreateSegmentDialog from "@/components/common/dialogs/create-segment-dialog";
 
 export default function EmptySegmentsList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  useHotkey("Mod+C", () => {
+    setCreateDialogOpen(true);
+  });
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
@@ -25,6 +31,7 @@ export default function EmptySegmentsList() {
         open={createDialogOpen}
       >
         Create segment
+        <Kbd className="text-ui-fg-base">⌘C</Kbd>
       </CreateSegmentDialog>
     </div>
   );

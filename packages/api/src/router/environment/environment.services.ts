@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "@gradual/db";
+import { and, count, eq, isNull, sql } from "@gradual/db";
 import {
   environment,
   featureFlag,
@@ -113,7 +113,41 @@ export const listEnvironments = async ({
       ),
     orderBy: (env, { asc }) => asc(env.createdAt),
   });
-  return environments;
+
+  if (environments.length === 0) {
+    return [];
+  }
+
+  const envIds = environments.map((e) => e.id);
+  const flagCounts = await ctx.db
+    .select({
+      environmentId: featureFlagEnvironment.environmentId,
+      totalFlags: count().as("totalFlags"),
+      enabledFlags: count(
+        sql`CASE WHEN ${featureFlagEnvironment.enabled} = true THEN 1 END`
+      ).as("enabledFlags"),
+    })
+    .from(featureFlagEnvironment)
+    .where(
+      sql`${featureFlagEnvironment.environmentId} IN (${sql.join(
+        envIds.map((id) => sql`${id}`),
+        sql`, `
+      )})`
+    )
+    .groupBy(featureFlagEnvironment.environmentId);
+
+  const countsMap = new Map(
+    flagCounts.map((fc) => [
+      fc.environmentId,
+      { totalFlags: fc.totalFlags, enabledFlags: fc.enabledFlags },
+    ])
+  );
+
+  return environments.map((env) => ({
+    ...env,
+    totalFlags: countsMap.get(env.id)?.totalFlags ?? 0,
+    enabledFlags: countsMap.get(env.id)?.enabledFlags ?? 0,
+  }));
 };
 
 export const getEnvironment = async ({

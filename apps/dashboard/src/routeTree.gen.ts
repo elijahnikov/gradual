@@ -33,7 +33,6 @@ import { Route as OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImp
 import { Route as OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/analytics/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/segments/$segmentSlug/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/index'
-import { Route as OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/index'
 
 const DeviceRoute = DeviceRouteImport.update({
   id: '/device',
@@ -186,15 +185,6 @@ const OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute =
         OrganizationOrganizationSlugProjectProjectSlugRouteRoute,
     } as any,
   )
-const OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute =
-  OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRouteImport.update(
-    {
-      id: '/environments/$environmentSlug/',
-      path: '/environments/$environmentSlug/',
-      getParentRoute: () =>
-        OrganizationOrganizationSlugProjectProjectSlugRouteRoute,
-    } as any,
-  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -216,7 +206,6 @@ export interface FileRoutesByFullPath {
   '/$organizationSlug/$projectSlug/flags/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/segments/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
   '/$organizationSlug/$projectSlug/settings/': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
-  '/$organizationSlug/$projectSlug/environments/$environmentSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute
   '/$organizationSlug/$projectSlug/flags/$flagSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute
   '/$organizationSlug/$projectSlug/segments/$segmentSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute
 }
@@ -238,7 +227,6 @@ export interface FileRoutesByTo {
   '/$organizationSlug/$projectSlug/flags': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/segments': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
   '/$organizationSlug/$projectSlug/settings': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
-  '/$organizationSlug/$projectSlug/environments/$environmentSlug': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute
   '/$organizationSlug/$projectSlug/flags/$flagSlug': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute
   '/$organizationSlug/$projectSlug/segments/$segmentSlug': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute
 }
@@ -266,7 +254,6 @@ export interface FileRoutesById {
   '/_organization/$organizationSlug/_project/$projectSlug/flags/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/segments/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/settings/': typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
-  '/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/segments/$segmentSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute
 }
@@ -292,7 +279,6 @@ export interface FileRouteTypes {
     | '/$organizationSlug/$projectSlug/flags/'
     | '/$organizationSlug/$projectSlug/segments/'
     | '/$organizationSlug/$projectSlug/settings/'
-    | '/$organizationSlug/$projectSlug/environments/$environmentSlug/'
     | '/$organizationSlug/$projectSlug/flags/$flagSlug/'
     | '/$organizationSlug/$projectSlug/segments/$segmentSlug/'
   fileRoutesByTo: FileRoutesByTo
@@ -314,7 +300,6 @@ export interface FileRouteTypes {
     | '/$organizationSlug/$projectSlug/flags'
     | '/$organizationSlug/$projectSlug/segments'
     | '/$organizationSlug/$projectSlug/settings'
-    | '/$organizationSlug/$projectSlug/environments/$environmentSlug'
     | '/$organizationSlug/$projectSlug/flags/$flagSlug'
     | '/$organizationSlug/$projectSlug/segments/$segmentSlug'
   id:
@@ -341,7 +326,6 @@ export interface FileRouteTypes {
     | '/_organization/$organizationSlug/_project/$projectSlug/flags/'
     | '/_organization/$organizationSlug/_project/$projectSlug/segments/'
     | '/_organization/$organizationSlug/_project/$projectSlug/settings/'
-    | '/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug/segments/$segmentSlug/'
   fileRoutesById: FileRoutesById
@@ -527,13 +511,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRouteImport
       parentRoute: typeof OrganizationOrganizationSlugProjectProjectSlugRouteRoute
     }
-    '/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/': {
-      id: '/_organization/$organizationSlug/_project/$projectSlug/environments/$environmentSlug/'
-      path: '/environments/$environmentSlug'
-      fullPath: '/$organizationSlug/$projectSlug/environments/$environmentSlug/'
-      preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRouteImport
-      parentRoute: typeof OrganizationOrganizationSlugProjectProjectSlugRouteRoute
-    }
   }
 }
 
@@ -557,7 +534,6 @@ interface OrganizationOrganizationSlugProjectProjectSlugRouteRouteChildren {
   OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute
-  OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute
 }
@@ -578,8 +554,6 @@ const OrganizationOrganizationSlugProjectProjectSlugRouteRouteChildren: Organiza
       OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRoute,
-    OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute:
-      OrganizationOrganizationSlugProjectProjectSlugEnvironmentsEnvironmentSlugIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugFlagsFlagSlugIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRoute:
