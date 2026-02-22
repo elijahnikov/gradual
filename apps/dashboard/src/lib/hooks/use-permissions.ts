@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useTRPC } from "@/lib/trpc";
 
-export type MemberRole = "owner" | "admin" | "member" | "viewer";
+type MemberRole = "owner" | "admin" | "member" | "viewer";
 
 const ROLE_HIERARCHY: MemberRole[] = ["viewer", "member", "admin", "owner"];
 

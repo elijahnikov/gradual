@@ -20,7 +20,7 @@ import {
   RiGlobalLine,
 } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { useState } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useSelectedFlagsStore } from "@/lib/stores/selected-flags-store";
@@ -102,7 +102,7 @@ export default function SelectedFlagsActions({
   };
 
   return (
-    <motion.div
+    <m.div
       animate={{
         opacity: 1,
         y: 0,
@@ -177,6 +177,6 @@ export default function SelectedFlagsActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </motion.div>
+    </m.div>
   );
 }

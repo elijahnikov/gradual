@@ -17,6 +17,7 @@ import { Skeleton } from "@gradual/ui/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
+import CreateProjectDialog from "@/components/common/dialogs/create-project-dialog";
 import OrganizationIcon from "@/components/common/organization-icon";
 import { useTRPC } from "@/lib/trpc";
 import ProjectSubmenu from "./project-submenu";
@@ -30,6 +31,10 @@ export default function OrganizationDropdown() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [_openSubmenuId, _setOpenSubmenuIdd] = useState<string | null>(null);
+  const [createProjectOrg, setCreateProjectOrg] = useState<{
+    id: string;
+    slug: string;
+  } | null>(null);
 
   const { data: organization } = useSuspenseQuery(
     trpc.organization.getBySlug.queryOptions({
@@ -93,6 +98,13 @@ export default function OrganizationDropdown() {
                         to={"/$organizationSlug"}
                       >
                         <ProjectSubmenu
+                          onCreateProject={() => {
+                            setIsOpen(false);
+                            setCreateProjectOrg({
+                              id: organization.organization.id,
+                              slug: organization.organization.slug,
+                            });
+                          }}
                           organizationSlug={organization.organization.slug}
                           projects={organization.projects}
                         >
@@ -124,6 +136,18 @@ export default function OrganizationDropdown() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+      {createProjectOrg && (
+        <CreateProjectDialog
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreateProjectOrg(null);
+            }
+          }}
+          open
+          organizationId={createProjectOrg.id}
+          organizationSlug={createProjectOrg.slug}
+        />
+      )}
     </div>
   );
 }

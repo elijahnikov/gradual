@@ -50,9 +50,6 @@ export interface RuleCondition {
 export type Variation =
   RouterOutputs["featureFlags"]["getByKey"]["variations"][number];
 
-export type Target =
-  RouterOutputs["featureFlags"]["getTargetingRules"]["targets"][number];
-
 export type Attribute = RouterOutputs["attributes"]["list"][number];
 
 export type Context = RouterOutputs["attributes"]["listContexts"][number];

@@ -2,7 +2,7 @@ import { Button } from "@gradual/ui/button";
 import { Text } from "@gradual/ui/text";
 import { RiLogoutBoxLine } from "@remixicon/react";
 import { useNavigate } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { authClient } from "@/auth/client";
 
 interface CurrentStepHeaderProps {
@@ -26,7 +26,7 @@ export function CurrentStepHeader({
   return (
     <div className="sticky top-0 z-10 flex h-16 w-full items-center border-b bg-ui-bg-base px-4">
       <AnimatePresence mode="wait">
-        <motion.div
+        <m.div
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-2"
           exit={{ opacity: 0, x: 10 }}
@@ -40,7 +40,7 @@ export function CurrentStepHeader({
             </Text>
             <Text className="text-ui-fg-muted text-xs">{description}</Text>
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
       <div className="ml-auto flex items-center gap-2">
         <Button

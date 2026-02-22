@@ -14,7 +14,7 @@ import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
 import { RiBracesFill, RiFileCopyLine, RiGlobalLine } from "@remixicon/react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { useSelectedSegmentsStore } from "@/lib/stores/selected-segments-store";
 import { getBaseUrl } from "@/lib/url";
 
@@ -55,7 +55,7 @@ export default function SelectedSegmentsActions({
   };
 
   return (
-    <motion.div
+    <m.div
       animate={{
         opacity: 1,
         y: 0,
@@ -109,6 +109,6 @@ export default function SelectedSegmentsActions({
           </DropdownMenuSub>
         </DropdownMenuContent>
       </DropdownMenu>
-    </motion.div>
+    </m.div>
   );
 }

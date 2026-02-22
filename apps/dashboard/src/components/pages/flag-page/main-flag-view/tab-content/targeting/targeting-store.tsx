@@ -122,7 +122,7 @@ interface TargetingActions {
 
 type TargetingStore = TargetingState & TargetingActions;
 
-export const createTargetingStore = () =>
+const createTargetingStore = () =>
   create<TargetingStore>((set, get) => ({
     attributes: [],
     contexts: [],
@@ -194,13 +194,33 @@ export const createTargetingStore = () =>
         ? (config.offVariationId ?? null)
         : current.originalOffVariationId;
 
-      set({
+      // Reference data (lookups) — always update
+      const referenceData = {
         attributes: config.attributes,
         contexts: config.contexts,
         segments: config.segments,
         variations: config.variations,
         organizationSlug: config.organizationSlug,
         projectSlug: config.projectSlug,
+        attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
+        attributesByContextKind,
+        contextsById: new Map(config.contexts.map((c) => [c.id, c])),
+        contextsByKind: new Map(
+          config.contexts.map((c) => [c.kind as ContextKind, c])
+        ),
+        segmentsById: new Map(config.segments.map((s) => [s.id, s])),
+        variationsById: new Map(config.variations.map((v) => [v.id, v])),
+      };
+
+      if (!isFirstInit) {
+        // After first init, only update reference/lookup data
+        // so user edits (targets, hasChanges, etc.) are preserved.
+        set(referenceData);
+        return;
+      }
+
+      set({
+        ...referenceData,
         defaultVariationId: config.defaultVariationId,
         defaultVariationIdState: config.defaultVariationId,
         originalDefaultVariationId: config.defaultVariationId,
@@ -214,14 +234,6 @@ export const createTargetingStore = () =>
         originalOffVariationId,
         flagId: config.flagId,
         environmentSlug: config.environmentSlug,
-        attributesByKey: new Map(config.attributes.map((a) => [a.key, a])),
-        attributesByContextKind,
-        contextsById: new Map(config.contexts.map((c) => [c.id, c])),
-        contextsByKind: new Map(
-          config.contexts.map((c) => [c.kind as ContextKind, c])
-        ),
-        segmentsById: new Map(config.segments.map((s) => [s.id, s])),
-        variationsById: new Map(config.variations.map((v) => [v.id, v])),
         targets: existingTargets,
         originalTargets: JSON.parse(JSON.stringify(existingTargets)),
         hasChanges: false,

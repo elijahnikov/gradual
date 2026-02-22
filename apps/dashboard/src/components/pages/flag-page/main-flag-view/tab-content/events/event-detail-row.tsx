@@ -4,8 +4,8 @@ import CopyButton from "@gradual/ui/copy-button";
 import { TableCell, TableRow } from "@gradual/ui/table";
 import { Text } from "@gradual/ui/text";
 import dayjs from "dayjs";
-import _ from "lodash";
-import { motion } from "motion/react";
+import upperFirst from "lodash/upperFirst";
+import { m } from "motion/react";
 import {
   formatStructuredReason,
   isStructuredReason,
@@ -76,7 +76,7 @@ function ReasonCard({ reason }: { reason: StructuredReason }) {
     <div className="flex flex-col gap-1 rounded-md border bg-ui-bg-base p-2">
       <div className="flex items-center justify-between gap-2">
         <Badge className="shrink-0" size="sm" variant={variant}>
-          {_.upperFirst(reason.type.replace("_", " "))}
+          {upperFirst(reason.type.replace("_", " "))}
         </Badge>
         {reason.type === "rule_match" && reason.ruleId && (
           <span className="truncate font-mono text-[11px] text-ui-fg-muted">
@@ -85,7 +85,7 @@ function ReasonCard({ reason }: { reason: StructuredReason }) {
         )}
       </div>
       <Text className="text-xs leading-snug">
-        {_.upperFirst(formatStructuredReason(reason))}
+        {upperFirst(formatStructuredReason(reason))}
       </Text>
       {reason.type === "percentage_rollout" && reason.bucket != null && (
         <span className="text-[11px] text-ui-fg-muted">
@@ -110,7 +110,7 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
   return (
     <TableRow className="hover:bg-transparent">
       <TableCell className="p-0" colSpan={6}>
-        <motion.div
+        <m.div
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           initial={{ height: 0, opacity: 0 }}
@@ -276,7 +276,7 @@ export default function EventDetailRow({ event }: { event: EventItem }) {
               }}
             />
           </div>
-        </motion.div>
+        </m.div>
       </TableCell>
     </TableRow>
   );

@@ -1,6 +1,6 @@
 import { cn } from "@gradual/ui";
 import { Separator } from "@gradual/ui/separator";
-import { LayoutGroup, motion } from "motion/react";
+import { LayoutGroup, m } from "motion/react";
 import {
   isValidElement,
   type ReactElement,
@@ -58,7 +58,7 @@ export function TargetingList({
                 : index;
 
               return (
-                <motion.div
+                <m.div
                   className="flex w-full flex-col items-center"
                   key={key ?? index}
                   layout
@@ -80,7 +80,7 @@ export function TargetingList({
                     onAddTarget={(type) => onAddTarget(type, index + 1)}
                   />
                   <TargetConnector />
-                </motion.div>
+                </m.div>
               );
             })}
           </LayoutGroup>

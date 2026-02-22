@@ -3,7 +3,7 @@ import { create, useStore } from "zustand";
 
 export type TimeframePreset = "24h" | "7d" | "30d" | "90d" | "custom";
 
-export interface DateRange {
+interface DateRange {
   from: Date;
   to: Date;
 }
@@ -65,7 +65,7 @@ const getDateRangeForPreset = (preset: TimeframePreset): DateRange => {
   return { from, to };
 };
 
-export const createMetricsStore = () =>
+const createMetricsStore = () =>
   create<MetricsStore>((set, get) => ({
     flagId: "",
     organizationSlug: "",

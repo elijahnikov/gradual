@@ -76,10 +76,10 @@ export function AuthShowcase() {
       <Button
         onClick={async () => {
           await authClient.signOut();
-          await queryClient.invalidateQueries(
-            trpc.auth.getSession.queryFilter()
-          );
-          await navigate({ to: "/login", replace: true });
+          await Promise.all([
+            queryClient.invalidateQueries(trpc.auth.getSession.queryFilter()),
+            navigate({ to: "/login", replace: true }),
+          ]);
         }}
         size="large"
         variant="gradual"

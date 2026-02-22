@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback } from "@gradual/ui/avatar";
 import { Badge } from "@gradual/ui/badge";
 import { Card } from "@gradual/ui/card";
 import { Text } from "@gradual/ui/text";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import type { OnboardingStep } from "@/lib/stores/onboarding-store";
@@ -79,7 +79,7 @@ function TeamMembersOverlay() {
 
   return (
     <div className="absolute inset-x-0 bottom-0 p-4">
-      <motion.div
+      <m.div
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.3 }}
@@ -91,7 +91,7 @@ function TeamMembersOverlay() {
           <div className="space-y-1.5">
             <AnimatePresence>
               {teamMembers.map((member) => (
-                <motion.div
+                <m.div
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center justify-between rounded-md px-2 py-1"
                   exit={{ opacity: 0, y: -5 }}
@@ -116,12 +116,12 @@ function TeamMembersOverlay() {
                   <Badge size="sm" variant="secondary">
                     {member.role}
                   </Badge>
-                </motion.div>
+                </m.div>
               ))}
             </AnimatePresence>
           </div>
         </Card>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -238,7 +238,7 @@ function MockEventsTable() {
         <div className="flex-1 overflow-hidden">
           <AnimatePresence initial={false}>
             {events.map((event) => (
-              <motion.div
+              <m.div
                 animate={{
                   opacity: 1,
                   y: 0,
@@ -286,7 +286,7 @@ function MockEventsTable() {
                     {event.duration}
                   </span>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </AnimatePresence>
         </div>
@@ -303,7 +303,7 @@ export function DashboardPreview({ currentStep }: DashboardPreviewProps) {
 
   return (
     <div className="h-full w-full translate-x-12">
-      <motion.div
+      <m.div
         animate={{ scale: zoom?.scale, x: zoom?.x, y: zoom?.y }}
         className="flex h-full w-full overflow-hidden rounded-lg bg-ui-bg-subtle p-1 shadow-elevation-card-rest"
         style={{ transformOrigin: "0% 0%" }}
@@ -320,7 +320,7 @@ export function DashboardPreview({ currentStep }: DashboardPreviewProps) {
               <PlaceholderContent />
               <AnimatePresence mode="wait">
                 {currentStep === 1 && (
-                  <motion.div
+                  <m.div
                     animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                     className="absolute inset-0"
                     exit={{ opacity: 0, x: -40, filter: "blur(4px)" }}
@@ -332,10 +332,10 @@ export function DashboardPreview({ currentStep }: DashboardPreviewProps) {
                     }}
                   >
                     <TeamMembersOverlay />
-                  </motion.div>
+                  </m.div>
                 )}
                 {(currentStep === 2 || currentStep === 3) && (
-                  <motion.div
+                  <m.div
                     animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                     className="absolute inset-0"
                     exit={{ opacity: 0, x: -40, filter: "blur(4px)" }}
@@ -347,13 +347,13 @@ export function DashboardPreview({ currentStep }: DashboardPreviewProps) {
                     }}
                   >
                     <MockEventsTable />
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

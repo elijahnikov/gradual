@@ -24,7 +24,7 @@ import {
   RiPencilLine,
 } from "@remixicon/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import _ from "lodash";
+import upperFirst from "lodash/upperFirst";
 import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
 import { type LocalTarget, useTargetingStore } from "./targeting-store";
@@ -864,7 +864,7 @@ export function ReviewChangesModal() {
                                 size="sm"
                                 variant="outline"
                               >
-                                {_.upperFirst(diff.target.type)}
+                                {upperFirst(diff.target.type)}
                               </Badge>
                             </div>
                             <TargetSummary

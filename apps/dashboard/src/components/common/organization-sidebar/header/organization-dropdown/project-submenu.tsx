@@ -2,21 +2,25 @@ import type { RouterOutputs } from "@gradual/api";
 import {
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   MenuItem,
 } from "@gradual/ui/dropdown-menu";
+import { RiAddLine } from "@remixicon/react";
 import { Link } from "@tanstack/react-router";
 
 export default function ProjectSubmenu({
   children,
   organizationSlug,
   projects,
+  onCreateProject,
 }: {
   children: React.ReactNode;
   organizationSlug: string;
   projects: RouterOutputs["organization"]["getAllByUserId"][number]["projects"];
+  onCreateProject: () => void;
 }) {
   return (
     <DropdownMenuSub>
@@ -50,6 +54,17 @@ export default function ProjectSubmenu({
               No projects
             </div>
           )}
+          <DropdownMenuSeparator />
+          <MenuItem
+            className="font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCreateProject();
+            }}
+          >
+            <RiAddLine className="size-4" />
+            Create new project
+          </MenuItem>
         </DropdownMenuGroup>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
