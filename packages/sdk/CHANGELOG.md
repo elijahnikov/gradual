@@ -1,5 +1,11 @@
 # @gradual-so/sdk
 
+## 0.8.11
+
+### Patch Changes
+
+- [#89](https://github.com/elijahnikov/gradual/pull/89) [`3da4be3`](https://github.com/elijahnikov/gradual/commit/3da4be36521218522052efcf59b3f96da3d4b795) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Better MAU tracking
+
 ## 0.8.10
 
 ### Patch Changes
