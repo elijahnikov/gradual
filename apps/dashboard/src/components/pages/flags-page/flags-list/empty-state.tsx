@@ -1,4 +1,3 @@
-import { Badge } from "@gradual/ui/badge";
 import { Card } from "@gradual/ui/card";
 import { Heading } from "@gradual/ui/heading";
 import { Kbd } from "@gradual/ui/kbd";
@@ -32,9 +31,7 @@ export default function EmptyFlagsList() {
         open={isCreateFlagDialogOpen}
       >
         Create flag
-        <Badge className="bg-white px-0.5">
-          <Kbd>⌘C</Kbd>
-        </Badge>
+        <Kbd className="text-ui-fg-base">⌘C</Kbd>
       </CreateFlagDialog>
     </div>
   );

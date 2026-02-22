@@ -212,7 +212,7 @@ function DetailBreadcrumb({
 export function ProjectBreadcrumbsSkeleton() {
   return (
     <Breadcrumb className="sticky top-0 z-50 flex h-9 w-full items-center border-b bg-ui-bg-base px-1.5">
-      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-6 w-[90%]" />
     </Breadcrumb>
   );
 }

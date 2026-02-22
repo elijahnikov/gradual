@@ -20,7 +20,11 @@ export default function CreateEnvironmentDialog({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       {children ? (
-        <DialogTrigger render={<Button size="small" variant="gradual" />}>
+        <DialogTrigger
+          render={
+            <Button className="h-6! min-h-6!" size="small" variant="outline" />
+          }
+        >
           {children}
         </DialogTrigger>
       ) : null}
