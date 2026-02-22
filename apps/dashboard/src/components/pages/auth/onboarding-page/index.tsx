@@ -2,11 +2,12 @@
 
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import {
@@ -22,7 +23,7 @@ import { GettingStartedStep } from "./steps/getting-started-step";
 import { InstallSDKStep } from "./steps/install-sdk-step";
 import { PlanSelectionStep } from "./steps/plan-selection-step";
 
-export interface OnboardingStepEntry {
+interface OnboardingStepEntry {
   step: OnboardingStep;
   title: string;
   description: string;
@@ -52,6 +53,7 @@ export default function OnboardingPageComponent() {
   const {
     currentStep,
     setCurrentStep,
+    createdOrganizationId,
     setCreatedOrganizationId,
     setCreatedProjectId,
     setOrganizationSlug,
@@ -62,6 +64,34 @@ export default function OnboardingPageComponent() {
   } = useOnboardingStore();
 
   const resetPreview = useOnboardingPreviewStore((s) => s.reset);
+
+  // Hydrate preview store with org data on refresh
+  const { data: orgData } = useQuery({
+    ...trpc.organization.getById.queryOptions({
+      organizationId: createdOrganizationId ?? "",
+    }),
+    enabled: !!createdOrganizationId,
+  });
+
+  useEffect(() => {
+    const store = useOnboardingPreviewStore.getState();
+    if (orgData?.organization) {
+      if (!store.orgName && orgData.organization.name) {
+        store.setOrgName(orgData.organization.name);
+      }
+      if (!store.orgLogoPreviewUrl && orgData.organization.logo) {
+        store.setOrgLogoPreviewUrl(orgData.organization.logo);
+      }
+    }
+    if (session?.user) {
+      if (!store.displayName && session.user.name) {
+        store.setDisplayName(session.user.name);
+      }
+      if (!store.avatarPreviewUrl && session.user.image) {
+        store.setAvatarPreviewUrl(session.user.image);
+      }
+    }
+  }, [orgData, session]);
 
   const { mutateAsync: updateUser, isPending: isUpdatingUser } = useMutation(
     trpc.auth.updateUser.mutationOptions({
@@ -79,6 +109,12 @@ export default function OnboardingPageComponent() {
       useOnboardingPreviewStore.getState().setStepIsSubmitting(true);
       useOnboardingPreviewStore.getState().setStepCanContinue(false);
 
+      // Stamp the userId on the first step completion so the
+      // cross-account guard can detect user changes on future loads.
+      if (!storedUserId && session?.user?.id) {
+        setUserId(session.user.id);
+      }
+
       const nextStep = (step + 1) as OnboardingStep;
 
       if (step < 3) {
@@ -95,7 +131,15 @@ export default function OnboardingPageComponent() {
       );
       await queryClient.invalidateQueries(trpc.auth.getSession.queryOptions());
     },
-    [updateUser, setCurrentStep, queryClient, trpc]
+    [
+      updateUser,
+      setCurrentStep,
+      queryClient,
+      trpc,
+      storedUserId,
+      session?.user?.id,
+      setUserId,
+    ]
   );
 
   const handleSkip = useCallback(
@@ -195,10 +239,16 @@ export default function OnboardingPageComponent() {
     ]
   );
 
-  // Reset onboarding state when a different user logs in
+  // Reset onboarding state when a *different* user logs in.
+  // IMPORTANT: Do NOT write to the store before hydration completes —
+  // any set() call pre-hydration persists the entire initial state
+  // to localStorage, overwriting the real persisted data.
   useEffect(() => {
     const currentUserId = session?.user?.id;
-    if (currentUserId && currentUserId !== storedUserId) {
+    if (!(currentUserId && storedUserId)) {
+      return;
+    }
+    if (currentUserId !== storedUserId) {
       resetOnboarding();
       setUserId(currentUserId);
     }
@@ -234,7 +284,7 @@ export default function OnboardingPageComponent() {
           <div className="flex w-full max-w-[640px] flex-col">
             {currentStepEntry && (
               <AnimatePresence mode="wait">
-                <motion.div
+                <m.div
                   animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, x: 40, filter: "blur(4px)" }}
                   initial={{ opacity: 0, x: -40, filter: "blur(4px)" }}
@@ -247,7 +297,7 @@ export default function OnboardingPageComponent() {
                   <div className="min-h-[400px]">
                     {currentStepEntry.component}
                   </div>
-                </motion.div>
+                </m.div>
               </AnimatePresence>
             )}
           </div>

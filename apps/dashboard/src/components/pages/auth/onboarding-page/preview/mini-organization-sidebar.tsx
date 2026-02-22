@@ -7,7 +7,7 @@ import {
   RiQuestionFill,
   RiSettings5Fill,
 } from "@remixicon/react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useOnboardingPreviewStore } from "@/lib/stores/onboarding-preview-store";
 import type { OnboardingStep } from "@/lib/stores/onboarding-store";
 
@@ -40,7 +40,7 @@ function FakeOrgDropdown({
   orgLogoPreviewUrl?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       animate={{ opacity: 1, scale: 1 }}
       className="absolute top-0 left-[calc(100%+4px)] z-50 w-48 rounded-lg bg-ui-bg-base p-1 shadow-elevation-card-rest"
       exit={{ opacity: 0, scale: 0.95 }}
@@ -76,7 +76,7 @@ function FakeOrgDropdown({
           {orgName}
         </Text>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -98,7 +98,7 @@ export function MiniOrganizationSidebar({
     <div className="flex h-full w-14 min-w-14 flex-col items-center bg-ui-bg-subtle py-3">
       <div className="relative flex items-center justify-center">
         <AnimatePresence>
-          <motion.div
+          <m.div
             animate={{ scale: 2.2, opacity: 0 }}
             className="pointer-events-none absolute inset-0 rounded-full bg-blue-400/30"
             initial={{ scale: 0.8, opacity: 0.6 }}
@@ -107,7 +107,7 @@ export function MiniOrganizationSidebar({
           />
         </AnimatePresence>
         <AnimatePresence mode="wait">
-          <motion.div
+          <m.div
             animate={{ scale: 1 }}
             initial={{ scale: 0.8 }}
             key={`org-${!!orgLogoPreviewUrl}-${orgName?.charAt(0) ?? ""}`}
@@ -141,7 +141,7 @@ export function MiniOrganizationSidebar({
                 )}
               </Card>
             </div>
-          </motion.div>
+          </m.div>
         </AnimatePresence>
         <AnimatePresence>
           {currentStep === 1 && (
@@ -162,7 +162,7 @@ export function MiniOrganizationSidebar({
         <NavIcon icon={RiQuestionFill} />
         <div className="relative flex items-center justify-center">
           <AnimatePresence>
-            <motion.div
+            <m.div
               animate={{ scale: 2.2, opacity: 0 }}
               className="pointer-events-none absolute inset-0 rounded-full bg-blue-400/30"
               initial={{ scale: 0.8, opacity: 0.6 }}
@@ -171,7 +171,7 @@ export function MiniOrganizationSidebar({
             />
           </AnimatePresence>
           <AnimatePresence mode="wait">
-            <motion.div
+            <m.div
               animate={{ scale: 1 }}
               initial={{ scale: 0.8 }}
               key={`user-${!!avatarPreviewUrl}-${displayName?.charAt(0) ?? ""}`}
@@ -198,7 +198,7 @@ export function MiniOrganizationSidebar({
                   </Avatar>
                 )}
               </Card>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </div>
       </div>

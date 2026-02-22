@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 
-export interface FileMetadata {
+interface FileMetadata {
   name: string;
   size: number;
   type: string;
@@ -16,13 +16,13 @@ export interface FileMetadata {
   id: string;
 }
 
-export interface FileWithPreview {
+interface FileWithPreview {
   file: File | FileMetadata;
   id: string;
   preview?: string;
 }
 
-export interface FileUploadOptions {
+interface FileUploadOptions {
   maxFiles?: number;
   maxSize?: number;
   accept?: string;
@@ -32,13 +32,13 @@ export interface FileUploadOptions {
   onFilesAdded?: (addedFiles: FileWithPreview[]) => void;
 }
 
-export interface FileUploadState {
+interface FileUploadState {
   files: FileWithPreview[];
   isDragging: boolean;
   errors: string[];
 }
 
-export interface FileUploadActions {
+interface FileUploadActions {
   addFiles: (files: FileList | File[]) => void;
   removeFile: (id: string) => void;
   clearFiles: () => void;
@@ -383,7 +383,7 @@ export const useFileUpload = (
   ];
 };
 
-export const formatBytes = (bytes: number, decimals = 2): string => {
+const formatBytes = (bytes: number, decimals = 2): string => {
   if (bytes === 0) {
     return "0 Bytes";
   }

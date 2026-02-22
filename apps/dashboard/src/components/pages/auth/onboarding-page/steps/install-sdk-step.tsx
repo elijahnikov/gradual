@@ -50,28 +50,26 @@ export function InstallSDKStep() {
     enabled: !!createdOrganizationId && !!createdProjectId,
   });
 
-  const selectedInstallCommand = useMemo(
-    () => installCommands[selectedPackageManager],
-    [selectedPackageManager]
-  );
+  const selectedInstallCommand = installCommands[selectedPackageManager];
 
-  const codeExample = useMemo(() => {
-    return `import { createGradual } from '@gradual-so/sdk';
+  const codeExample = `import { createGradual } from '@gradual-so/sdk';
 
 const gradual = createGradual({
   apiKey: process.env.GRADUAL_API_KEY,
   environment: 'production'
 });
 
-// Boolean flags
+// With user context
+gradual.identify({ user: { id: '123', plan: 'pro' } });
+
+// Quick boolean check
 const enabled = await gradual.isEnabled('new-feature');
 
-// Typed values (inferred from fallback)
-const theme = await gradual.get('theme', { fallback: 'dark' });
-
-// With user context
-gradual.identify({ user: { id: '123', plan: 'pro' } });`;
-  }, []);
+// Full evaluation result with metadata
+const result = await gradual.evaluate('banner-text');
+// result.value        → 'Welcome back!'
+// result.variationKey → 'variant-a'
+// result.reasons      → [{ type: 'rule_match', ruleId: '...' }]`;
 
   const [highlightedHtml, setHighlightedHtml] = useState<string>("");
   const [highlightedApiKey, setHighlightedApiKey] = useState<string>("");
@@ -95,7 +93,7 @@ gradual.identify({ user: { id: '123', plan: 'pro' } });`;
         dark: "github-dark-default",
       },
     }).then(setHighlightedHtml);
-  }, [codeExample]);
+  }, []);
 
   useEffect(() => {
     if (!apiKeyDisplay) {

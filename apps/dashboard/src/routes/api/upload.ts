@@ -1,6 +1,3 @@
-import { eq } from "@gradual/db";
-import { db } from "@gradual/db/client";
-import { user } from "@gradual/db/schema";
 import { createFileRoute } from "@tanstack/react-router";
 import { auth } from "@/auth/server";
 import { getPublicUrl, uploadFile } from "@/lib/utils/r2";
@@ -56,11 +53,6 @@ export const Route = createFileRoute("/api/upload")({
           await uploadFile(buffer, key, file.type);
 
           const publicUrl = await getPublicUrl(key);
-
-          await db
-            .update(user)
-            .set({ image: publicUrl })
-            .where(eq(user.id, session.user.id));
 
           return new Response(JSON.stringify({ url: publicUrl, key }), {
             status: 200,

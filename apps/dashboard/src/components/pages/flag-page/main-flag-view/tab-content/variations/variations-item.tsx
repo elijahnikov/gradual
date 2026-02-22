@@ -39,6 +39,97 @@ interface VariationsItemProps {
   readOnly?: boolean;
 }
 
+interface VariationValueProps {
+  flagType: FlagType;
+  isEditing: boolean;
+  variation: Variation;
+  jsonValue: string;
+  editedValue: unknown;
+  setJsonValue: (value: string) => void;
+  setIsJsonValid: (valid: boolean) => void;
+  setEditedValue: (value: unknown) => void;
+}
+
+function VariationValue({
+  flagType,
+  isEditing,
+  variation,
+  jsonValue,
+  editedValue,
+  setJsonValue,
+  setIsJsonValid,
+  setEditedValue,
+}: VariationValueProps) {
+  if (flagType === "boolean") {
+    return (
+      <Badge className="font-mono" size="lg" variant="outline">
+        {variation.value === true ? "true" : "false"}
+      </Badge>
+    );
+  }
+
+  if (isEditing) {
+    if (flagType === "json") {
+      return (
+        <div className="w-full">
+          <JsonEditor
+            initialValue={jsonValue}
+            maxHeight="400px"
+            onChange={(value, isValid) => {
+              setJsonValue(value);
+              setIsJsonValid(isValid);
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (flagType === "number") {
+      return (
+        <Input
+          className="w-48"
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === "") {
+              setEditedValue("");
+            } else {
+              const num = Number(val);
+              setEditedValue(Number.isNaN(num) ? "" : num);
+            }
+          }}
+          type="number"
+          value={typeof editedValue === "number" ? String(editedValue) : ""}
+        />
+      );
+    }
+
+    return (
+      <Input
+        className="w-64"
+        onChange={(e) => setEditedValue(e.target.value)}
+        type="text"
+        value={typeof editedValue === "string" ? editedValue : ""}
+      />
+    );
+  }
+
+  if (flagType === "json") {
+    return (
+      <div className="w-full overflow-hidden rounded-md border bg-ui-bg-base p-2">
+        <pre className="overflow-x-auto font-mono text-sm">
+          {JSON.stringify(variation.value, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  return (
+    <Badge className="font-mono" size="lg" variant="outline">
+      {String(variation.value)}
+    </Badge>
+  );
+}
+
 export default function VariationsItem({
   variation,
   flagId,
@@ -258,77 +349,6 @@ export default function VariationsItem({
     setIsEditing(false);
   }, [variation.name, variation.value]);
 
-  const renderValue = () => {
-    if (flagType === "boolean") {
-      return (
-        <Badge className="font-mono" size="lg" variant="outline">
-          {variation.value === true ? "true" : "false"}
-        </Badge>
-      );
-    }
-
-    if (isEditing) {
-      if (flagType === "json") {
-        return (
-          <div className="w-full">
-            <JsonEditor
-              initialValue={jsonValue}
-              maxHeight="400px"
-              onChange={(value, isValid) => {
-                setJsonValue(value);
-                setIsJsonValid(isValid);
-              }}
-            />
-          </div>
-        );
-      }
-
-      if (flagType === "number") {
-        return (
-          <Input
-            className="w-48"
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "") {
-                setEditedValue("");
-              } else {
-                const num = Number(val);
-                setEditedValue(Number.isNaN(num) ? "" : num);
-              }
-            }}
-            type="number"
-            value={typeof editedValue === "number" ? String(editedValue) : ""}
-          />
-        );
-      }
-
-      return (
-        <Input
-          className="w-64"
-          onChange={(e) => setEditedValue(e.target.value)}
-          type="text"
-          value={typeof editedValue === "string" ? editedValue : ""}
-        />
-      );
-    }
-
-    if (flagType === "json") {
-      return (
-        <div className="w-full overflow-hidden rounded-md border bg-ui-bg-base p-2">
-          <pre className="overflow-x-auto font-mono text-sm">
-            {JSON.stringify(variation.value, null, 2)}
-          </pre>
-        </div>
-      );
-    }
-
-    return (
-      <Badge className="font-mono" size="lg" variant="outline">
-        {String(variation.value)}
-      </Badge>
-    );
-  };
-
   return (
     <Card className="group relative flex flex-col rounded-none p-0 shadow-none">
       <div className="p-3 pt-2">
@@ -432,7 +452,18 @@ export default function VariationsItem({
           )}
         </div>
 
-        <div className="mt-2 flex items-start gap-2">{renderValue()}</div>
+        <div className="mt-2 flex items-start gap-2">
+          <VariationValue
+            editedValue={editedValue}
+            flagType={flagType}
+            isEditing={isEditing}
+            jsonValue={jsonValue}
+            setEditedValue={setEditedValue}
+            setIsJsonValid={setIsJsonValid}
+            setJsonValue={setJsonValue}
+            variation={variation}
+          />
+        </div>
       </div>
       <div className="flex items-center px-3 pb-3">
         <div className="flex items-center gap-0.5">

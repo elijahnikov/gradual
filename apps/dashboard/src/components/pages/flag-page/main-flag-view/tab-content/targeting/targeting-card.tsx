@@ -2,7 +2,6 @@ import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import { Input } from "@gradual/ui/input";
-import { Text } from "@gradual/ui/text";
 import {
   RiArrowDownLine,
   RiArrowUpLine,
@@ -135,29 +134,6 @@ export default function TargetingCard({
           <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
         </Button>
       </div>
-    </div>
-  );
-}
-
-interface TargetingCardHeaderProps {
-  title: string;
-  description?: string;
-}
-
-export function TargetingCardHeader({
-  title,
-  description,
-}: TargetingCardHeaderProps) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <Text size="small" weight="plus">
-        {title}
-      </Text>
-      {description && (
-        <Text className="text-ui-fg-subtle" size="xsmall">
-          {description}
-        </Text>
-      )}
     </div>
   );
 }

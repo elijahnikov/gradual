@@ -13,6 +13,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { domAnimation, LazyMotion } from "motion/react";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import type * as React from "react";
 import appCss from "@/styles.css?url";
@@ -53,15 +54,17 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   return (
     <RootDocument>
-      <ThemeProvider>
-        <NuqsAdapter>
-          <ToastProvider>
-            <AnchoredToastProvider>
-              <Outlet />
-            </AnchoredToastProvider>
-          </ToastProvider>
-        </NuqsAdapter>
-      </ThemeProvider>
+      <LazyMotion features={domAnimation}>
+        <ThemeProvider>
+          <NuqsAdapter>
+            <ToastProvider>
+              <AnchoredToastProvider>
+                <Outlet />
+              </AnchoredToastProvider>
+            </ToastProvider>
+          </NuqsAdapter>
+        </ThemeProvider>
+      </LazyMotion>
     </RootDocument>
   );
 }

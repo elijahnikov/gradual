@@ -59,6 +59,7 @@ export const createOrganization = async ({
     body: {
       name: input.name,
       slug: input.slug,
+      logo: input.logo ?? undefined,
       userId: currentUser.id,
       keepCurrentActiveOrganization: false,
     },

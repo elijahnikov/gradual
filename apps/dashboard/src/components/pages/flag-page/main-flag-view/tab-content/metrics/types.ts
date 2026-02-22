@@ -10,18 +10,3 @@ export interface MetricsVariation {
   name: string;
   color?: string | null;
 }
-
-export interface MetricsEnvironment {
-  id: string;
-  name: string;
-}
-
-export interface MetricsData {
-  data: MetricsBucket[];
-  variations: MetricsVariation[];
-  environments: MetricsEnvironment[];
-  totals: Record<string, number>;
-  granularity: "hour" | "6hour" | "day";
-  startDate: Date;
-  endDate: Date;
-}

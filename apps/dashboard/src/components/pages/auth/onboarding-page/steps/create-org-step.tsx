@@ -502,8 +502,8 @@ export function CreateOrgStep({
                   <div className="space-y-2">
                     {teamMembers.map((member, index) => (
                       <Card
-                        className="flex items-center justify-between gap-2 rounded-md p-2"
-                        key={index}
+                        className="flex items-center justify-between gap-2 rounded-md bg-ui-bg-base p-2"
+                        key={member.email}
                       >
                         <Text weight="plus">{member.email}</Text>
                         <div className="flex items-center gap-2">

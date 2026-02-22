@@ -8,14 +8,6 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/env";
 
-export interface FileObject {
-  Key?: string;
-  LastModified?: Date;
-  ETag?: string;
-  Size?: number;
-  StorageClass?: string;
-}
-
 const S3 = new S3Client({
   region: "auto",
   endpoint: env.R2_S3_API_URL.toString(),
@@ -42,25 +34,6 @@ export async function uploadFile(
     return response;
   } catch (error) {
     console.error("Error uploading file:", error);
-    throw error;
-  }
-}
-
-export async function getSignedUrlForUpload(
-  key: string,
-  contentType: string
-): Promise<string> {
-  const command = new PutObjectCommand({
-    Bucket: env.R2_BUCKET,
-    Key: key,
-    ContentType: contentType,
-  });
-
-  try {
-    const signedUrl = await getSignedUrl(S3, command, { expiresIn: 3600 });
-    return signedUrl;
-  } catch (error) {
-    console.error("Error generating signed URL:", error);
     throw error;
   }
 }
@@ -97,7 +70,7 @@ export async function getPublicUrl(key: string): Promise<string> {
   }
 }
 
-export async function listFiles(prefix = ""): Promise<FileObject[]> {
+export async function listFiles(prefix = "") {
   const command = new ListObjectsV2Command({
     Bucket: env.R2_BUCKET,
     Prefix: prefix,

@@ -548,7 +548,7 @@ export default function CreateFlagForm({
                         index: number
                       ) => (
                         <SelectItem
-                          key={index}
+                          key={validVariationIndices[index] ?? index}
                           value={String(validVariationIndices[index] ?? index)}
                         >
                           {variation.name || `Variation ${index + 1}`}
@@ -606,7 +606,7 @@ export default function CreateFlagForm({
                         index: number
                       ) => (
                         <SelectItem
-                          key={index}
+                          key={validVariationIndices[index] ?? index}
                           value={String(validVariationIndices[index] ?? index)}
                         >
                           {variation.name || `Variation ${index + 1}`}
