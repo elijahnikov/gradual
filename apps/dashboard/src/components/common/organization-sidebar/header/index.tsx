@@ -1,11 +1,11 @@
 import { SidebarHeader } from "@gradual/ui/sidebar";
 import { TooltipProvider } from "@gradual/ui/tooltip";
 import { RiHomeSmileFill, RiSettings5Fill } from "@remixicon/react";
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import SidebarLinkItem from "../sidebar-link-item";
-import OrganizationDropdown, {
-  OrganizationDropdownSkeleton,
-} from "./organization-dropdown";
+import { OrganizationDropdownSkeleton } from "./organization-dropdown";
+
+const OrganizationDropdown = lazy(() => import("./organization-dropdown"));
 
 export default function MainSidebarHeader() {
   return (

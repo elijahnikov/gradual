@@ -692,6 +692,9 @@ export const featureFlagEvaluation = pgTable(
     traceId: text("trace_id"),
     schemaVersion: integer("schema_version"),
     policyVersion: bigint("policy_version", { mode: "number" }),
+    projectId: uuid("project_id").references(() => project.id, {
+      onDelete: "cascade",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -704,6 +707,10 @@ export const featureFlagEvaluation = pgTable(
     index("feature_flag_evaluation_created_at_idx").on(table.createdAt),
     index("feature_flag_evaluation_flag_created_idx").on(
       table.featureFlagId,
+      table.createdAt
+    ),
+    index("feature_flag_evaluation_project_created_idx").on(
+      table.projectId,
       table.createdAt
     ),
   ]

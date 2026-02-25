@@ -93,6 +93,7 @@ export async function ingestEvaluations({
       traceId: string | null;
       schemaVersion: number | null;
       policyVersion: number | null;
+      projectId: string;
       createdAt: Date;
     }> = [];
 
@@ -129,6 +130,7 @@ export async function ingestEvaluations({
         traceId: event.traceId ?? null,
         schemaVersion: event.schemaVersion ?? null,
         policyVersion: event.policyVersion ?? null,
+        projectId: meta.projectId,
         createdAt: new Date(event.timestamp),
       });
     }

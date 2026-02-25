@@ -1,12 +1,18 @@
 import { Card } from "@gradual/ui/card";
 import { Heading } from "@gradual/ui/heading";
+import { Kbd } from "@gradual/ui/kbd";
 import { Text } from "@gradual/ui/text";
 import { RiServerFill } from "@remixicon/react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useState } from "react";
 import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
 
 export default function EmptyEnvironmentsList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  useHotkey("Mod+C", () => {
+    setCreateDialogOpen(true);
+  });
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
@@ -25,6 +31,7 @@ export default function EmptyEnvironmentsList() {
         open={createDialogOpen}
       >
         Create environment
+        <Kbd className="text-ui-fg-base">⌘C</Kbd>
       </CreateEnvironmentDialog>
     </div>
   );

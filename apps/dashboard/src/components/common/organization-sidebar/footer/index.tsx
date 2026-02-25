@@ -2,9 +2,11 @@ import { Card } from "@gradual/ui/card";
 import { SidebarFooter } from "@gradual/ui/sidebar";
 import { TooltipProvider } from "@gradual/ui/tooltip";
 import { RiQuestionFill } from "@remixicon/react";
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import SidebarLinkItem from "../sidebar-link-item";
-import UserMenu, { UserMenuSkeleton } from "./user-menu";
+import { UserMenuSkeleton } from "./user-menu";
+
+const UserMenu = lazy(() => import("./user-menu"));
 
 export default function MainSidebarFooter() {
   return (

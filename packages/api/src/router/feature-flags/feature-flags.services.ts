@@ -691,8 +691,10 @@ export const seedEvaluations = async ({
 
   const ips = ["192.168.1.1", "10.0.0.5", "172.16.0.10", "8.8.8.8", "1.1.1.1"];
 
+  const sdkPlatforms = ["browser", "node", "react-native", "python"];
+
   const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const evaluationValues: (typeof featureFlagEvaluation.$inferInsert)[] = [];
   for (let i = 0; i < totalToInsert; i++) {
@@ -700,9 +702,16 @@ export const seedEvaluations = async ({
     const environmentId = getRandomElement(envs);
 
     const createdAt = new Date(
-      twentyFourHoursAgo.getTime() +
-        Math.random() * (now.getTime() - twentyFourHoursAgo.getTime())
+      thirtyDaysAgo.getTime() +
+        Math.random() * (now.getTime() - thirtyDaysAgo.getTime())
     );
+
+    // Realistic latency: mostly 1-50ms with some outliers up to 500ms
+    const baseDurationUs = Math.floor(Math.random() * 50_000) + 500;
+    const hasSpike = Math.random() < 0.05;
+    const evaluationDurationUs = hasSpike
+      ? baseDurationUs * (5 + Math.floor(Math.random() * 10))
+      : baseDurationUs;
 
     evaluationValues.push({
       featureFlagId: flagId,
@@ -712,6 +721,8 @@ export const seedEvaluations = async ({
       context: { userId: `user_${Math.floor(Math.random() * 5000)}` },
       ipAddress: getRandomElement(ips),
       userAgent: getRandomElement(userAgents),
+      sdkPlatform: getRandomElement(sdkPlatforms),
+      evaluationDurationUs,
       reasons: [{ type: "default" }],
       createdAt,
     });
