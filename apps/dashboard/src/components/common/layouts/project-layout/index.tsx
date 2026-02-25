@@ -1,9 +1,9 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import CommandPalette from "../../command-pallette";
 import ProjectSidebar, { MobileProjectSidebar } from "../../project-sidebar";
-import ProjectBreadcrumbs, {
-  ProjectBreadcrumbsSkeleton,
-} from "./project-breadcrumbs";
+import { ProjectBreadcrumbsSkeleton } from "./project-breadcrumbs";
+
+const ProjectBreadcrumbs = lazy(() => import("./project-breadcrumbs"));
 
 export default function ProjectLayout({
   children,

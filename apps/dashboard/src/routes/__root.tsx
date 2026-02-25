@@ -12,15 +12,18 @@ import {
   redirect,
   Scripts,
 } from "@tanstack/react-router";
+import type { TRPCClient } from "@trpc/client";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { domAnimation, LazyMotion } from "motion/react";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import type * as React from "react";
+import { TRPCProvider } from "@/lib/trpc";
 import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   trpc: TRPCOptionsProxy<AppRouter>;
+  trpcClient: TRPCClient<AppRouter>;
 }>()({
   head: () => ({
     links: [
@@ -52,20 +55,23 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+  const { queryClient, trpcClient } = Route.useRouteContext();
   return (
-    <RootDocument>
-      <LazyMotion features={domAnimation}>
-        <ThemeProvider>
-          <NuqsAdapter>
-            <ToastProvider>
-              <AnchoredToastProvider>
-                <Outlet />
-              </AnchoredToastProvider>
-            </ToastProvider>
-          </NuqsAdapter>
-        </ThemeProvider>
-      </LazyMotion>
-    </RootDocument>
+    <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
+      <RootDocument>
+        <LazyMotion features={domAnimation}>
+          <ThemeProvider>
+            <NuqsAdapter>
+              <ToastProvider>
+                <AnchoredToastProvider>
+                  <Outlet />
+                </AnchoredToastProvider>
+              </ToastProvider>
+            </NuqsAdapter>
+          </ThemeProvider>
+        </LazyMotion>
+      </RootDocument>
+    </TRPCProvider>
   );
 }
 

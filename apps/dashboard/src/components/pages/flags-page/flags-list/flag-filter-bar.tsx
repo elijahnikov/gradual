@@ -21,7 +21,7 @@ import {
 } from "@remixicon/react";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
 import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -214,7 +214,7 @@ export default function FlagFilterBar({
           </div>
         ) : (
           selectedEnvironments.map((env, index) => (
-            <>
+            <React.Fragment key={env.id}>
               <div
                 className="group/badge txt-compact-small-plus relative inline-flex h-7 w-34 items-center justify-between gap-x-1.5 rounded-sm bg-ui-button-neutral py-1.5 ps-1.5 pe-1 text-ui-fg-base shadow-buttons-neutral outline-none"
                 key={env.id}
@@ -244,7 +244,7 @@ export default function FlagFilterBar({
               {index < selectedEnvironments.length - 1 && (
                 <Separator orientation="vertical" />
               )}
-            </>
+            </React.Fragment>
           ))
         )}
         <DropdownMenu>
