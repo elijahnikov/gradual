@@ -53,3 +53,9 @@ export const getBreadcrumbsSchema = z.object({
   flagSlug: z.string().optional(),
   segmentSlug: z.string().optional(),
 });
+
+export type GetHomeSummaryInput = z.infer<typeof getHomeSummarySchema>;
+export const getHomeSummarySchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+});
