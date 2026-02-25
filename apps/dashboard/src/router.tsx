@@ -4,7 +4,7 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import SuperJSON from "superjson";
 
-import { makeTRPCClient, TRPCProvider } from "@/lib/trpc";
+import { makeTRPCClient } from "@/lib/trpc";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -22,15 +22,8 @@ export function getRouter() {
 
   const router = createRouter({
     routeTree,
-    context: { queryClient, trpc },
+    context: { queryClient, trpc, trpcClient },
     defaultPreload: "intent",
-    Wrap: (props) => (
-      <TRPCProvider
-        queryClient={queryClient}
-        trpcClient={trpcClient}
-        {...props}
-      />
-    ),
   });
   setupRouterSsrQueryIntegration({
     router,

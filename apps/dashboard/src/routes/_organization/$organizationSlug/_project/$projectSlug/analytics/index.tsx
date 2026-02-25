@@ -1,15 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AnalyticsPageComponent from "@/components/pages/analytics-page";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/analytics/"
 )({
-  component: RouteComponent,
+  component: AnalyticsPageComponent,
 });
-
-function RouteComponent() {
-  return (
-    <div>
-      Hello "/_organization/$organizationSlug/_project/$projectSlug/analytics/"!
-    </div>
-  );
-}

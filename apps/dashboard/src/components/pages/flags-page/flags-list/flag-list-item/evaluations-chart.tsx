@@ -8,7 +8,7 @@ import {
 import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { useChartEnvironmentsStore } from "@/lib/stores/chart-environments-store";
 import { useTRPC } from "@/lib/trpc";
@@ -106,7 +106,7 @@ export default function EvaluationsPreviewChart({
   return (
     <div className="flex items-center justify-center gap-2">
       {chartDataByEnvironment.map(({ env, data }, index) => (
-        <>
+        <React.Fragment key={env.id}>
           <ChartContainer
             className="h-10 w-36"
             config={chartConfig}
@@ -155,7 +155,7 @@ export default function EvaluationsPreviewChart({
           {index < chartDataByEnvironment.length - 1 && (
             <Separator className="h-10" orientation="vertical" />
           )}
-        </>
+        </React.Fragment>
       ))}
     </div>
   );
