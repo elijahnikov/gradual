@@ -284,7 +284,7 @@ export default function LatencyWidget() {
           isAnimationActive={false}
           stroke="var(--chart-3)"
           strokeWidth={1.5}
-          type="monotone"
+          type="linear"
         />
         <Area
           connectNulls
@@ -294,7 +294,7 @@ export default function LatencyWidget() {
           isAnimationActive={false}
           stroke="var(--chart-2)"
           strokeWidth={1.5}
-          type="monotone"
+          type="linear"
         />
         <Area
           connectNulls
@@ -304,7 +304,7 @@ export default function LatencyWidget() {
           isAnimationActive={false}
           stroke="var(--chart-1)"
           strokeWidth={1.5}
-          type="monotone"
+          type="linear"
         />
       </AreaChart>
     </ChartContainer>

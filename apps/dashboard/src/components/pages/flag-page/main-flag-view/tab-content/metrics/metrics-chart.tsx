@@ -6,7 +6,7 @@ import {
   ChartTooltipContent,
 } from "@gradual/ui/chart";
 import { useMemo } from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useMetricsStore } from "./metrics-store";
 import type { MetricsBucket, MetricsVariation } from "./types";
 
@@ -65,7 +65,29 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
 
   return (
     <ChartContainer className="h-full w-full" config={chartConfig}>
-      <LineChart accessibilityLayer data={chartData}>
+      <AreaChart accessibilityLayer data={chartData}>
+        <defs>
+          {visibleVariations.map((variation) => {
+            const originalIndex = variations.findIndex(
+              (v) => v.id === variation.id
+            );
+            const color =
+              variation.color ?? getVariationColorByIndex(originalIndex);
+            return (
+              <linearGradient
+                id={`grad-${variation.id}`}
+                key={variation.id}
+                x1="0"
+                x2="0"
+                y1="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            );
+          })}
+        </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis
           axisLine={false}
@@ -94,21 +116,22 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
           const originalIndex = variations.findIndex(
             (v) => v.id === variation.id
           );
+          const color =
+            variation.color ?? getVariationColorByIndex(originalIndex);
           return (
-            <Line
+            <Area
               dataKey={variation.name}
               dot={false}
+              fill={`url(#grad-${variation.id})`}
               isAnimationActive={false}
               key={variation.id}
-              stroke={
-                variation.color ?? getVariationColorByIndex(originalIndex)
-              }
+              stroke={color}
               strokeWidth={2}
-              type="monotone"
+              type="linear"
             />
           );
         })}
-      </LineChart>
+      </AreaChart>
     </ChartContainer>
   );
 }

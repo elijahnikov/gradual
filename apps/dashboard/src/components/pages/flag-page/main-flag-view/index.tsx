@@ -222,7 +222,7 @@ function MetricsTabSkeleton() {
       </div>
       {/* Chart area */}
       <div className="h-full min-h-[400px] border-t">
-        <div className="h-full bg-ui-bg-base py-2 pt-4 pr-4 pb-2">
+        <div className="h-full bg-ui-bg-base px-4 py-2 pt-4 pb-2">
           <Skeleton className="h-full w-full rounded-md" />
         </div>
       </div>

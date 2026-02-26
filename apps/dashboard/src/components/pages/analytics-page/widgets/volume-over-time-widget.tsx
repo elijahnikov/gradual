@@ -186,7 +186,7 @@ export default function VolumeOverTimeWidget() {
           isAnimationActive={false}
           stroke="var(--chart-1)"
           strokeWidth={2}
-          type="monotone"
+          type="linear"
         />
       </AreaChart>
     </ChartContainer>
