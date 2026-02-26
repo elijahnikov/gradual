@@ -1,5 +1,4 @@
 import { cn } from "@gradual/ui";
-import { Card } from "@gradual/ui/card";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
 import {
@@ -9,7 +8,17 @@ import {
 } from "@remixicon/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { type ReactNode, Suspense } from "react";
+import {
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+import {
+  type LiveEvaluation,
+  useLiveEvaluationListener,
+} from "@/hooks/use-live-evaluations";
 import { useTRPC } from "@/lib/trpc";
 import HomeKpiCards from "./home-kpi-cards";
 import HomeTopFlags from "./home-top-flags";
@@ -75,21 +84,65 @@ function HomeContent({
     })
   );
 
+  const [liveEvalCount, setLiveEvalCount] = useState(0);
+  const [liveFlagCounts, setLiveFlagCounts] = useState<Map<string, number>>(
+    () => new Map()
+  );
+  const [liveVolumePoints, setLiveVolumePoints] = useState<
+    { time: number; value: number }[]
+  >([]);
+
+  useLiveEvaluationListener(
+    useCallback((event: LiveEvaluation) => {
+      setLiveEvalCount((c) => c + 1);
+
+      setLiveFlagCounts((prev) => {
+        const next = new Map(prev);
+        next.set(event.featureFlagId, (next.get(event.featureFlagId) ?? 0) + 1);
+        return next;
+      });
+
+      setLiveVolumePoints((prev) => [
+        ...prev,
+        { time: Date.now() / 1000, value: (prev.at(-1)?.value ?? 0) + 1 },
+      ]);
+    }, [])
+  );
+
+  const enrichedData = useMemo(
+    () => ({
+      ...data,
+      evaluations24h: {
+        ...data.evaluations24h,
+        current: data.evaluations24h.current + liveEvalCount,
+      },
+    }),
+    [data, liveEvalCount]
+  );
+
+  const enrichedTopFlags = useMemo(
+    () =>
+      data.topFlags.map((f) => ({
+        ...f,
+        count: f.count + (liveFlagCounts.get(f.flagId) ?? 0),
+      })),
+    [data.topFlags, liveFlagCounts]
+  );
+
   return (
     <>
-      <HomeKpiCards data={data} />
+      <HomeKpiCards data={enrichedData} />
 
       <Section
         className="border-t"
         icon={RiBarChartBoxLine}
         title="Evaluation Volume (7d)"
       >
-        <div className="p-3">
-          <Card>
-            <div className="flex h-[300px] items-center px-3 py-3">
-              <HomeVolumeChart data={data.volumeOverTime} />
-            </div>
-          </Card>
+        <div className="h-[400px] p-3">
+          <HomeVolumeChart
+            data={data.volumeOverTime}
+            livePoints={liveVolumePoints}
+          />
         </div>
       </Section>
 
@@ -103,7 +156,7 @@ function HomeContent({
         </Section>
         <Section icon={RiLineChartLine} title="Top Flags (24h)">
           <HomeTopFlags
-            data={data.topFlags}
+            data={enrichedTopFlags}
             organizationSlug={organizationSlug}
             projectSlug={projectSlug}
           />

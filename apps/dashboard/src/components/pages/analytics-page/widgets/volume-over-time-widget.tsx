@@ -4,9 +4,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@gradual/ui/chart";
+import { useTheme } from "@gradual/ui/theme";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Liveline } from "liveline";
+import { useMemo } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 function formatTimeLabel(isoString: string, granularity: string): string {
@@ -35,13 +39,38 @@ function formatYAxis(value: number): string {
   return String(value);
 }
 
+const ONE_DAY_SECS = 86_400;
+
+function formatLivelineTime(t: number): string {
+  const date = new Date(t * 1000);
+  const now = Date.now() / 1000;
+  const ago = now - t;
+
+  if (ago > ONE_DAY_SECS) {
+    return date.toLocaleString(undefined, {
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function VolumeOverTimeWidget() {
+  const { resolvedTheme } = useTheme();
   const trpc = useTRPC();
   const organizationSlug = useAnalyticsStore((s) => s.organizationSlug);
   const projectSlug = useAnalyticsStore((s) => s.projectSlug);
   const dateRange = useAnalyticsStore((s) => s.dateRange);
   const environmentIds = useAnalyticsStore((s) => s.selectedEnvironmentIds);
   const flagIds = useAnalyticsStore((s) => s.selectedFlagIds);
+
+  const live = useAnalyticsLive();
 
   const { data } = useSuspenseQuery(
     trpc.analytics.getVolumeOverTime.queryOptions({
@@ -53,6 +82,59 @@ export default function VolumeOverTimeWidget() {
       flagIds: flagIds.length > 0 ? flagIds : undefined,
     })
   );
+
+  const livelineData = useMemo(() => {
+    const points: { time: number; value: number }[] = data.data.map((d) => ({
+      time: new Date(d.time).getTime() / 1000,
+      value: d.count,
+    }));
+
+    for (const p of live.volumePoints) {
+      points.push(p);
+    }
+
+    return points;
+  }, [data.data, live.volumePoints]);
+
+  const currentValue = useMemo(
+    () => livelineData.at(-1)?.value ?? 0,
+    [livelineData]
+  );
+
+  const windowSecs = useMemo(() => {
+    const first = livelineData[0];
+    const last = livelineData.at(-1);
+    if (!(first && last)) {
+      return 60;
+    }
+    const span = last.time - first.time;
+    return Math.max(60, Math.ceil(span * 1.1));
+  }, [livelineData]);
+
+  if (live.isLive) {
+    if (livelineData.length === 0) {
+      return (
+        <div className="flex h-full items-center justify-center text-ui-fg-muted">
+          No data available for the selected time range
+        </div>
+      );
+    }
+
+    return (
+      <Liveline
+        color="#3b82f6"
+        data={livelineData}
+        formatTime={formatLivelineTime}
+        formatValue={(v) => formatYAxis(Math.round(v))}
+        grid
+        momentum={false}
+        scrub
+        theme={resolvedTheme}
+        value={currentValue}
+        window={windowSecs}
+      />
+    );
+  }
 
   const chartData = data.data.map((point) => ({
     label: formatTimeLabel(point.time, data.granularity),
@@ -75,10 +157,7 @@ export default function VolumeOverTimeWidget() {
   }
 
   return (
-    <ChartContainer
-      className="h-full max-h-[350px] min-h-[350px] w-full"
-      config={chartConfig}
-    >
+    <ChartContainer className="h-full w-full" config={chartConfig}>
       <AreaChart
         accessibilityLayer
         data={chartData}

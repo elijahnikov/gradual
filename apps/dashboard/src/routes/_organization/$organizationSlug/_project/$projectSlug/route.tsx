@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { LiveEvaluationProvider } from "@/hooks/use-live-evaluations";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug"
@@ -22,5 +23,9 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
-  return <Outlet />;
+  return (
+    <LiveEvaluationProvider>
+      <Outlet />
+    </LiveEvaluationProvider>
+  );
 }

@@ -2,6 +2,7 @@ import { Text } from "@gradual/ui/text";
 import { RiArrowDownLine, RiArrowUpLine } from "@remixicon/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 function computeTrend(
@@ -40,10 +41,11 @@ export default function ErrorRateWidget() {
     })
   );
 
-  const errorRate =
-    data.current.totalEvaluations > 0
-      ? (data.current.errorCount / data.current.totalEvaluations) * 100
-      : 0;
+  const live = useAnalyticsLive();
+  const totalEvals = data.current.totalEvaluations + live.totalEvaluations;
+  const totalErrors = data.current.errorCount + live.errorCount;
+
+  const errorRate = totalEvals > 0 ? (totalErrors / totalEvals) * 100 : 0;
 
   const previousErrorRate =
     data.previous.totalEvaluations > 0
@@ -53,9 +55,9 @@ export default function ErrorRateWidget() {
   const trend = computeTrend(errorRate, previousErrorRate);
 
   return (
-    <div className="flex h-full flex-col justify-center">
+    <div className="flex h-full flex-col justify-center px-1 pb-2">
       <div className="flex items-baseline gap-2">
-        <span className="font-semibold text-4xl tracking-tight">
+        <span className="font-semibold text-3xl tracking-tight">
           {errorRate.toFixed(2)}%
         </span>
         {trend.direction !== "neutral" && (
@@ -74,7 +76,7 @@ export default function ErrorRateWidget() {
         )}
       </div>
       <Text className="text-ui-fg-muted" size="xsmall">
-        {data.current.errorCount} errors / {data.current.totalEvaluations} total
+        {totalErrors} errors / {totalEvals} total
       </Text>
     </div>
   );

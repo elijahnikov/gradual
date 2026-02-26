@@ -1,72 +1,82 @@
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@gradual/ui/chart";
-import { Area, AreaChart, XAxis } from "recharts";
+import { Text } from "@gradual/ui/text";
+import { useTheme } from "@gradual/ui/theme";
+import { Liveline } from "liveline";
+import { useMemo } from "react";
 
-const chartConfig: ChartConfig = {
-  evaluations: {
-    label: "Evaluations",
-    color: "var(--chart-1)",
-  },
-};
+const ONE_DAY_SECS = 86_400;
 
-export default function HomeVolumeChart({
-  data,
-}: {
-  data: { time: string; count: number }[];
-}) {
-  const chartData = data.map((point) => {
-    const date = new Date(point.time);
-    return {
-      label: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      evaluations: point.count,
-    };
+function formatLivelineTime(t: number): string {
+  const date = new Date(t * 1000);
+  const now = Date.now() / 1000;
+  const ago = now - t;
+
+  if (ago > ONE_DAY_SECS) {
+    return date.toLocaleString(undefined, {
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
   });
+}
 
-  if (chartData.length === 0) {
+interface Props {
+  data: { time: string; count: number }[];
+  livePoints: { time: number; value: number }[];
+}
+
+export default function HomeVolumeChart({ data, livePoints }: Props) {
+  const { resolvedTheme } = useTheme();
+
+  const chartData = useMemo(() => {
+    const points: { time: number; value: number }[] = data.map((d) => ({
+      time: new Date(d.time).getTime() / 1000,
+      value: d.count,
+    }));
+
+    for (const p of livePoints) {
+      points.push(p);
+    }
+
+    return points;
+  }, [data, livePoints]);
+
+  const currentValue = useMemo(() => chartData.at(-1)?.value ?? 0, [chartData]);
+
+  const windowSecs = useMemo(() => {
+    const first = chartData[0];
+    const last = chartData.at(-1);
+    if (!(first && last)) {
+      return 60;
+    }
+    const span = last.time - first.time;
+    return Math.max(60, Math.ceil(span * 1.1));
+  }, [chartData]);
+
+  if (chartData.length === 0 && livePoints.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-ui-fg-muted">
-        No evaluation data in the last 7 days
+        <Text size="small">No evaluation data in the last 7 days</Text>
       </div>
     );
   }
 
   return (
-    <ChartContainer className="h-full w-full" config={chartConfig}>
-      <AreaChart
-        data={chartData}
-        margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
-      >
-        <defs>
-          <linearGradient id="homeVolGrad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis
-          axisLine={false}
-          dataKey="label"
-          interval="preserveStartEnd"
-          tick={{ fontSize: 11 }}
-          tickLine={false}
-          tickMargin={4}
-        />
-        <ChartTooltip content={<ChartTooltipContent />} />
-        <Area
-          dataKey="evaluations"
-          fill="url(#homeVolGrad)"
-          isAnimationActive={false}
-          stroke="var(--chart-1)"
-          strokeWidth={1.5}
-          type="monotone"
-        />
-      </AreaChart>
-    </ChartContainer>
+    <Liveline
+      color="#3b82f6"
+      data={chartData}
+      formatTime={formatLivelineTime}
+      grid
+      momentum={false}
+      scrub
+      theme={resolvedTheme}
+      value={currentValue}
+      window={windowSecs}
+    />
   );
 }

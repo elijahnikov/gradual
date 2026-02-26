@@ -32,7 +32,7 @@ function KpiCard({
   trend?: { value: number; direction: "up" | "down" | "neutral" };
 }) {
   return (
-    <div className="flex flex-col gap-1 p-3">
+    <div className="flex flex-col gap-1 p-2">
       <Card>
         <div className="flex items-center gap-2">
           <Icon className="size-3.5 text-ui-fg-muted" />

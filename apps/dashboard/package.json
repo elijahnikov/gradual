@@ -39,6 +39,7 @@
     "@types/lodash": "^4.17.23",
     "better-auth": "catalog:better-auth",
     "dayjs": "^1.11.19",
+    "liveline": "^0.0.6",
     "lodash": "^4.17.23",
     "motion": "^12.33.0",
     "nitro": "3.0.1-alpha.1",

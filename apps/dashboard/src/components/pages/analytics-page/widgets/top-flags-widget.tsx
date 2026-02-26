@@ -10,7 +10,9 @@ import {
 import { Text } from "@gradual/ui/text";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 function formatNumber(value: number): string {
@@ -31,6 +33,8 @@ export default function TopFlagsWidget() {
   const environmentIds = useAnalyticsStore((s) => s.selectedEnvironmentIds);
   const flagIds = useAnalyticsStore((s) => s.selectedFlagIds);
 
+  const live = useAnalyticsLive();
+
   const { data } = useSuspenseQuery(
     trpc.analytics.getTopFlags.queryOptions({
       organizationSlug,
@@ -43,7 +47,15 @@ export default function TopFlagsWidget() {
     })
   );
 
-  if (data.data.length === 0) {
+  const mergedFlags = useMemo(() => {
+    const merged = data.data.map((f) => ({
+      ...f,
+      count: f.count + (live.flagCounts.get(f.flagId) ?? 0),
+    }));
+    return merged.sort((a, b) => b.count - a.count);
+  }, [data.data, live.flagCounts]);
+
+  if (mergedFlags.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-ui-fg-muted">
         No flag data available
@@ -61,7 +73,7 @@ export default function TopFlagsWidget() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.data.map((flag) => (
+          {mergedFlags.map((flag) => (
             <TableRow key={flag.flagId}>
               <TableCell>
                 <Link

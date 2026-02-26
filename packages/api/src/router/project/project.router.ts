@@ -52,4 +52,13 @@ export const projectRouter = {
     .query((opts) => {
       return services.getHomeSummary({ ...opts });
     }),
+
+  watchEvaluations: protectedOrganizationProcedure({ project: ["read"] })
+    .input(schemas.watchProjectEvaluationsSchema)
+    .subscription((opts) => services.watchProjectEvaluations({ ...opts })),
+
+  /** Temporary: emit fake evaluation events for testing realtime */
+  seedLiveEvaluation: protectedOrganizationProcedure({ project: ["read"] })
+    .input(schemas.seedLiveEvaluationSchema)
+    .mutation((opts) => services.seedLiveEvaluation({ ...opts })),
 } satisfies TRPCRouterRecord;

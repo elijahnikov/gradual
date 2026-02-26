@@ -13,6 +13,7 @@ import { createApiKey } from "../api-key/api-key.services";
 import { seedDefaultAttributes } from "../attributes/attributes.services";
 import { createEnvironment } from "../environment";
 import { getEnvironmentColorByIndex } from "../environment/environment.utils";
+import { ee } from "../evaluations/evaluations.emitter";
 import type {
   CreateProjectInput,
   DeleteProjectInput,
@@ -21,7 +22,9 @@ import type {
   GetHomeSummaryInput,
   GetProjectByIdInput,
   GetProjectBySlugInput,
+  SeedLiveEvaluationInput,
   UpdateProjectInput,
+  WatchProjectEvaluationsInput,
 } from "./project.schemas";
 
 export const createProject = async ({
@@ -475,3 +478,142 @@ export const getHomeSummary = async ({
     })),
   };
 };
+
+export async function* watchProjectEvaluations({
+  ctx,
+  input,
+  signal,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: WatchProjectEvaluationsInput;
+  signal: AbortSignal | undefined;
+}) {
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: (table, { and: a, eq: e, isNull: n }) =>
+      a(
+        e(table.slug, input.projectSlug),
+        e(table.organizationId, ctx.organization.id),
+        n(table.deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  // Pre-load flag name/key mapping for enrichment
+  const flags = await ctx.db
+    .select({
+      id: featureFlag.id,
+      name: featureFlag.name,
+      key: featureFlag.key,
+    })
+    .from(featureFlag)
+    .where(eq(featureFlag.projectId, foundProject.id));
+
+  const flagMap = new Map(
+    flags.map((f) => [f.id, { name: f.name, key: f.key }])
+  );
+  const flagIds = new Set(flags.map((f) => f.id));
+
+  const iterable = ee.toIterable("add", { signal });
+
+  for await (const [event] of iterable) {
+    if (!flagIds.has(event.featureFlagId)) {
+      continue;
+    }
+
+    const flag = flagMap.get(event.featureFlagId);
+
+    yield {
+      id: event.id,
+      featureFlagId: event.featureFlagId,
+      flagName: flag?.name ?? null,
+      flagKey: flag?.key ?? null,
+      environmentId: event.environmentId,
+      errorDetail: event.errorDetail,
+      sdkPlatform: event.sdkPlatform,
+      evaluationDurationUs: event.evaluationDurationUs,
+      createdAt: event.createdAt,
+    };
+  }
+}
+
+/** Temporary: emit fake evaluation events for testing realtime. No DB insert. */
+export async function seedLiveEvaluation({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: SeedLiveEvaluationInput;
+}) {
+  const foundProject = await ctx.db.query.project.findFirst({
+    where: (table, { and: a, eq: e }) =>
+      a(
+        e(table.organizationId, ctx.organization.id),
+        e(table.slug, input.projectSlug),
+        isNull(table.deletedAt)
+      ),
+  });
+
+  if (!foundProject) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const flags = await ctx.db
+    .select({ id: featureFlag.id })
+    .from(featureFlag)
+    .where(eq(featureFlag.projectId, foundProject.id));
+
+  if (flags.length === 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Project has no flags",
+    });
+  }
+
+  const envs = await ctx.db
+    .select({ id: environment.id })
+    .from(environment)
+    .where(eq(environment.projectId, foundProject.id));
+
+  const platforms = ["browser", "node", "react-native", "python"];
+  const pick = <T>(arr: T[]): T => {
+    const item = arr[Math.floor(Math.random() * arr.length)];
+    if (item === undefined) {
+      throw new Error("Array is empty");
+    }
+    return item;
+  };
+
+  for (let i = 0; i < input.count; i++) {
+    const baseDurationUs = Math.floor(Math.random() * 50_000) + 500;
+    const hasSpike = Math.random() < 0.05;
+
+    ee.emit("add", {
+      id: crypto.randomUUID(),
+      featureFlagId: pick(flags).id,
+      environmentId: envs.length > 0 ? pick(envs).id : crypto.randomUUID(),
+      variationId: null,
+      value: Math.random() > 0.5,
+      reasons: [{ type: "default" }],
+      evaluatedAt: new Date(),
+      ruleId: null,
+      sdkVersion: "1.0.0",
+      userAgent: null,
+      createdAt: new Date(),
+      matchedTargetName: null,
+      flagConfigVersion: null,
+      sdkPlatform: pick(platforms),
+      errorDetail: Math.random() < 0.05 ? "timeout" : null,
+      evaluationDurationUs: hasSpike ? baseDurationUs * 8 : baseDurationUs,
+      isAnonymous: null,
+      inputsUsed: null,
+      traceId: null,
+      schemaVersion: null,
+      policyVersion: null,
+    });
+  }
+
+  return { emitted: input.count };
+}

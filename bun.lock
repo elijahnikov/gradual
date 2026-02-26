@@ -50,6 +50,7 @@
         "@types/lodash": "^4.17.23",
         "better-auth": "catalog:better-auth",
         "dayjs": "^1.11.19",
+        "liveline": "^0.0.6",
         "lodash": "^4.17.23",
         "motion": "^12.33.0",
         "nitro": "3.0.1-alpha.1",
@@ -2666,6 +2667,8 @@
     "lines-and-columns": ["lines-and-columns@1.2.4", "", {}, "sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg=="],
 
     "linkify-it": ["linkify-it@5.0.0", "", { "dependencies": { "uc.micro": "^2.0.0" } }, "sha512-5aHCbzQRADcdP+ATqnDuhhJ/MRIqDkZX5pyjFHRRysS8vZ5AbqGEoFIb6pYHPZ+L/OC2Lc+xT8uHVVR5CAK/wQ=="],
+
+    "liveline": ["liveline@0.0.6", "", { "peerDependencies": { "react": ">=18" } }, "sha512-ZHw/Xgh1elzCc361YFRW4+rqGPl8dWdDDS26XYLxkn4uYBlEs5V6OajpIC75l2Lff1Q+I8TvBvav4rbLGHIpJg=="],
 
     "load-tsconfig": ["load-tsconfig@0.2.5", "", {}, "sha512-IXO6OCs9yg8tMKzfPZ1YmheJbZCiEsnBdcB03l0OcfK9prKnJb96siuHCr5Fl37/yo9DnKU+TLpxzTUspw9shg=="],
 

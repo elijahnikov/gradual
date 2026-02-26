@@ -4,9 +4,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@gradual/ui/chart";
+import { useTheme } from "@gradual/ui/theme";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Liveline, type LivelineSeries } from "liveline";
+import { useMemo } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 function formatTimeLabel(isoString: string, granularity: string): string {
@@ -36,13 +40,47 @@ function formatDuration(us: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
+const ONE_DAY_SECS = 86_400;
+
+function formatLivelineTime(t: number): string {
+  const date = new Date(t * 1000);
+  const now = Date.now() / 1000;
+  const ago = now - t;
+
+  if (ago > ONE_DAY_SECS) {
+    return date.toLocaleString(undefined, {
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function computePercentile(sorted: number[], p: number): number {
+  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, idx)] ?? 0;
+}
+
 const chartConfig: ChartConfig = {
   p50: { label: "p50", color: "var(--chart-1)" },
   p95: { label: "p95", color: "var(--chart-2)" },
   p99: { label: "p99", color: "var(--chart-3)" },
 };
 
+const SERIES_COLORS = {
+  p50: "#3b82f6",
+  p95: "#f59e0b",
+  p99: "#ef4444",
+};
+
 export default function LatencyWidget() {
+  const { resolvedTheme } = useTheme();
   const trpc = useTRPC();
   const organizationSlug = useAnalyticsStore((s) => s.organizationSlug);
   const projectSlug = useAnalyticsStore((s) => s.projectSlug);
@@ -61,12 +99,124 @@ export default function LatencyWidget() {
     })
   );
 
-  const chartData = data.data.map((point) => ({
-    label: formatTimeLabel(point.time, data.granularity),
-    p50: point.p50 ?? 0,
-    p95: point.p95 ?? 0,
-    p99: point.p99 ?? 0,
-  }));
+  const live = useAnalyticsLive();
+
+  const livelineSeries = useMemo((): LivelineSeries[] | null => {
+    if (!live.isLive) {
+      return null;
+    }
+
+    const p50Data = data.data.map((d) => ({
+      time: new Date(d.time).getTime() / 1000,
+      value: d.p50 ?? 0,
+    }));
+    const p95Data = data.data.map((d) => ({
+      time: new Date(d.time).getTime() / 1000,
+      value: d.p95 ?? 0,
+    }));
+    const p99Data = data.data.map((d) => ({
+      time: new Date(d.time).getTime() / 1000,
+      value: d.p99 ?? 0,
+    }));
+
+    if (live.latencyValues.length > 0) {
+      const sorted = [...live.latencyValues].sort((a, b) => a - b);
+      const now = Date.now() / 1000;
+      p50Data.push({ time: now, value: computePercentile(sorted, 50) });
+      p95Data.push({ time: now, value: computePercentile(sorted, 95) });
+      p99Data.push({ time: now, value: computePercentile(sorted, 99) });
+    }
+
+    const lastP50 = p50Data.at(-1)?.value ?? 0;
+    const lastP95 = p95Data.at(-1)?.value ?? 0;
+    const lastP99 = p99Data.at(-1)?.value ?? 0;
+
+    return [
+      {
+        id: "p50",
+        data: p50Data,
+        value: lastP50,
+        color: SERIES_COLORS.p50,
+        label: "p50",
+      },
+      {
+        id: "p95",
+        data: p95Data,
+        value: lastP95,
+        color: SERIES_COLORS.p95,
+        label: "p95",
+      },
+      {
+        id: "p99",
+        data: p99Data,
+        value: lastP99,
+        color: SERIES_COLORS.p99,
+        label: "p99",
+      },
+    ];
+  }, [data.data, live.isLive, live.latencyValues]);
+
+  const windowSecs = useMemo(() => {
+    if (!livelineSeries) {
+      return 60;
+    }
+    const allTimes = livelineSeries.flatMap((s) => s.data.map((d) => d.time));
+    const min = Math.min(...allTimes);
+    const max = Math.max(...allTimes);
+    if (max <= min) {
+      return 60;
+    }
+    return Math.max(60, Math.ceil((max - min) * 1.1));
+  }, [livelineSeries]);
+
+  const chartData = useMemo(() => {
+    const points = data.data.map((point) => ({
+      label: formatTimeLabel(point.time, data.granularity),
+      p50: point.p50 ?? 0,
+      p95: point.p95 ?? 0,
+      p99: point.p99 ?? 0,
+    }));
+
+    if (live.isLive && live.latencyValues.length > 0) {
+      const sorted = [...live.latencyValues].sort((a, b) => a - b);
+      points.push({
+        label: "Now",
+        p50: computePercentile(sorted, 50),
+        p95: computePercentile(sorted, 95),
+        p99: computePercentile(sorted, 99),
+      });
+    }
+
+    return points;
+  }, [data.data, data.granularity, live.isLive, live.latencyValues]);
+
+  if (livelineSeries) {
+    const primary = livelineSeries[0];
+    const hasData = primary && livelineSeries.some((s) => s.data.length >= 2);
+
+    if (!(hasData && primary)) {
+      return (
+        <div className="flex h-full items-center justify-center text-ui-fg-muted">
+          No latency data available
+        </div>
+      );
+    }
+
+    return (
+      <Liveline
+        data={primary.data}
+        formatTime={formatLivelineTime}
+        formatValue={(v) => formatDuration(Math.round(v))}
+        grid
+        momentum={false}
+        scrub
+        series={livelineSeries}
+        theme={resolvedTheme}
+        value={primary.value}
+        window={windowSecs}
+      />
+    );
+  }
 
   if (chartData.length === 0) {
     return (
@@ -77,10 +227,7 @@ export default function LatencyWidget() {
   }
 
   return (
-    <ChartContainer
-      className="h-full max-h-[220px] w-full"
-      config={chartConfig}
-    >
+    <ChartContainer className="h-full w-full" config={chartConfig}>
       <AreaChart
         accessibilityLayer
         data={chartData}
