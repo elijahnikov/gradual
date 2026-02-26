@@ -156,3 +156,13 @@ export function useAnalyticsStore<T>(
   }
   return useStore(store, selector);
 }
+
+export function isDateRangeLive(
+  preset: TimeframePreset,
+  dateRange: { to: Date }
+): boolean {
+  if (preset !== "custom") {
+    return true;
+  }
+  return dateRange.to.getTime() >= Date.now() - 60 * 60 * 1000;
+}

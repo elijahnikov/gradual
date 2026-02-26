@@ -1,16 +1,14 @@
 import { cn } from "@gradual/ui";
-import { Card } from "@gradual/ui/card";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
-import type { LucideIcon } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode, Suspense } from "react";
 
-type WidgetVariant = "kpi" | "chart" | "bar" | "table";
+type WidgetVariant = "kpi" | "chart" | "canvas" | "bar" | "table";
 
 interface WidgetWrapperProps {
   title: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: React.ComponentType<{ className?: string }>;
   children: ReactNode;
   className?: string;
   variant?: WidgetVariant;
@@ -82,7 +80,7 @@ export default function WidgetWrapper({
   variant = "chart",
 }: WidgetWrapperProps) {
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${className ?? ""}`}>
+    <div className={cn("flex h-full flex-col overflow-hidden", className)}>
       <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
         {Icon && <Icon className="size-4 shrink-0 text-ui-fg-muted" />}
         <div>
@@ -97,19 +95,28 @@ export default function WidgetWrapper({
         </div>
       </div>
       <div
-        className={`min-h-0 flex-1 ${variant === "chart" ? "flex items-center px-3 py-3" : "p-3"}`}
+        className={cn(
+          "min-h-0 flex-1",
+          variant === "chart" && "flex items-center px-3 py-3",
+          variant === "canvas" && "pt-2",
+          variant !== "chart" && variant !== "canvas" && "pt-2"
+        )}
       >
         <WidgetErrorBoundary>
           <Suspense
             fallback={
-              <div className="h-full w-full p-2">
+              <div className="h-full w-full px-2 pb-2">
                 <WidgetSkeleton variant={variant} />
               </div>
             }
           >
-            <Card className={cn(variant === "table" && "p-0", "h-full")}>
-              {children}
-            </Card>
+            {variant === "canvas" ? (
+              children
+            ) : (
+              <div className={cn(variant === "table" && "p-0", "h-full px-2")}>
+                {children}
+              </div>
+            )}
           </Suspense>
         </WidgetErrorBoundary>
       </div>

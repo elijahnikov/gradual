@@ -2,6 +2,7 @@ import { Text } from "@gradual/ui/text";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 const PLATFORM_COLORS = [
@@ -20,6 +21,8 @@ export default function SdkPlatformWidget() {
   const environmentIds = useAnalyticsStore((s) => s.selectedEnvironmentIds);
   const flagIds = useAnalyticsStore((s) => s.selectedFlagIds);
 
+  const live = useAnalyticsLive();
+
   const { data } = useSuspenseQuery(
     trpc.analytics.getSdkPlatformBreakdown.queryOptions({
       organizationSlug,
@@ -32,14 +35,23 @@ export default function SdkPlatformWidget() {
   );
 
   const chartItems = useMemo(() => {
-    const maxCount = data.data[0]?.count ?? 0;
-    return data.data.map((item, i) => ({
-      name: item.platform,
-      count: item.count,
+    const merged = new Map<string, number>();
+    for (const item of data.data) {
+      merged.set(item.platform, item.count);
+    }
+    for (const [platform, count] of live.platformCounts) {
+      merged.set(platform, (merged.get(platform) ?? 0) + count);
+    }
+    const sorted = [...merged.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+    const maxCount = sorted[0]?.count ?? 0;
+    return sorted.map((item, i) => ({
+      ...item,
       pct: maxCount > 0 ? (item.count / maxCount) * 100 : 0,
       color: PLATFORM_COLORS[i % PLATFORM_COLORS.length],
     }));
-  }, [data.data]);
+  }, [data.data, live.platformCounts]);
 
   if (chartItems.length === 0) {
     return (
@@ -50,20 +62,23 @@ export default function SdkPlatformWidget() {
   }
 
   return (
-    <div className="flex h-full flex-col justify-center gap-3">
+    <div className="flex h-full flex-col justify-center gap-4 px-2">
       {chartItems.map((item) => (
         <div className="flex flex-col gap-1" key={item.name}>
           <div className="flex items-baseline justify-between">
-            <Text className="text-ui-fg-muted" size="xsmall">
+            <Text className="font-mono text-ui-fg-muted" size="xsmall">
               {item.name}
             </Text>
-            <Text className="text-ui-fg-muted tabular-nums" size="xsmall">
+            <Text
+              className="font-mono text-ui-fg-muted tabular-nums"
+              size="xsmall"
+            >
               {item.count.toLocaleString()}
             </Text>
           </div>
-          <div className="h-2 w-full rounded-full bg-ui-bg-subtle-hover">
+          <div className="h-3 w-full rounded-xs bg-ui-bg-subtle-hover shadow-elevation-card-rest">
             <div
-              className="h-full rounded-full transition-all"
+              className="h-full rounded-xs transition-all"
               style={{
                 width: `${Math.max(item.pct, 2)}%`,
                 backgroundColor: item.color,

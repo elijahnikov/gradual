@@ -1,8 +1,7 @@
-import { Button } from "@gradual/ui/button";
 import { Separator } from "@gradual/ui/separator";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useMutation, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
@@ -119,11 +118,6 @@ export default function FlagsList({
     [selectedFlags.length, clearSelectedFlags]
   );
 
-  const firstFlag = allFlags[0]?.featureFlag;
-  const seedMutation = useMutation(
-    trpc.featureFlags.seedEvaluations.mutationOptions()
-  );
-
   useHotkey("Mod+A", handleSelectAll);
   useHotkey("Escape", handleClearSelection);
 
@@ -136,35 +130,6 @@ export default function FlagsList({
 
   return (
     <div className="flex flex-1 flex-col">
-      {firstFlag && (
-        <div className="flex items-center gap-2 border-b px-3 py-2">
-          <Button
-            disabled={seedMutation.isPending}
-            onClick={() =>
-              seedMutation.mutate({
-                flagId: firstFlag.id,
-                organizationId: firstFlag.organizationId,
-                projectId: firstFlag.projectId,
-                count: 1000,
-              })
-            }
-            size="small"
-            variant="secondary"
-          >
-            {seedMutation.isPending
-              ? "Seeding..."
-              : `Seed 1k evals for "${firstFlag.name}"`}
-          </Button>
-          {seedMutation.isSuccess && (
-            <span className="text-ui-fg-muted text-xs">Done!</span>
-          )}
-          {seedMutation.isError && (
-            <span className="text-red-500 text-xs">
-              {seedMutation.error.message}
-            </span>
-          )}
-        </div>
-      )}
       <div className="flex flex-col">
         {allFlags.map((item, _index) => (
           <React.Fragment key={item.featureFlag.id}>

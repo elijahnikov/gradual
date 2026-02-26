@@ -53,3 +53,24 @@ export const getBreadcrumbsSchema = z.object({
   flagSlug: z.string().optional(),
   segmentSlug: z.string().optional(),
 });
+
+export type GetHomeSummaryInput = z.infer<typeof getHomeSummarySchema>;
+export const getHomeSummarySchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+});
+
+export type WatchProjectEvaluationsInput = z.infer<
+  typeof watchProjectEvaluationsSchema
+>;
+export const watchProjectEvaluationsSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+});
+
+export type SeedLiveEvaluationInput = z.infer<typeof seedLiveEvaluationSchema>;
+export const seedLiveEvaluationSchema = z.object({
+  organizationSlug: z.string(),
+  projectSlug: z.string(),
+  count: z.number().int().min(1).max(100).default(1),
+});

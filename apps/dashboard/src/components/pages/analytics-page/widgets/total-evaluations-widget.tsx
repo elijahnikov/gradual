@@ -2,6 +2,7 @@ import { Text } from "@gradual/ui/text";
 import { RiArrowDownLine, RiArrowUpLine } from "@remixicon/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc";
+import { useAnalyticsLive } from "../analytics-live-context";
 import { useAnalyticsStore } from "../analytics-store";
 
 function formatNumber(value: number): string {
@@ -50,16 +51,16 @@ export default function TotalEvaluationsWidget() {
     })
   );
 
-  const trend = computeTrend(
-    data.current.totalEvaluations,
-    data.previous.totalEvaluations
-  );
+  const live = useAnalyticsLive();
+  const displayTotal = data.current.totalEvaluations + live.totalEvaluations;
+
+  const trend = computeTrend(displayTotal, data.previous.totalEvaluations);
 
   return (
-    <div className="flex h-full flex-col justify-center">
+    <div className="flex h-full flex-col justify-center px-1 pb-2">
       <div className="flex items-baseline gap-2">
-        <span className="font-semibold text-4xl tracking-tight">
-          {formatNumber(data.current.totalEvaluations)}
+        <span className="font-semibold text-3xl tracking-tight">
+          {formatNumber(displayTotal)}
         </span>
       </div>
       <div className="flex items-center gap-x-2">

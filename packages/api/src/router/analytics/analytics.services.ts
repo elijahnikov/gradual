@@ -397,7 +397,8 @@ export async function getSdkPlatformBreakdown({
       )
     )
     .groupBy(sql`COALESCE(${featureFlagEvaluation.sdkPlatform}, 'unknown')`)
-    .orderBy(sql`count(*) DESC`);
+    .orderBy(sql`count(*) DESC`)
+    .limit(5);
 
   const total = results.reduce((sum, r) => sum + r.count, 0);
 
