@@ -83,16 +83,14 @@ export default function WidgetWrapper({
     <div className={cn("flex h-full flex-col overflow-hidden", className)}>
       <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
         {Icon && <Icon className="size-4 shrink-0 text-ui-fg-muted" />}
-        <div>
-          <Text size="small" weight="plus">
-            {title}
+        <Text size="small" weight="plus">
+          {title}
+        </Text>
+        {description ? (
+          <Text className="font-mono text-ui-fg-muted" size="xsmall">
+            {description}
           </Text>
-          {description ? (
-            <Text className="text-ui-fg-muted" size="xsmall">
-              {description}
-            </Text>
-          ) : null}
-        </div>
+        ) : null}
       </div>
       <div
         className={cn(

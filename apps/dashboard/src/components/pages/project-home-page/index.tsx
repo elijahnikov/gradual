@@ -62,9 +62,11 @@ function Section({
   className?: string;
 }) {
   return (
-    <div className={cn(className)}>
+    <div className={cn("flex flex-col", className)}>
       <SectionHeader icon={icon} title={title} />
-      <Suspense fallback={<SectionSkeleton />}>{children}</Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <div className="min-h-0 flex-1">{children}</div>
+      </Suspense>
     </div>
   );
 }
@@ -130,15 +132,15 @@ function HomeContent({
   );
 
   return (
-    <>
+    <div className="flex flex-1 flex-col overflow-y-auto">
       <HomeKpiCards data={enrichedData} />
 
       <Section
-        className="border-t"
+        className="min-h-[400px] flex-1 border-t"
         icon={RiBarChartBoxLine}
         title="Evaluation Volume (7d)"
       >
-        <div className="h-[400px] p-3">
+        <div className="h-full p-3">
           <HomeVolumeChart
             data={data.volumeOverTime}
             livePoints={liveVolumePoints}
@@ -146,7 +148,7 @@ function HomeContent({
         </div>
       </Section>
 
-      <div className="grid min-h-0 flex-1 divide-x border-t sm:grid-cols-2">
+      <div className="grid min-h-[300px] divide-x border-t sm:grid-cols-2">
         <Section icon={RiTimeLine} title="Recently Changed">
           <RecentFlags
             data={data.recentFlags}
@@ -162,7 +164,7 @@ function HomeContent({
           />
         </Section>
       </div>
-    </>
+    </div>
   );
 }
 

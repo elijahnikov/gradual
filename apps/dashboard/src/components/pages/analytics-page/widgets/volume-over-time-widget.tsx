@@ -122,6 +122,7 @@ export default function VolumeOverTimeWidget() {
 
     return (
       <Liveline
+        badge={false}
         color="#3b82f6"
         data={livelineData}
         formatTime={formatLivelineTime}

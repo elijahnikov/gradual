@@ -204,6 +204,7 @@ export default function LatencyWidget() {
 
     return (
       <Liveline
+        badge={false}
         data={primary.data}
         formatTime={formatLivelineTime}
         formatValue={(v) => formatDuration(Math.round(v))}

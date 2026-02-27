@@ -68,6 +68,7 @@ export default function HomeVolumeChart({ data, livePoints }: Props) {
 
   return (
     <Liveline
+      badge={false}
       color="#3b82f6"
       data={chartData}
       formatTime={formatLivelineTime}

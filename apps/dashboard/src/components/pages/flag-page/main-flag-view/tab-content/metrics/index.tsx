@@ -83,17 +83,15 @@ function MetricsContent({
   }
 
   return (
-    <div className="flex w-full flex-1 flex-col">
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <MetricsHeader variations={data.variations} />
       <MetricsSummary
         previousTotals={data.previousTotals}
         totals={data.totals}
         variations={data.variations}
       />
-      <div className="h-full min-h-[400px] border-t">
-        <div className="h-full bg-ui-bg-base py-2 pt-4 pr-4 pb-2">
-          <MetricsChart data={data.data} variations={data.variations} />
-        </div>
+      <div className="min-h-0 flex-1 border-t pt-2">
+        <MetricsChart data={data.data} variations={data.variations} />
       </div>
     </div>
   );
