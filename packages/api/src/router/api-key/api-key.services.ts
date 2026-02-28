@@ -2,6 +2,7 @@ import { authEnv } from "@gradual/auth/env";
 import { eq } from "@gradual/db";
 import { apiKey } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateApiKeyInput,
@@ -74,6 +75,15 @@ export const createApiKey = async ({
   } catch (err) {
     console.error("Error submitting API key to Cloudflare Worker:", err);
   }
+
+  createAuditLog({
+    ctx,
+    action: "create",
+    resourceType: "api_key",
+    resourceId: createdApiKey.id,
+    projectId: createdApiKey.projectId,
+    metadata: { name: input.name, keyPrefix: key.slice(0, 8) },
+  });
 
   return {
     ...createdApiKey,
@@ -173,6 +183,15 @@ export const revokeApiKey = async ({
   } catch (err) {
     console.error("Error revoking API key in Cloudflare Worker:", err);
   }
+
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "api_key",
+    resourceId: revokedApiKey.id,
+    projectId: revokedApiKey.projectId,
+    metadata: { name: revokedApiKey.name, keyPrefix: revokedApiKey.keyPrefix },
+  });
 
   return revokedApiKey;
 };

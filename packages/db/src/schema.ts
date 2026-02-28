@@ -909,6 +909,71 @@ export const auditLog = pgTable(
   ]
 );
 
+export const webhook = pgTable(
+  "webhook",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    name: varchar("name", { length: 256 }).notNull(),
+    url: text("url").notNull(),
+    signingSecret: text("signing_secret").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    eventFilters: jsonb("event_filters")
+      .$type<{ actions: string[]; resourceTypes: string[] }>()
+      .default({ actions: [], resourceTypes: [] }),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    createdById: uuid("created_by_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("webhook_org_idx").on(table.organizationId),
+    index("webhook_org_enabled_idx").on(table.organizationId, table.enabled),
+  ]
+);
+
+export const webhookDelivery = pgTable(
+  "webhook_delivery",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    webhookId: uuid("webhook_id")
+      .notNull()
+      .references(() => webhook.id, { onDelete: "cascade" }),
+    auditLogId: uuid("audit_log_id").references(() => auditLog.id, {
+      onDelete: "set null",
+    }),
+    eventAction: varchar("event_action", { length: 64 }).notNull(),
+    eventResourceType: varchar("event_resource_type", { length: 64 }).notNull(),
+    requestUrl: text("request_url").notNull(),
+    requestPayload: jsonb("request_payload"),
+    responseStatus: integer("response_status"),
+    responseBody: text("response_body"),
+    success: boolean("success").notNull().default(false),
+    error: text("error"),
+    durationMs: integer("duration_ms"),
+    attemptNumber: integer("attempt_number").notNull().default(1),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("webhook_delivery_webhook_idx").on(table.webhookId),
+    index("webhook_delivery_webhook_delivered_idx").on(
+      table.webhookId,
+      table.deliveredAt
+    ),
+    index("webhook_delivery_audit_log_idx").on(table.auditLogId),
+  ]
+);
+
 export const organizationRelations = relations(organization, ({ many }) => ({
   projects: many(project),
   environments: many(environment),
@@ -916,6 +981,7 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   segments: many(segment),
   apiKeys: many(apiKey),
   auditLogs: many(auditLog),
+  webhooks: many(webhook),
 }));
 
 export const projectRelations = relations(project, ({ one, many }) => ({
@@ -1215,3 +1281,29 @@ export const auditLogRelations = relations(auditLog, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const webhookRelations = relations(webhook, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [webhook.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
+    fields: [webhook.createdById],
+    references: [user.id],
+  }),
+  deliveries: many(webhookDelivery),
+}));
+
+export const webhookDeliveryRelations = relations(
+  webhookDelivery,
+  ({ one }) => ({
+    webhook: one(webhook, {
+      fields: [webhookDelivery.webhookId],
+      references: [webhook.id],
+    }),
+    auditLog: one(auditLog, {
+      fields: [webhookDelivery.auditLogId],
+      references: [auditLog.id],
+    }),
+  })
+);

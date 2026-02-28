@@ -5,6 +5,7 @@ import {
   featureFlagEnvironment,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
@@ -91,6 +92,20 @@ export const createEnvironment = async ({
         `Failed to queue snapshot for ${createdEnvironment.slug}:`,
         err
       );
+    });
+  }
+
+  if (createdEnvironment) {
+    createAuditLog({
+      ctx,
+      action: "create",
+      resourceType: "environment",
+      resourceId: createdEnvironment.id,
+      projectId: foundProject.id,
+      metadata: {
+        name: createdEnvironment.name,
+        slug: createdEnvironment.slug,
+      },
     });
   }
 
@@ -239,6 +254,15 @@ export const updateEnvironment = async ({
     });
   }
 
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "environment",
+    resourceId: updatedEnvironment.id,
+    projectId: updatedEnvironment.projectId,
+    metadata: { name: rest.name, slug: rest.slug },
+  });
+
   return updatedEnvironment;
 };
 
@@ -276,6 +300,15 @@ export const deleteEnvironment = async ({
       )
     )
     .returning();
+
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "environment",
+    resourceId: foundEnvironment.id,
+    projectId: foundEnvironment.projectId,
+    metadata: { name: foundEnvironment.name, slug: foundEnvironment.slug },
+  });
 
   return deletedEnvironment;
 };

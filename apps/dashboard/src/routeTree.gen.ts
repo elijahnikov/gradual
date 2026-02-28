@@ -29,6 +29,7 @@ import { Route as OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRou
 import { Route as OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/segments/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/flags/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/environments/index'
+import { Route as OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/audit-log/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/api/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/analytics/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugSegmentsSegmentSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/segments/$segmentSlug/index'
@@ -151,6 +152,15 @@ const OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute =
         OrganizationOrganizationSlugProjectProjectSlugRouteRoute,
     } as any,
   )
+const OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute =
+  OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRouteImport.update(
+    {
+      id: '/audit-log/',
+      path: '/audit-log/',
+      getParentRoute: () =>
+        OrganizationOrganizationSlugProjectProjectSlugRouteRoute,
+    } as any,
+  )
 const OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute =
   OrganizationOrganizationSlugProjectProjectSlugApiIndexRouteImport.update({
     id: '/api/',
@@ -202,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/$organizationSlug/$projectSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/$organizationSlug/$projectSlug/analytics/': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/$organizationSlug/$projectSlug/api/': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
+  '/$organizationSlug/$projectSlug/audit-log/': typeof OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute
   '/$organizationSlug/$projectSlug/environments/': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/$organizationSlug/$projectSlug/flags/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/segments/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
@@ -223,6 +234,7 @@ export interface FileRoutesByTo {
   '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/$organizationSlug/$projectSlug/analytics': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/$organizationSlug/$projectSlug/api': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
+  '/$organizationSlug/$projectSlug/audit-log': typeof OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute
   '/$organizationSlug/$projectSlug/environments': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/$organizationSlug/$projectSlug/flags': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/$organizationSlug/$projectSlug/segments': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
@@ -250,6 +262,7 @@ export interface FileRoutesById {
   '/_organization/$organizationSlug/_project/$projectSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/analytics/': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/api/': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
+  '/_organization/$organizationSlug/_project/$projectSlug/audit-log/': typeof OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/environments/': typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/flags/': typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/segments/': typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
@@ -275,6 +288,7 @@ export interface FileRouteTypes {
     | '/$organizationSlug/$projectSlug/'
     | '/$organizationSlug/$projectSlug/analytics/'
     | '/$organizationSlug/$projectSlug/api/'
+    | '/$organizationSlug/$projectSlug/audit-log/'
     | '/$organizationSlug/$projectSlug/environments/'
     | '/$organizationSlug/$projectSlug/flags/'
     | '/$organizationSlug/$projectSlug/segments/'
@@ -296,6 +310,7 @@ export interface FileRouteTypes {
     | '/$organizationSlug/$projectSlug'
     | '/$organizationSlug/$projectSlug/analytics'
     | '/$organizationSlug/$projectSlug/api'
+    | '/$organizationSlug/$projectSlug/audit-log'
     | '/$organizationSlug/$projectSlug/environments'
     | '/$organizationSlug/$projectSlug/flags'
     | '/$organizationSlug/$projectSlug/segments'
@@ -322,6 +337,7 @@ export interface FileRouteTypes {
     | '/_organization/$organizationSlug/_project/$projectSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug/analytics/'
     | '/_organization/$organizationSlug/_project/$projectSlug/api/'
+    | '/_organization/$organizationSlug/_project/$projectSlug/audit-log/'
     | '/_organization/$organizationSlug/_project/$projectSlug/environments/'
     | '/_organization/$organizationSlug/_project/$projectSlug/flags/'
     | '/_organization/$organizationSlug/_project/$projectSlug/segments/'
@@ -483,6 +499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRouteImport
       parentRoute: typeof OrganizationOrganizationSlugProjectProjectSlugRouteRoute
     }
+    '/_organization/$organizationSlug/_project/$projectSlug/audit-log/': {
+      id: '/_organization/$organizationSlug/_project/$projectSlug/audit-log/'
+      path: '/audit-log'
+      fullPath: '/$organizationSlug/$projectSlug/audit-log/'
+      preLoaderRoute: typeof OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugProjectProjectSlugRouteRoute
+    }
     '/_organization/$organizationSlug/_project/$projectSlug/api/': {
       id: '/_organization/$organizationSlug/_project/$projectSlug/api/'
       path: '/api'
@@ -530,6 +553,7 @@ interface OrganizationOrganizationSlugProjectProjectSlugRouteRouteChildren {
   OrganizationOrganizationSlugProjectProjectSlugIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
+  OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute
   OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute: typeof OrganizationOrganizationSlugProjectProjectSlugSegmentsIndexRoute
@@ -546,6 +570,8 @@ const OrganizationOrganizationSlugProjectProjectSlugRouteRouteChildren: Organiza
       OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute,
+    OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute:
+      OrganizationOrganizationSlugProjectProjectSlugAuditLogIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute:
       OrganizationOrganizationSlugProjectProjectSlugEnvironmentsIndexRoute,
     OrganizationOrganizationSlugProjectProjectSlugFlagsIndexRoute:

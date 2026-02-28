@@ -8,6 +8,7 @@ import {
   segment,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
 import { seedDefaultAttributes } from "../attributes/attributes.services";
@@ -79,6 +80,14 @@ export const createProject = async ({
       organizationId: ctx.organization.id,
     }),
   ]);
+  createAuditLog({
+    ctx,
+    action: "create",
+    resourceType: "project",
+    resourceId: createdProject.id,
+    projectId: createdProject.id,
+    metadata: { name: createdProject.name, slug: createdProject.slug },
+  });
   return createdProject;
 };
 
@@ -160,6 +169,14 @@ export const updateProject = async ({
       message: "Project not found",
     });
   }
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "project",
+    resourceId: updatedProject.id,
+    projectId: updatedProject.id,
+    metadata: rest,
+  });
   return updatedProject;
 };
 
@@ -187,6 +204,14 @@ export const deleteProject = async ({
       message: "Failed to delete project",
     });
   }
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "project",
+    resourceId: deletedProject.id,
+    projectId: deletedProject.id,
+    metadata: { name: deletedProject.name, slug: deletedProject.slug },
+  });
   return deletedProject;
 };
 

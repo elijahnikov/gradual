@@ -20,7 +20,7 @@ function formatNumber(value: number): string {
 function KpiCard({
   icon: Icon,
   title,
-  description,
+
   value,
   subtitle,
   trend,
@@ -34,16 +34,13 @@ function KpiCard({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
-        <Icon className="size-4 shrink-0 text-ui-fg-muted" />
-        <Text size="small" weight="plus">
-          {title}
-        </Text>
-        {description ? (
-          <Text className="font-mono text-ui-fg-muted" size="xsmall">
-            {description}
+      <div className="flex flex-col gap-1.5 border-b bg-ui-bg-subtle px-4 py-3">
+        <div className="flex items-center gap-x-1">
+          {Icon && <Icon className="size-4 shrink-0 text-ui-fg-muted" />}
+          <Text size="small" weight="plus">
+            {title}
           </Text>
-        ) : null}
+        </div>
       </div>
       <div className="flex flex-col justify-center px-4 py-3">
         <div className="flex items-baseline gap-2">

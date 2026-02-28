@@ -40,6 +40,10 @@
       {
         "binding": "EVALUATION_QUEUE",
         "queue": "evaluation-queue"
+      },
+      {
+        "binding": "WEBHOOK_QUEUE",
+        "queue": "webhook-queue"
       }
     ],
     "consumers": [
@@ -53,6 +57,11 @@
         "max_batch_size": 50,
         "max_retries": 3,
         "max_batch_timeout": 30
+      },
+      {
+        "queue": "webhook-queue",
+        "max_batch_size": 10,
+        "max_retries": 3
       }
     ]
   }

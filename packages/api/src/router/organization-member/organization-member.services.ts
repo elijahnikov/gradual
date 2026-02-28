@@ -2,6 +2,7 @@ import { and, eq, ilike, or } from "@gradual/db";
 import { member, user } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { asc, desc } from "drizzle-orm";
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateOrganizationMemberInput,
@@ -31,6 +32,15 @@ export const createOrganizationMember = async ({
       message: "Failed to create member",
     });
   }
+
+  createAuditLog({
+    ctx,
+    action: "create",
+    resourceType: "organization_member",
+    resourceId: input.userId,
+    metadata: { userId: input.userId, role: input.role },
+  });
+
   return createdMember;
 };
 
@@ -177,6 +187,14 @@ export const removeOrganizationMember = async ({
     });
   }
 
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "organization_member",
+    resourceId: memberToRemove.id,
+    metadata: { userId: memberToRemove.userId, role: memberToRemove.role },
+  });
+
   return removedMember;
 };
 
@@ -241,6 +259,18 @@ export const updateMemberRole = async ({
     .set({ role: input.role })
     .where(eq(member.id, input.id))
     .returning();
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "organization_member",
+    resourceId: memberToUpdate.id,
+    metadata: {
+      userId: memberToUpdate.userId,
+      oldRole: memberToUpdate.role,
+      newRole: input.role,
+    },
+  });
 
   return updatedMember;
 };

@@ -46,11 +46,24 @@ interface ApiKeyMetadata {
   projectId: string;
 }
 
+interface AuditLogWebhookMessage {
+  organizationId: string;
+  auditLogId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  projectId: string | null;
+  userId: string;
+  metadata: Record<string, unknown> | null;
+  timestamp: string;
+}
+
 interface Env {
   GRADUAL_API_KEY: KVNamespace;
   GRADUAL_SNAPSHOT: KVNamespace;
   SNAPSHOT_QUEUE: Queue<SnapshotJobMessage>;
   EVALUATION_QUEUE: Queue<EvaluationQueueMessage>;
+  WEBHOOK_QUEUE: Queue<AuditLogWebhookMessage>;
   SNAPSHOT_ROOM: DurableObjectNamespace;
   CLOUDFLARE_WORKERS_ADMIN_KEY: string;
   API_INTERNAL_URL: string;
@@ -723,6 +736,73 @@ async function processSnapshotQueue(
   }
 }
 
+async function adminQueueWebhook(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  if (!verifyAdminAuth(request, env)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const body = (await request.json()) as AuditLogWebhookMessage;
+    if (!(body.organizationId && body.action && body.resourceType)) {
+      return new Response(
+        "Missing required fields: organizationId, action, resourceType",
+        { status: 400 }
+      );
+    }
+
+    await env.WEBHOOK_QUEUE.send(body);
+    return Response.json({ success: true, message: "Webhook dispatch queued" });
+  } catch (err) {
+    console.error("adminQueueWebhook error:", err);
+    return new Response(
+      err instanceof Error ? err.message : "Error queuing webhook dispatch",
+      { status: 500 }
+    );
+  }
+}
+
+async function processWebhookQueue(
+  batch: MessageBatch<unknown>,
+  env: Env
+): Promise<void> {
+  const messages = batch.messages as Message<AuditLogWebhookMessage>[];
+
+  for (const msg of messages) {
+    try {
+      const apiUrl = `${env.API_INTERNAL_URL}/api/trpc/webhooks.dispatch`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          json: {
+            workerSecret: env.CLOUDFLARE_WORKERS_ADMIN_KEY,
+            ...msg.body,
+          },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("processWebhookQueue API error:", errorText);
+        msg.retry();
+        continue;
+      }
+
+      msg.ack();
+    } catch (err) {
+      console.error("processWebhookQueue error:", err);
+      msg.retry();
+    }
+  }
+}
+
 export default {
   async fetch(request, env, _ctx): Promise<Response> {
     const { pathname } = new URL(request.url);
@@ -774,6 +854,8 @@ export default {
         return adminRevokeApiKey(request, env);
       case "/api/v1/update-mau-status":
         return adminUpdateMauStatus(request, env);
+      case "/api/v1/queue-webhook":
+        return adminQueueWebhook(request, env);
       default:
         return new Response("Not found", { status: 404 });
     }
@@ -785,6 +867,9 @@ export default {
   queue(batch, env): Promise<void> {
     if (batch.queue === "evaluation-queue") {
       return processEvaluationQueue(batch, env);
+    }
+    if (batch.queue === "webhook-queue") {
+      return processWebhookQueue(batch, env);
     }
     return processSnapshotQueue(batch, env);
   },
