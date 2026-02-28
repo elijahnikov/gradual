@@ -1,4 +1,5 @@
 import { Badge } from "@gradual/ui/badge";
+import { Card } from "@gradual/ui/card";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
 import { useQuery } from "@tanstack/react-query";
@@ -36,19 +37,19 @@ export default function WebhookDeliveryList({
 
   if (!data?.items.length) {
     return (
-      <div className="rounded-md border p-3">
+      <Card className="p-3">
         <Text className="text-ui-fg-muted" size="xsmall">
           No deliveries yet
         </Text>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="flex flex-col gap-px rounded-md border bg-ui-bg-subtle">
+    <Card>
       {data.items.map((delivery) => (
         <div
-          className="flex items-center gap-3 bg-ui-bg-base px-3 py-1.5 first:rounded-t-md last:rounded-b-md"
+          className="flex items-center gap-x-2 border-b py-1.5"
           key={delivery.id}
         >
           <Badge
@@ -58,7 +59,10 @@ export default function WebhookDeliveryList({
           >
             {delivery.responseStatus ?? "ERR"}
           </Badge>
-          <Text className="font-mono text-ui-fg-muted" size="xsmall">
+          <Text
+            className="font-medium font-mono text-ui-fg-muted"
+            size="xsmall"
+          >
             {delivery.eventAction}.{delivery.eventResourceType}
           </Text>
           {delivery.durationMs != null && (
@@ -76,6 +80,6 @@ export default function WebhookDeliveryList({
           )}
         </div>
       ))}
-    </div>
+    </Card>
   );
 }

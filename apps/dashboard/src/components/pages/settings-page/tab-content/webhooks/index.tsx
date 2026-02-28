@@ -1,31 +1,25 @@
 import { Button } from "@gradual/ui/button";
 import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
-import { RiAddLine, RiWebhookLine } from "@remixicon/react";
+import { RiAddLine } from "@remixicon/react";
 import { Suspense, useState } from "react";
 import WebhookFormDialog from "./webhook-form-dialog";
 import WebhookList from "./webhook-list";
 
-export default function WebhooksSettingsPage() {
+export default function WebhooksSettings() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col sm:h-[calc(100vh-3.75rem)] sm:min-h-[calc(100vh-3.75rem)]">
+    <div className="flex flex-1 flex-col">
       <div className="flex items-center justify-between border-b bg-ui-bg-subtle px-4 py-2">
-        <div className="flex items-center gap-2">
-          <RiWebhookLine className="size-4 text-ui-fg-muted" />
-          <Text size="small" weight="plus">
-            Webhooks
-          </Text>
-          <Text className="text-ui-fg-muted" size="xsmall">
-            Receive real-time notifications when audit log events occur
-          </Text>
-        </div>
+        <Text className="text-ui-fg-muted" size="xsmall">
+          Receive real-time notifications when audit log events occur
+        </Text>
         <Button
           className="gap-x-1"
           onClick={() => setCreateOpen(true)}
           size="small"
-          variant="gradual"
+          variant="outline"
         >
           <RiAddLine className="size-3.5" />
           <span className="text-xs">Add Webhook</span>
