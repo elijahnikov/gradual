@@ -73,7 +73,6 @@ class WidgetErrorBoundary extends Component<
 
 export default function WidgetWrapper({
   title,
-  description,
   icon: Icon,
   children,
   className,
