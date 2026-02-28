@@ -13,6 +13,7 @@ import {
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 
+import { createAuditLog } from "../../lib/audit-log";
 import type {
   ProtectedOrganizationTRPCContext,
   PublicTRPCContext,
@@ -530,6 +531,20 @@ export async function queueAllSnapshotsPublish({
     }
   }
 
+  createAuditLog({
+    ctx,
+    action: "publish",
+    resourceType: "snapshot",
+    resourceId: foundProject.id,
+    projectId: foundProject.id,
+    metadata: {
+      environmentSlug: "all",
+      projectSlug: input.projectSlug,
+      environmentCount: environments.length,
+      queuedCount: queued,
+    },
+  });
+
   return { queued };
 }
 
@@ -587,11 +602,25 @@ export async function publishSnapshot({
     });
   }
 
-  return queueSnapshotPublish({
+  const result = await queueSnapshotPublish({
     orgId: ctx.organization.id,
     projectId: foundProject.id,
     environmentSlug: input.environmentSlug,
   });
+
+  createAuditLog({
+    ctx,
+    action: "publish",
+    resourceType: "snapshot",
+    resourceId: foundProject.id,
+    projectId: foundProject.id,
+    metadata: {
+      environmentSlug: input.environmentSlug,
+      projectSlug: input.projectSlug,
+    },
+  });
+
+  return result;
 }
 
 export function buildForWorker({

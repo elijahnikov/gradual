@@ -150,7 +150,9 @@ function ChangeIndicator({ change }: { change: number }) {
 
   const isPositive = change > 0;
   const Icon = isPositive ? RiArrowUpSLine : RiArrowDownSLine;
-  const colorClass = isPositive ? "text-green-600" : "text-red-600";
+  const colorClass = isPositive
+    ? "dark:text-green-400 text-green-600"
+    : "dark:text-red-400 text-red-600";
 
   return (
     <div className={`mt-1 flex items-center gap-0.5 ${colorClass}`}>

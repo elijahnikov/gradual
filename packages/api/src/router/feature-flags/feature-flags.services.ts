@@ -33,7 +33,7 @@ import {
   user,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
-
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { ee } from "../evaluations/evaluations.emitter";
 import { queueSnapshotPublish } from "../snapshots/snapshots.services";
@@ -406,6 +406,19 @@ export const createCompleteFeatureFlag = async ({
     });
   }
 
+  createAuditLog({
+    ctx,
+    action: "create",
+    resourceType: "feature_flag",
+    resourceId: result.flag.id,
+    projectId: foundProject.id,
+    metadata: {
+      name: flagData.name,
+      key: flagData.key,
+      type: flagData.type,
+    },
+  });
+
   return {
     ...result.flag,
     variations: result.variations,
@@ -770,6 +783,18 @@ export const deleteFlags = async ({
 
   queueSnapshotsForAllEnvironments(ctx, project.id);
 
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "feature_flag",
+    resourceId: flagIds[0] ?? "",
+    projectId: project.id,
+    metadata: {
+      flagIds,
+      count: flagIds.length,
+    },
+  });
+
   return { success: true, deleted: flagIds.length };
 };
 
@@ -916,6 +941,16 @@ export const saveTargetingRules = async ({
   const flagEnvironment = await ctx.db.query.featureFlagEnvironment.findFirst({
     where: ({ featureFlagId, environmentId }, { eq, and }) =>
       and(eq(featureFlagId, flagId), eq(environmentId, foundEnvironment.id)),
+    with: {
+      targets: {
+        orderBy: (target, { asc }) => asc(target.sortOrder),
+        with: {
+          rules: { orderBy: (rule, { asc }) => asc(rule.sortOrder) },
+          individual: true,
+          segment: true,
+        },
+      },
+    },
   });
 
   if (!flagEnvironment) {
@@ -1105,6 +1140,159 @@ export const saveTargetingRules = async ({
     console.error("Failed to queue snapshot publish:", err);
   });
 
+  const auditFlag = await ctx.db.query.featureFlag.findFirst({
+    where: ({ id }, { eq: e }) => e(id, flagId),
+    columns: { name: true, key: true },
+  });
+
+  // Compute diff between old and new targeting state
+  const oldTargets = flagEnvironment.targets;
+  const oldTargetMap = new Map(oldTargets.map((t) => [t.id, t]));
+  const newTargetIds = new Set(targets.map((t) => t.id));
+
+  interface ConditionSummary {
+    attribute: string;
+    operator: string;
+    value: unknown;
+  }
+  interface TargetDiff {
+    name: string;
+    type: string;
+    conditions?: ConditionSummary[];
+    details?: string[];
+  }
+
+  const formatConditions = (
+    conditions: { attributeKey: string; operator: string; value: unknown }[]
+  ): ConditionSummary[] =>
+    conditions.map((c) => ({
+      attribute: c.attributeKey,
+      operator: c.operator,
+      value: c.value,
+    }));
+
+  const added: TargetDiff[] = [];
+  const removed: TargetDiff[] = [];
+  const modified: TargetDiff[] = [];
+
+  for (const t of targets) {
+    const old = oldTargetMap.get(t.id);
+    if (old) {
+      const details: string[] = [];
+      if (old.name !== t.name) {
+        details.push(`renamed "${old.name}" → "${t.name}"`);
+      }
+      if (old.variationId !== (t.variationId ?? null)) {
+        details.push("variation changed");
+      }
+      if (t.type === "rule") {
+        const oldRules = old.rules ?? [];
+        const newRules = t.conditions ?? [];
+        if (
+          JSON.stringify(
+            oldRules.map((r) => ({
+              attributeKey: r.attributeKey,
+              operator: r.operator,
+              value: r.value,
+            }))
+          ) !==
+          JSON.stringify(
+            newRules.map((r) => ({
+              attributeKey: r.attributeKey,
+              operator: r.operator,
+              value: r.value,
+            }))
+          )
+        ) {
+          details.push("conditions modified");
+        }
+      }
+      if (t.type === "individual") {
+        if (old.individual?.attributeKey !== t.attributeKey) {
+          details.push(
+            `attribute: "${old.individual?.attributeKey}" → "${t.attributeKey}"`
+          );
+        }
+        if (old.individual?.attributeValue !== t.attributeValue) {
+          details.push(
+            `value: "${old.individual?.attributeValue}" → "${t.attributeValue}"`
+          );
+        }
+      }
+      if (t.type === "segment" && old.segment?.segmentId !== t.segmentId) {
+        details.push("segment changed");
+      }
+      if (t.rollout && !old.variationId) {
+        details.push("rollout modified");
+      }
+      if (details.length > 0) {
+        const diff: TargetDiff = { name: t.name, type: t.type, details };
+        if (t.type === "rule" && t.conditions?.length) {
+          diff.conditions = formatConditions(t.conditions);
+        }
+        modified.push(diff);
+      }
+    } else {
+      const diff: TargetDiff = { name: t.name, type: t.type };
+      if (t.type === "rule" && t.conditions?.length) {
+        diff.conditions = formatConditions(t.conditions);
+      }
+      if (t.type === "individual") {
+        diff.details = [`${t.attributeKey} = "${t.attributeValue}"`];
+      }
+      added.push(diff);
+    }
+  }
+  for (const old of oldTargets) {
+    if (!newTargetIds.has(old.id)) {
+      const diff: TargetDiff = { name: old.name, type: old.type };
+      if (old.type === "rule" && old.rules?.length) {
+        diff.conditions = formatConditions(old.rules);
+      }
+      removed.push(diff);
+    }
+  }
+
+  const changes: Record<string, unknown> = {};
+  if (enabled !== undefined && enabled !== flagEnvironment.enabled) {
+    changes.enabled = { from: flagEnvironment.enabled, to: enabled };
+  }
+  if (
+    defaultVariationId &&
+    defaultVariationId !== flagEnvironment.defaultVariationId
+  ) {
+    changes.defaultVariation = "changed";
+  }
+  if (
+    offVariationId !== undefined &&
+    offVariationId !== flagEnvironment.offVariationId
+  ) {
+    changes.offVariation = "changed";
+  }
+  if (added.length > 0) {
+    changes.added = added;
+  }
+  if (removed.length > 0) {
+    changes.removed = removed;
+  }
+  if (modified.length > 0) {
+    changes.modified = modified;
+  }
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "feature_flag",
+    resourceId: flagId,
+    projectId: foundProject.id,
+    metadata: {
+      name: auditFlag?.name,
+      key: auditFlag?.key,
+      environment: environmentSlug,
+      changes,
+    },
+  });
+
   return result;
 };
 
@@ -1168,6 +1356,37 @@ export const updateFeatureFlag = async ({
     .where(eq(featureFlag.id, flagId))
     .returning();
 
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  if (name !== undefined && name !== existingFlag.name) {
+    changes.name = { from: existingFlag.name, to: name };
+  }
+  if (description !== undefined && description !== existingFlag.description) {
+    changes.description = { from: existingFlag.description, to: description };
+  }
+  if (
+    maintainerId !== undefined &&
+    maintainerId !== existingFlag.maintainerId
+  ) {
+    changes.maintainerId = {
+      from: existingFlag.maintainerId,
+      to: maintainerId,
+    };
+  }
+  if (tags !== undefined) {
+    changes.tags = { from: existingFlag.tags, to: tags };
+  }
+
+  if (Object.keys(changes).length > 0) {
+    createAuditLog({
+      ctx,
+      action: "update",
+      resourceType: "feature_flag",
+      resourceId: flagId,
+      projectId: foundProject.id,
+      metadata: { name: existingFlag.name, key: existingFlag.key, changes },
+    });
+  }
+
   return updatedFlag;
 };
 
@@ -1219,6 +1438,19 @@ export const archiveFlag = async ({
     .returning();
 
   queueSnapshotsForAllEnvironments(ctx, foundProject.id);
+
+  createAuditLog({
+    ctx,
+    action: archive ? "archive" : "restore",
+    resourceType: "feature_flag",
+    resourceId: flagId,
+    projectId: foundProject.id,
+    metadata: {
+      name: existingFlag.name,
+      key: existingFlag.key,
+      archive,
+    },
+  });
 
   return updatedFlag;
 };
@@ -1376,6 +1608,37 @@ export const updateVariation = async ({
 
   queueSnapshotsForAllEnvironments(ctx, foundProject.id);
 
+  const variationChanges: Record<string, { from: unknown; to: unknown }> = {};
+  if (name !== undefined && name !== foundVariation.name) {
+    variationChanges.name = { from: foundVariation.name, to: name };
+  }
+  if (value !== undefined && value !== foundVariation.value) {
+    variationChanges.value = { from: foundVariation.value, to: value };
+  }
+  if (description !== undefined && description !== foundVariation.description) {
+    variationChanges.description = {
+      from: foundVariation.description,
+      to: description,
+    };
+  }
+  if (color !== undefined && color !== foundVariation.color) {
+    variationChanges.color = { from: foundVariation.color, to: color };
+  }
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "feature_flag",
+    resourceId: flagId,
+    projectId: foundProject.id,
+    metadata: {
+      name: foundFlag.name,
+      key: foundFlag.key,
+      variationId,
+      changes: variationChanges,
+    },
+  });
+
   return updatedVariation;
 };
 
@@ -1446,6 +1709,20 @@ export const addVariation = async ({
     .returning();
 
   queueSnapshotsForAllEnvironments(ctx, foundProject.id);
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "feature_flag",
+    resourceId: flagId,
+    projectId: foundProject.id,
+    metadata: {
+      name: foundFlag.name,
+      key: foundFlag.key,
+      variationId: newVariation?.id,
+      variationName: name,
+    },
+  });
 
   return newVariation;
 };
@@ -1527,6 +1804,20 @@ export const deleteVariation = async ({
     .where(eq(featureFlagVariation.id, variationId));
 
   queueSnapshotsForAllEnvironments(ctx, foundProject.id);
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "feature_flag",
+    resourceId: flagId,
+    projectId: foundProject.id,
+    metadata: {
+      name: foundFlag.name,
+      key: foundFlag.key,
+      deletedVariationId: variationId,
+      variationName: foundVariation.name,
+    },
+  });
 
   return { success: true };
 };

@@ -1,6 +1,7 @@
 import { member, project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
+import { createAuditLog } from "../../lib/audit-log";
 import type {
   ProtectedOrganizationTRPCContext,
   ProtectedTRPCContext,
@@ -119,6 +120,15 @@ export const updateOrganization = async ({
       message: "Failed to update organization",
     });
   }
+
+  createAuditLog({
+    ctx,
+    action: "update",
+    resourceType: "organization",
+    resourceId: input.organizationId,
+    metadata: { name: input.name, slug: input.slug },
+  });
+
   return updatedOrganization;
 };
 
@@ -142,6 +152,14 @@ export const deleteOrganization = async ({
       message: "Failed to delete organization",
     });
   }
+
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "organization",
+    resourceId: input.organizationId,
+    metadata: {},
+  });
 
   return deletedOrganization;
 };

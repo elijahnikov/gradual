@@ -22,6 +22,7 @@ import {
   segment,
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
+import { createAuditLog } from "../../lib/audit-log";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateSegmentInput,
@@ -276,6 +277,17 @@ export const createSegment = async ({
     })
     .returning();
 
+  if (createdSegment) {
+    createAuditLog({
+      ctx,
+      action: "create",
+      resourceType: "segment",
+      resourceId: createdSegment.id,
+      projectId: foundProject.id,
+      metadata: { name: createdSegment.name, key: createdSegment.key },
+    });
+  }
+
   return createdSegment;
 };
 
@@ -352,6 +364,21 @@ export const updateSegment = async ({
     .set(updates)
     .where(eq(segment.id, segmentId))
     .returning();
+
+  if (updated) {
+    createAuditLog({
+      ctx,
+      action: "update",
+      resourceType: "segment",
+      resourceId: updated.id,
+      projectId: foundProject.id,
+      metadata: {
+        name: updated.name,
+        key: updated.key,
+        changes: Object.keys(updates),
+      },
+    });
+  }
 
   return updated;
 };
@@ -519,6 +546,15 @@ export const deleteSegment = async ({
     .update(segment)
     .set({ deletedAt: sql`now()` })
     .where(eq(segment.id, segmentId));
+
+  createAuditLog({
+    ctx,
+    action: "delete",
+    resourceType: "segment",
+    resourceId: existing.id,
+    projectId: foundProject.id,
+    metadata: { name: existing.name, key: existing.key },
+  });
 
   return { success: true };
 };
