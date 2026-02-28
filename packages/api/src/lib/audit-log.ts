@@ -60,9 +60,7 @@ export function createAuditLog(params: CreateAuditLogParams): void {
     .returning({ id: auditLog.id })
     .then((result) => {
       const auditLogId = result[0]?.id;
-      console.log("[AuditLog] Insert result:", JSON.stringify(result));
       if (auditLogId) {
-        console.log("[AuditLog] Queuing webhook dispatch for:", auditLogId);
         void queueWebhookDispatch({
           organizationId: ctx.organization.id,
           auditLogId,
@@ -97,7 +95,6 @@ async function queueWebhookDispatch(params: {
   try {
     const baseUrl = authEnv().CLOUDFLARE_WORKERS_API_URL;
     const url = `${baseUrl}/queue-webhook`;
-    console.log("[AuditLog] Dispatching webhook to:", url);
     const response = await fetch(url, {
       method: "POST",
       body: JSON.stringify(params),
@@ -107,10 +104,8 @@ async function queueWebhookDispatch(params: {
       },
     });
 
-    const responseText = await response.text();
-    if (response.ok) {
-      console.log("[AuditLog] Webhook queued successfully:", responseText);
-    } else {
+    if (!response.ok) {
+      const responseText = await response.text();
       console.error(
         "[AuditLog] Error queuing webhook dispatch:",
         response.status,

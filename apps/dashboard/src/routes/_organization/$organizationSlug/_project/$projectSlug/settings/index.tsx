@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import WebhooksSettingsPage from "@/components/pages/webhooks-settings-page";
+import SettingsPage from "@/components/pages/settings-page";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/settings/"
@@ -8,5 +8,5 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
-  return <WebhooksSettingsPage />;
+  return <SettingsPage />;
 }

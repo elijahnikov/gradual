@@ -49,5 +49,7 @@ export function usePermissions() {
     // API Keys
     canReadApiKeys: isAtLeast("member"),
     canManageApiKeys: isAtLeast("admin"),
+    // Webhooks
+    canManageWebhooks: isAtLeast("admin"),
   };
 }
