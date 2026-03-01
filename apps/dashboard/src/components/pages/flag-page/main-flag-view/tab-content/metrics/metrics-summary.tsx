@@ -16,19 +16,25 @@ interface MetricsSummaryProps {
   totals: Record<string, number>;
   previousTotals: Record<string, number>;
   variations: MetricsVariation[];
+  liveVariationCounts?: Map<string, number>;
 }
 
 export default function MetricsSummary({
   totals,
   previousTotals,
   variations,
+  liveVariationCounts,
 }: MetricsSummaryProps) {
   const selectedVariationIds = useMetricsStore((s) => s.selectedVariationIds);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const totalEvaluations = variations
     .filter((v) => selectedVariationIds.has(v.id))
-    .reduce((sum, v) => sum + (totals[v.id] ?? 0), 0);
+    .reduce(
+      (sum, v) =>
+        sum + (totals[v.id] ?? 0) + (liveVariationCounts?.get(v.id) ?? 0),
+      0
+    );
 
   const previousTotalEvaluations = variations
     .filter((v) => selectedVariationIds.has(v.id))
@@ -37,7 +43,7 @@ export default function MetricsSummary({
   const variationStats = variations
     .filter((v) => selectedVariationIds.has(v.id))
     .map((v, index) => {
-      const count = totals[v.id] ?? 0;
+      const count = (totals[v.id] ?? 0) + (liveVariationCounts?.get(v.id) ?? 0);
       const previousCount = previousTotals[v.id] ?? 0;
       const percentage =
         totalEvaluations > 0 ? (count / totalEvaluations) * 100 : 0;

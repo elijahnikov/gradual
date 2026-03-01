@@ -71,7 +71,13 @@ export default function HomeVolumeChart({ data, liveEvalCount }: Props) {
       color="#3b82f6"
       data={chartData}
       formatTime={formatLivelineTime}
-      formatValue={(v) => String(Math.round(v))}
+      formatValue={(v) => {
+        const rounded = Math.round(v);
+        if (Math.abs(v - rounded) > 0.01) {
+          return "";
+        }
+        return String(rounded);
+      }}
       grid
       momentum={false}
       scrub

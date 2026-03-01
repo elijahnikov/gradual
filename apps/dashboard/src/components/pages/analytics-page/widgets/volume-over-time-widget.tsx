@@ -122,7 +122,13 @@ export default function VolumeOverTimeWidget() {
         color="#3b82f6"
         data={livelineData}
         formatTime={formatLivelineTime}
-        formatValue={(v) => formatYAxis(Math.round(v))}
+        formatValue={(v) => {
+          const rounded = Math.round(v);
+          if (Math.abs(v - rounded) > 0.01) {
+            return "";
+          }
+          return formatYAxis(rounded);
+        }}
         grid
         momentum={false}
         scrub

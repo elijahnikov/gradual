@@ -581,6 +581,7 @@ export async function* watchProjectEvaluations({
       flagName: flag?.name ?? null,
       flagKey: flag?.key ?? null,
       environmentId: event.environmentId,
+      variationId: event.variationId,
       errorDetail: event.errorDetail,
       sdkPlatform: event.sdkPlatform,
       evaluationDurationUs: event.evaluationDurationUs,

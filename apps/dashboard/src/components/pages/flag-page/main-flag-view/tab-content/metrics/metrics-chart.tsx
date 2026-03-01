@@ -41,9 +41,14 @@ function formatYAxis(value: number): string {
 interface MetricsChartProps {
   data: MetricsBucket[];
   variations: MetricsVariation[];
+  liveVariationCounts?: Map<string, number>;
 }
 
-export default function MetricsChart({ data, variations }: MetricsChartProps) {
+export default function MetricsChart({
+  data,
+  variations,
+  liveVariationCounts,
+}: MetricsChartProps) {
   const { resolvedTheme } = useTheme();
   const selectedVariationIds = useMetricsStore((s) => s.selectedVariationIds);
 
@@ -68,16 +73,17 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
       });
 
       const lastValue = points.at(-1)?.value ?? 0;
+      const liveCount = liveVariationCounts?.get(variation.id) ?? 0;
 
       return {
         id: variation.id,
         data: points,
-        value: lastValue,
+        value: lastValue + liveCount,
         color,
         label: variation.name,
       };
     });
-  }, [data, variations, visibleVariations]);
+  }, [data, variations, visibleVariations, liveVariationCounts]);
 
   const windowSecs = useMemo(() => {
     const allTimes = series.flatMap((s) => s.data.map((d) => d.time));
@@ -116,7 +122,13 @@ export default function MetricsChart({ data, variations }: MetricsChartProps) {
       badge={false}
       data={primary.data}
       formatTime={formatLivelineTime}
-      formatValue={(v) => formatYAxis(Math.round(v))}
+      formatValue={(v) => {
+        const rounded = Math.round(v);
+        if (Math.abs(v - rounded) > 0.01) {
+          return "";
+        }
+        return formatYAxis(rounded);
+      }}
       grid
       momentum={false}
       scrub
