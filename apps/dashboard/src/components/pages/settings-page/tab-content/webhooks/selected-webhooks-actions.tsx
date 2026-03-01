@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { m } from "motion/react";
 import { useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useSelectedWebhooksStore } from "@/lib/stores/selected-webhooks-store";
 import { useTRPC } from "@/lib/trpc";
 
@@ -23,6 +24,7 @@ export default function SelectedWebhooksActions() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { selectedWebhooks, clearSelectedWebhooks } =
     useSelectedWebhooksStore();
+  const { canManageWebhooks } = usePermissions();
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -128,13 +130,15 @@ export default function SelectedWebhooksActions() {
             <RiLink className="size-3" />
             Copy names
           </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-ui-fg-error [&_svg]:text-ui-fg-error"
-            onClick={handleDelete}
-          >
-            <RiDeleteBinLine className="size-3" />
-            Delete
-          </DropdownMenuItem>
+          {canManageWebhooks && (
+            <DropdownMenuItem
+              className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+              onClick={handleDelete}
+            >
+              <RiDeleteBinLine className="size-3" />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </m.div>

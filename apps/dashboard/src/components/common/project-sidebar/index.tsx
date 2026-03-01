@@ -29,11 +29,13 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import CreateNewMenu from "./create-new-menu";
 
 function useNavigationItems() {
   const params = useParams({ strict: false });
   const pathname = useLocation({ select: (location) => location.pathname });
+  const { canViewAuditLog, canReadApiKeys, canViewSettings } = usePermissions();
 
   return useMemo(() => {
     if (!(params?.organizationSlug && params?.projectSlug)) {
@@ -42,7 +44,7 @@ function useNavigationItems() {
 
     const projectPath = `/${params.organizationSlug}/${params.projectSlug}`;
 
-    const items: NavigationItemProps[] = [
+    const topItems: NavigationItemProps[] = [
       {
         icon: RiHome2Fill,
         title: "Home",
@@ -82,34 +84,53 @@ function useNavigationItems() {
         isActive: pathname === `${projectPath}/analytics`,
         shortcutKeys: ["G", "N"],
       },
-      {
-        icon: RiHistoryFill,
-        title: "Audit Log",
-        url: `${projectPath}/audit-log`,
-        isActive: pathname === `${projectPath}/audit-log`,
-        shortcutKeys: ["G", "L"],
-      },
-      {
-        icon: RiKey2Fill,
-        title: "API Keys",
-        url: `${projectPath}/api`,
-        isActive: pathname === `${projectPath}/api`,
-        shortcutKeys: ["G", "K"],
-      },
-      {
-        icon: RiSettings5Fill,
-        title: "Settings",
-        url: `${projectPath}/settings`,
-        isActive: pathname === `${projectPath}/settings`,
-        shortcutKeys: ["G", "S"],
-      },
     ];
 
-    return {
-      topItems: items.slice(0, items.length - 3),
-      bottomItems: items.slice(items.length - 3),
-    };
-  }, [pathname, params?.organizationSlug, params?.projectSlug]);
+    const bottomItems: NavigationItemProps[] = [
+      ...(canViewAuditLog
+        ? [
+            {
+              icon: RiHistoryFill,
+              title: "Audit Log",
+              url: `${projectPath}/audit-log`,
+              isActive: pathname === `${projectPath}/audit-log`,
+              shortcutKeys: ["G", "L"],
+            },
+          ]
+        : []),
+      ...(canReadApiKeys
+        ? [
+            {
+              icon: RiKey2Fill,
+              title: "API Keys",
+              url: `${projectPath}/api`,
+              isActive: pathname === `${projectPath}/api`,
+              shortcutKeys: ["G", "K"],
+            },
+          ]
+        : []),
+      ...(canViewSettings
+        ? [
+            {
+              icon: RiSettings5Fill,
+              title: "Settings",
+              url: `${projectPath}/settings`,
+              isActive: pathname === `${projectPath}/settings`,
+              shortcutKeys: ["G", "S"],
+            },
+          ]
+        : []),
+    ];
+
+    return { topItems, bottomItems };
+  }, [
+    pathname,
+    params?.organizationSlug,
+    params?.projectSlug,
+    canViewAuditLog,
+    canReadApiKeys,
+    canViewSettings,
+  ]);
 }
 
 interface NavigationItemProps {
@@ -180,6 +201,7 @@ function NavigationItem({
 function useNavigationHotkeys() {
   const navigate = useNavigate();
   const params = useParams({ strict: false });
+  const { canViewAuditLog, canReadApiKeys, canViewSettings } = usePermissions();
   const projectPath = `/${params?.organizationSlug}/${params?.projectSlug}`;
 
   const goTo = useCallback(
@@ -194,9 +216,21 @@ function useNavigationHotkeys() {
   useHotkeySequence(["G", "A"], () => goTo(`${projectPath}/segments`));
   useHotkeySequence(["G", "E"], () => goTo(`${projectPath}/environments`));
   useHotkeySequence(["G", "N"], () => goTo(`${projectPath}/analytics`));
-  useHotkeySequence(["G", "L"], () => goTo(`${projectPath}/audit-log`));
-  useHotkeySequence(["G", "K"], () => goTo(`${projectPath}/api`));
-  useHotkeySequence(["G", "S"], () => goTo(`${projectPath}/settings`));
+  useHotkeySequence(["G", "L"], () => {
+    if (canViewAuditLog) {
+      goTo(`${projectPath}/audit-log`);
+    }
+  });
+  useHotkeySequence(["G", "K"], () => {
+    if (canReadApiKeys) {
+      goTo(`${projectPath}/api`);
+    }
+  });
+  useHotkeySequence(["G", "S"], () => {
+    if (canViewSettings) {
+      goTo(`${projectPath}/settings`);
+    }
+  });
 }
 
 export default function ProjectSidebar() {

@@ -3,11 +3,14 @@ import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
 import { RiAddLine } from "@remixicon/react";
 import { Suspense, useState } from "react";
+import { PermissionTooltip } from "@/components/common/permission-tooltip";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import WebhookFormDialog from "./webhook-form-dialog";
 import WebhookList from "./webhook-list";
 
 export default function WebhooksSettings() {
   const [createOpen, setCreateOpen] = useState(false);
+  const { canManageWebhooks } = usePermissions();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -15,15 +18,20 @@ export default function WebhooksSettings() {
         <Text className="text-ui-fg-muted" size="xsmall">
           Receive real-time notifications when audit log events occur
         </Text>
-        <Button
-          className="gap-x-1"
-          onClick={() => setCreateOpen(true)}
-          size="small"
-          variant="outline"
+        <PermissionTooltip
+          hasPermission={canManageWebhooks}
+          message="You don't have permission to manage webhooks"
         >
-          <RiAddLine className="size-3.5" />
-          <span className="text-xs">Add Webhook</span>
-        </Button>
+          <Button
+            className="gap-x-1"
+            onClick={() => setCreateOpen(true)}
+            size="small"
+            variant="outline"
+          >
+            <RiAddLine className="size-3.5" />
+            <span className="text-xs">Add Webhook</span>
+          </Button>
+        </PermissionTooltip>
       </div>
       <Suspense fallback={<WebhookListSkeleton />}>
         <WebhookList />

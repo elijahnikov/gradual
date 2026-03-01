@@ -34,6 +34,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import CreateEnvironmentDialog from "../dialogs/create-environment-dialog";
 import CreateFlagDialog from "../dialogs/create-flag-dialog";
 import CreateSegmentDialog from "../dialogs/create-segment-dialog";
@@ -77,6 +78,14 @@ export default function CommandPalette({
   const [createSegmentOpen, setCreateSegmentOpen] = useState(false);
   const navigate = useNavigate();
   const params = useParams({ strict: false });
+  const {
+    canViewAuditLog,
+    canReadApiKeys,
+    canViewSettings,
+    canCreateFlags,
+    canCreateSegments,
+    canCreateEnvironments,
+  } = usePermissions();
 
   const projectPath =
     params?.organizationSlug && params?.projectSlug
@@ -123,47 +132,71 @@ export default function CommandPalette({
           icon: RiLineChartFill,
           action: () => goTo(`${projectPath}/analytics`),
         },
-        {
-          value: "go-audit-log",
-          label: "Audit Log",
-          icon: RiHistoryFill,
-          action: () => goTo(`${projectPath}/audit-log`),
-        },
-        {
-          value: "go-api-keys",
-          label: "API Keys",
-          icon: RiKey2Fill,
-          action: () => goTo(`${projectPath}/api`),
-        },
-        {
-          value: "go-settings",
-          label: "Settings",
-          icon: RiSettings5Fill,
-          action: () => goTo(`${projectPath}/settings`),
-        },
+        ...(canViewAuditLog
+          ? [
+              {
+                value: "go-audit-log",
+                label: "Audit Log",
+                icon: RiHistoryFill,
+                action: () => goTo(`${projectPath}/audit-log`),
+              },
+            ]
+          : []),
+        ...(canReadApiKeys
+          ? [
+              {
+                value: "go-api-keys",
+                label: "API Keys",
+                icon: RiKey2Fill,
+                action: () => goTo(`${projectPath}/api`),
+              },
+            ]
+          : []),
+        ...(canViewSettings
+          ? [
+              {
+                value: "go-settings",
+                label: "Settings",
+                icon: RiSettings5Fill,
+                action: () => goTo(`${projectPath}/settings`),
+              },
+            ]
+          : []),
       ]
     : [];
 
   const actionItems: Item[] = projectPath
     ? [
-        {
-          value: "create-flag",
-          label: "Create feature flag",
-          icon: RiFlagLine,
-          action: () => setCreateFlagOpen(true),
-        },
-        {
-          value: "create-segment",
-          label: "Create segment",
-          icon: RiFolder2Fill,
-          action: () => setCreateSegmentOpen(true),
-        },
-        {
-          value: "create-environment",
-          label: "Create environment",
-          icon: RiEarthFill,
-          action: () => setCreateEnvOpen(true),
-        },
+        ...(canCreateFlags
+          ? [
+              {
+                value: "create-flag",
+                label: "Create feature flag",
+                icon: RiFlagLine,
+                action: () => setCreateFlagOpen(true),
+              },
+            ]
+          : []),
+        ...(canCreateSegments
+          ? [
+              {
+                value: "create-segment",
+                label: "Create segment",
+                icon: RiFolder2Fill,
+                action: () => setCreateSegmentOpen(true),
+              },
+            ]
+          : []),
+        ...(canCreateEnvironments
+          ? [
+              {
+                value: "create-environment",
+                label: "Create environment",
+                icon: RiEarthFill,
+                action: () => setCreateEnvOpen(true),
+              },
+            ]
+          : []),
       ]
     : [];
 

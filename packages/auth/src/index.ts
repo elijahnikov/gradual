@@ -1,4 +1,5 @@
 import { expo } from "@better-auth/expo";
+import { dash } from "@better-auth/infra";
 import { db } from "@gradual/db/client";
 import { checkout, polar, portal, usage } from "@polar-sh/better-auth";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
@@ -59,6 +60,7 @@ export function initAuth<
       },
     },
     plugins: [
+      dash(),
       lastLoginMethod(),
       organization({
         ac,

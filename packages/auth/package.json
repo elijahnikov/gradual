@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "catalog:better-auth",
+    "@better-auth/infra": "catalog:better-auth",
     "@gradual/db": "*",
     "@polar-sh/better-auth": "catalog:better-auth",
     "@polar-sh/sdk": "catalog:better-auth",

@@ -7,6 +7,7 @@ import {
 } from "@gradual/ui/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQueryStates } from "nuqs";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   type SettingsTab,
   settingsSearchParams,
@@ -15,22 +16,38 @@ import {
 
 export default function SettingsSubheader() {
   const [{ tab }, setQueryStates] = useQueryStates(settingsSearchParams);
+  const { canManageWebhooks } = usePermissions();
 
   const handleTabChange = (value: string) => {
     setQueryStates({ tab: value as SettingsTab });
   };
 
+  const tabPermissions: Record<SettingsTab, boolean> = {
+    general: true,
+    webhooks: canManageWebhooks,
+    integrations: true,
+    notifications: true,
+  };
+
   useHotkey("1", () => {
-    setQueryStates({ tab: "general" });
+    if (tabPermissions.general) {
+      setQueryStates({ tab: "general" });
+    }
   });
   useHotkey("2", () => {
-    setQueryStates({ tab: "webhooks" });
+    if (tabPermissions.webhooks) {
+      setQueryStates({ tab: "webhooks" });
+    }
   });
   useHotkey("3", () => {
-    setQueryStates({ tab: "integrations" });
+    if (tabPermissions.integrations) {
+      setQueryStates({ tab: "integrations" });
+    }
   });
   useHotkey("4", () => {
-    setQueryStates({ tab: "notifications" });
+    if (tabPermissions.notifications) {
+      setQueryStates({ tab: "notifications" });
+    }
   });
 
   return (
@@ -41,12 +58,14 @@ export default function SettingsSubheader() {
             {settingsTabList.map(
               ({ tab: tabValue, icon, description, hotkey }) => {
                 const Icon = icon;
+                const hasPermission = tabPermissions[tabValue];
                 return (
                   <Tooltip key={tabValue}>
                     <TooltipTrigger
                       render={
                         <TabsTab
                           className="h-6! px-2 text-[12px]! sm:max-h-6!"
+                          disabled={!hasPermission}
                           value={tabValue}
                         />
                       }
@@ -56,8 +75,10 @@ export default function SettingsSubheader() {
                     </TooltipTrigger>
                     {description && (
                       <TooltipContent className="flex items-center">
-                        {description}
-                        {hotkey && (
+                        {hasPermission
+                          ? description
+                          : "You don't have permission to access this tab"}
+                        {hasPermission && hotkey && (
                           <kbd className="relative -top-0.25 ml-1.5 rounded border border-ui-border-base bg-ui-bg-base px-1 py-0.5 font-mono text-[10px] text-ui-fg-base">
                             {hotkey}
                           </kbd>

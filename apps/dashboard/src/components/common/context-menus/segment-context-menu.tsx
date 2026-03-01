@@ -70,18 +70,21 @@ export default function SegmentContextMenu({
             <RiLink className="size-3" />
             Copy link
           </ContextMenu.Item>
-          <ContextMenu.Separator />
-          <ContextMenu.Item
-            className="text-ui-fg-error [&_svg]:text-ui-fg-error"
-            disabled={!canDeleteSegments}
-            onClick={(e) => {
-              e.preventDefault();
-              setDeleteDialogOpen(true);
-            }}
-          >
-            <RiDeleteBinLine className="size-3" />
-            Delete
-          </ContextMenu.Item>
+          {canDeleteSegments && (
+            <>
+              <ContextMenu.Separator />
+              <ContextMenu.Item
+                className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <RiDeleteBinLine className="size-3" />
+                Delete
+              </ContextMenu.Item>
+            </>
+          )}
         </ContextMenu.Content>
       </ContextMenu>
       <DeleteSegmentDialog
