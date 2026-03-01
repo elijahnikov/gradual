@@ -17,7 +17,6 @@ import { toastManager } from "@gradual/ui/toast";
 import { RiFlagLine } from "@remixicon/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 
 interface DeleteSegmentDialogProps {
@@ -38,8 +37,6 @@ export default function DeleteSegmentDialog({
   onOpenChange,
   onDeleted,
 }: DeleteSegmentDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
   const { organizationSlug, projectSlug } = useParams({ strict: false });
 
   const queryClient = useQueryClient();
@@ -58,16 +55,15 @@ export default function DeleteSegmentDialog({
 
   const hasFlags = flags.length > 0;
 
-  const { mutateAsync: deleteSegment } = useMutation(
+  const { mutateAsync: deleteSegment, isPending } = useMutation(
     trpc.segments.delete.mutationOptions({
-      onSuccess: () => {
+      onSettled: () => {
         queryClient.invalidateQueries(trpc.segments.pathFilter());
       },
     })
   );
 
   const handleDelete = async () => {
-    setIsLoading(true);
     try {
       await deleteSegment({
         segmentId: segment.id,
@@ -85,8 +81,6 @@ export default function DeleteSegmentDialog({
         title: "Failed to delete segment",
         type: "error",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -176,7 +170,7 @@ export default function DeleteSegmentDialog({
           <LoadingButton
             className="w-full text-white!"
             disabled={hasFlags || isLoadingFlags}
-            loading={isLoading}
+            loading={isPending}
             onClick={handleDelete}
             variant="destructive"
           >

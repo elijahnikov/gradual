@@ -7,14 +7,18 @@ export const Route = createFileRoute(
   component: RouteComponent,
   loader: ({ context, params }) => {
     const { queryClient, trpc } = context;
-    void Promise.all([
-      queryClient.prefetchQuery(
-        trpc.project.getBySlug.queryOptions({
-          slug: params.projectSlug,
+    void queryClient.prefetchInfiniteQuery(
+      trpc.auditLog.list.infiniteQueryOptions(
+        {
           organizationSlug: params.organizationSlug,
-        })
-      ),
-    ]);
+          projectSlug: params.projectSlug,
+          limit: 50,
+        },
+        {
+          getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        }
+      )
+    );
   },
 });
 

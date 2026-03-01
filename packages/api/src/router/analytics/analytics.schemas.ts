@@ -14,7 +14,7 @@ export const getOverviewSchema = analyticsBaseSchema;
 
 export type GetVolumeOverTimeInput = z.infer<typeof getVolumeOverTimeSchema>;
 export const getVolumeOverTimeSchema = analyticsBaseSchema.extend({
-  granularity: z.enum(["hour", "6hour", "day"]).optional(),
+  granularity: z.enum(["hour", "day"]).optional(),
 });
 
 export type GetVariantDistributionInput = z.infer<
@@ -34,7 +34,7 @@ export const getTopFlagsSchema = analyticsBaseSchema.extend({
 
 export type GetErrorRateInput = z.infer<typeof getErrorRateSchema>;
 export const getErrorRateSchema = analyticsBaseSchema.extend({
-  granularity: z.enum(["hour", "6hour", "day"]).optional(),
+  granularity: z.enum(["hour", "day"]).optional(),
 });
 
 export type GetSdkPlatformBreakdownInput = z.infer<
@@ -44,5 +44,5 @@ export const getSdkPlatformBreakdownSchema = analyticsBaseSchema;
 
 export type GetLatencyInput = z.infer<typeof getLatencySchema>;
 export const getLatencySchema = analyticsBaseSchema.extend({
-  granularity: z.enum(["hour", "6hour", "day"]).optional(),
+  granularity: z.enum(["hour", "day"]).optional(),
 });

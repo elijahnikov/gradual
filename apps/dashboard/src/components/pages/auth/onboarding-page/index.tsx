@@ -65,7 +65,6 @@ export default function OnboardingPageComponent() {
 
   const resetPreview = useOnboardingPreviewStore((s) => s.reset);
 
-  // Hydrate preview store with org data on refresh
   const { data: orgData } = useQuery({
     ...trpc.organization.getById.queryOptions({
       organizationId: createdOrganizationId ?? "",
@@ -109,8 +108,6 @@ export default function OnboardingPageComponent() {
       useOnboardingPreviewStore.getState().setStepIsSubmitting(true);
       useOnboardingPreviewStore.getState().setStepCanContinue(false);
 
-      // Stamp the userId on the first step completion so the
-      // cross-account guard can detect user changes on future loads.
       if (!storedUserId && session?.user?.id) {
         setUserId(session.user.id);
       }
@@ -239,10 +236,6 @@ export default function OnboardingPageComponent() {
     ]
   );
 
-  // Reset onboarding state when a *different* user logs in.
-  // IMPORTANT: Do NOT write to the store before hydration completes —
-  // any set() call pre-hydration persists the entire initial state
-  // to localStorage, overwriting the real persisted data.
   useEffect(() => {
     const currentUserId = session?.user?.id;
     if (!(currentUserId && storedUserId)) {

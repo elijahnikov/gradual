@@ -34,29 +34,66 @@ export default function SelectedFlagsActions({
   organizationSlug: string;
   projectSlug: string;
 }) {
-  const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const { selectedFlags, clearSelectedFlags } = useSelectedFlagsStore();
   const { canDeleteFlags } = usePermissions();
 
   const queryClient = useQueryClient();
   const trpc = useTRPC();
-  const { mutateAsync: deleteFlags } = useMutation(
+  const { mutateAsync: deleteFlags, isPending } = useMutation(
     trpc.featureFlags.deleteFlags.mutationOptions({
-      onSuccess: async () => {
+      onMutate: async (variables) => {
+        await queryClient.cancelQueries(trpc.featureFlags.getAll.pathFilter());
+
+        const queryFilter = trpc.featureFlags.getAll.pathFilter();
+        const previousData = queryClient.getQueriesData(queryFilter);
+
+        const deletedIds = new Set(variables.flagIds);
+        queryClient.setQueriesData(queryFilter, (old: unknown) => {
+          if (!old || typeof old !== "object") {
+            return old;
+          }
+          const data = old as {
+            pageParams: unknown[];
+            pages: { items: { id: string }[]; nextCursor?: string }[];
+          };
+          return {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((flag) => !deletedIds.has(flag.id)),
+            })),
+          };
+        });
+
+        return { previousData };
+      },
+      onError: (_err, _vars, context) => {
+        if (context?.previousData) {
+          for (const [queryKey, data] of context.previousData) {
+            queryClient.setQueryData(queryKey, data);
+          }
+        }
+        toastManager.add({
+          title: `Failed to delete ${selectedFlags.length} flag(s)`,
+          type: "error",
+        });
+      },
+      onSuccess: () => {
         toastManager.add({
           title: `${selectedFlags.length} flag(s) deleted`,
           type: "success",
         });
         clearSelectedFlags();
-        await queryClient.invalidateQueries(trpc.featureFlags.pathFilter());
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(trpc.featureFlags.pathFilter());
       },
     })
   );
 
   const handleDeleteFlags = async () => {
     try {
-      setActionLoading(true);
       await deleteFlags({
         organizationSlug,
         projectSlug,
@@ -64,14 +101,8 @@ export default function SelectedFlagsActions({
       });
 
       setDropdownOpen(false);
-    } catch (error) {
-      console.error(error);
-      toastManager.add({
-        title: `An error occured deleting ${selectedFlags.length} flags`,
-        type: "error",
-      });
-    } finally {
-      setActionLoading(false);
+    } catch {
+      // Handled by onError
     }
   };
 
@@ -127,17 +158,17 @@ export default function SelectedFlagsActions({
       <Separator orientation="vertical" />
       <DropdownMenu
         onOpenChange={(open) => {
-          if (!actionLoading) {
+          if (!isPending) {
             setDropdownOpen(open);
           }
         }}
-        open={dropdownOpen || actionLoading}
+        open={dropdownOpen || isPending}
       >
         <DropdownMenuTrigger
           render={
             <LoadingButton
               className="text-white!"
-              loading={actionLoading}
+              loading={isPending}
               size="small"
               variant="gradual"
             />

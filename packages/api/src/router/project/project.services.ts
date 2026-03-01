@@ -322,6 +322,33 @@ export const getBreadcrumbs = async ({
   };
 };
 
+function fillHourlyBuckets(
+  from: Date,
+  to: Date,
+  data: { time: string; count: number }[]
+) {
+  const HOUR_MS = 60 * 60 * 1000;
+  const evalMap = new Map(
+    data.map((d) => [new Date(d.time).getTime(), Number(d.count)])
+  );
+
+  const buckets: { time: string; count: number }[] = [];
+  const start = new Date(from);
+  start.setUTCMinutes(0, 0, 0);
+
+  let current = start.getTime();
+  const end = to.getTime();
+  while (current < end) {
+    buckets.push({
+      time: new Date(current).toISOString(),
+      count: evalMap.get(current) ?? 0,
+    });
+    current += HOUR_MS;
+  }
+
+  return buckets;
+}
+
 export const getHomeSummary = async ({
   ctx,
   input,
@@ -433,11 +460,11 @@ export const getHomeSummary = async ({
       )
       .orderBy(sql`${featureFlag.updatedAt} DESC`)
       .limit(5),
-    // Volume over time (7 days, bucketed by day)
+    // Volume over time (7 days, bucketed by hour)
     hasFlags
       ? ctx.db
           .select({
-            time: sql<string>`date_trunc('day', ${featureFlagEvaluation.createdAt})::text`,
+            time: sql<string>`date_trunc('hour', ${featureFlagEvaluation.createdAt})::text`,
             count: count(),
           })
           .from(featureFlagEvaluation)
@@ -448,8 +475,8 @@ export const getHomeSummary = async ({
               lt(featureFlagEvaluation.createdAt, now)
             )
           )
-          .groupBy(sql`date_trunc('day', ${featureFlagEvaluation.createdAt})`)
-          .orderBy(sql`date_trunc('day', ${featureFlagEvaluation.createdAt})`)
+          .groupBy(sql`date_trunc('hour', ${featureFlagEvaluation.createdAt})`)
+          .orderBy(sql`date_trunc('hour', ${featureFlagEvaluation.createdAt})`)
       : Promise.resolve([]),
     // Top flags by evaluation count (24h)
     hasFlags
@@ -491,10 +518,7 @@ export const getHomeSummary = async ({
       previous: previousEvals[0]?.total ?? 0,
     },
     recentFlags,
-    volumeOverTime: volumeData.map((d) => ({
-      time: d.time,
-      count: d.count,
-    })),
+    volumeOverTime: fillHourlyBuckets(sevenDaysAgo, now, volumeData),
     topFlags: topFlagsData.map((d) => ({
       flagId: d.flagId,
       flagName: d.flagName,
@@ -611,11 +635,10 @@ export async function seedLiveEvaluation({
     return item;
   };
 
-  for (let i = 0; i < input.count; i++) {
+  const rows = Array.from({ length: input.count }, () => {
     const baseDurationUs = Math.floor(Math.random() * 50_000) + 500;
     const hasSpike = Math.random() < 0.05;
-
-    ee.emit("add", {
+    return {
       id: crypto.randomUUID(),
       featureFlagId: pick(flags).id,
       environmentId: envs.length > 0 ? pick(envs).id : crypto.randomUUID(),
@@ -637,8 +660,15 @@ export async function seedLiveEvaluation({
       traceId: null,
       schemaVersion: null,
       policyVersion: null,
-    });
+      projectId: foundProject.id,
+    };
+  });
+
+  await ctx.db.insert(featureFlagEvaluation).values(rows);
+
+  for (const row of rows) {
+    ee.emit("add", row);
   }
 
-  return { emitted: input.count };
+  return { inserted: input.count };
 }

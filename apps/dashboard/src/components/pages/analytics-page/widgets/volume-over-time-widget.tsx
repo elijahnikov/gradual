@@ -83,23 +83,19 @@ export default function VolumeOverTimeWidget() {
     })
   );
 
-  const livelineData = useMemo(() => {
-    const points: { time: number; value: number }[] = data.data.map((d) => ({
-      time: new Date(d.time).getTime() / 1000,
-      value: d.count,
-    }));
-
-    for (const p of live.volumePoints) {
-      points.push(p);
-    }
-
-    return points;
-  }, [data.data, live.volumePoints]);
-
-  const currentValue = useMemo(
-    () => livelineData.at(-1)?.value ?? 0,
-    [livelineData]
+  const livelineData = useMemo(
+    () =>
+      data.data.map((d) => ({
+        time: new Date(d.time).getTime() / 1000,
+        value: d.count,
+      })),
+    [data.data]
   );
+
+  const currentValue = useMemo(() => {
+    const lastDbValue = livelineData.at(-1)?.value ?? 0;
+    return lastDbValue + live.totalEvaluations;
+  }, [livelineData, live.totalEvaluations]);
 
   const windowSecs = useMemo(() => {
     const first = livelineData[0];

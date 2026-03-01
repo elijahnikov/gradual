@@ -5,16 +5,20 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/environments/"
 )({
   component: RouteComponent,
-  loader: ({ context, params }) => {
+  loader: async ({ context, params }) => {
     const { queryClient, trpc } = context;
-    void Promise.all([
-      queryClient.prefetchQuery(
-        trpc.project.getBySlug.queryOptions({
-          slug: params.projectSlug,
-          organizationSlug: params.organizationSlug,
-        })
-      ),
-    ]);
+    const project = await queryClient.ensureQueryData(
+      trpc.project.getBySlug.queryOptions({
+        slug: params.projectSlug,
+        organizationSlug: params.organizationSlug,
+      })
+    );
+    void queryClient.prefetchQuery(
+      trpc.environment.list.queryOptions({
+        organizationId: project.organizationId,
+        projectId: project.id,
+      })
+    );
   },
 });
 

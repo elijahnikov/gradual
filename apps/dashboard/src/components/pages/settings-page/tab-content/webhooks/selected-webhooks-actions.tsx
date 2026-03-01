@@ -20,7 +20,7 @@ import { useSelectedWebhooksStore } from "@/lib/stores/selected-webhooks-store";
 import { useTRPC } from "@/lib/trpc";
 
 export default function SelectedWebhooksActions() {
-  const [actionLoading, setActionLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { selectedWebhooks, clearSelectedWebhooks } =
     useSelectedWebhooksStore();
@@ -35,8 +35,23 @@ export default function SelectedWebhooksActions() {
   );
 
   const handleDelete = async () => {
+    const queryKey = trpc.webhooks.list.queryOptions({
+      organizationSlug: organizationSlug as string,
+    }).queryKey;
+
+    await queryClient.cancelQueries({ queryKey });
+    const previous = queryClient.getQueryData(queryKey);
+
+    if (previous) {
+      const deletedIds = new Set(selectedWebhooks.map((w) => w.id));
+      queryClient.setQueryData(
+        queryKey,
+        previous.filter((w) => !deletedIds.has(w.id))
+      );
+    }
+
     try {
-      setActionLoading(true);
+      setIsPending(true);
       await Promise.all(
         selectedWebhooks.map((w) =>
           deleteWebhook({
@@ -50,16 +65,18 @@ export default function SelectedWebhooksActions() {
         type: "success",
       });
       clearSelectedWebhooks();
-      await queryClient.invalidateQueries(trpc.webhooks.pathFilter());
       setDropdownOpen(false);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      if (previous) {
+        queryClient.setQueryData(queryKey, previous);
+      }
       toastManager.add({
         title: `Failed to delete ${selectedWebhooks.length} webhook(s)`,
         type: "error",
       });
     } finally {
-      setActionLoading(false);
+      setIsPending(false);
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
@@ -103,17 +120,17 @@ export default function SelectedWebhooksActions() {
       <Separator orientation="vertical" />
       <DropdownMenu
         onOpenChange={(open) => {
-          if (!actionLoading) {
+          if (!isPending) {
             setDropdownOpen(open);
           }
         }}
-        open={dropdownOpen || actionLoading}
+        open={dropdownOpen || isPending}
       >
         <DropdownMenuTrigger
           render={
             <LoadingButton
               className="text-white!"
-              loading={actionLoading}
+              loading={isPending}
               size="small"
               variant="gradual"
             />

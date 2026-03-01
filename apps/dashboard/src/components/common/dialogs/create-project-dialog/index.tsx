@@ -78,7 +78,6 @@ export default function CreateProjectDialog({
     }
   }, [name, form]);
 
-  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       form.reset({ name: "", slug: "" });

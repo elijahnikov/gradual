@@ -13,7 +13,6 @@ import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { useState } from "react";
 import { useTRPC } from "@/lib/trpc";
 
 interface DeleteFlagDialogProps {
@@ -34,22 +33,19 @@ export default function DeleteFlagDialog({
   onOpenChange,
   onDeleted,
 }: DeleteFlagDialogProps) {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const { organizationSlug, projectSlug } = useParams({ strict: false });
 
   const queryClient = useQueryClient();
   const trpc = useTRPC();
-  const { mutateAsync: deleteFlags } = useMutation(
+  const { mutateAsync: deleteFlags, isPending } = useMutation(
     trpc.featureFlags.deleteFlags.mutationOptions({
-      onSuccess: () => {
+      onSettled: () => {
         queryClient.invalidateQueries(trpc.featureFlags.pathFilter());
       },
     })
   );
 
   const handleDelete = async () => {
-    setIsLoading(true);
     try {
       await deleteFlags({
         flagIds: [flag.id],
@@ -70,7 +66,6 @@ export default function DeleteFlagDialog({
       });
     } finally {
       onOpenChange?.(false);
-      setIsLoading(false);
     }
   };
 
@@ -96,7 +91,7 @@ export default function DeleteFlagDialog({
           </DialogClose>
           <LoadingButton
             className="w-full text-white!"
-            loading={isLoading}
+            loading={isPending}
             onClick={handleDelete}
             variant="destructive"
           >

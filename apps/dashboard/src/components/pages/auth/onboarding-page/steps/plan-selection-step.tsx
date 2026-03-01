@@ -83,7 +83,6 @@ export function PlanSelectionStep({
   // biome-ignore lint/suspicious/noExplicitAny: <>
   const hasSubscription = (subscriptions as any)?.result?.items?.length > 0;
 
-  // Report step action state to footer
   useEffect(() => {
     previewStore
       .getState()
