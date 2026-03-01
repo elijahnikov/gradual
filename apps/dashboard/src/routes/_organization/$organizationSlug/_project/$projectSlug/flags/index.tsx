@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/flags/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Flags · Gradual" }] }),
   loader: ({ context, params }) => {
     const { queryClient, trpc } = context;
     void Promise.all([

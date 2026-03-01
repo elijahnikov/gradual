@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Flag · Gradual" }] }),
   loader: async ({ context, params }) => {
     const { queryClient, trpc } = context;
     const { projectSlug, organizationSlug, flagSlug } = params;
@@ -50,9 +51,6 @@ export const Route = createFileRoute(
         );
       }
     } catch (error) {
-      // CancelledError (silent: true) from TanStack Query happens when
-      // preload-on-intent navigation supersedes an in-flight fetch.
-      // The component's useSuspenseQuery will handle fetching the data.
       if (error && typeof error === "object" && "silent" in error) {
         return;
       }

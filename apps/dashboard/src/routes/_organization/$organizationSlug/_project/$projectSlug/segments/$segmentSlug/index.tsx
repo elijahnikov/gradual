@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/segments/$segmentSlug/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Segment · Gradual" }] }),
   loader: async ({ context, params }) => {
     const { queryClient, trpc } = context;
     const { projectSlug, organizationSlug, segmentSlug } = params;

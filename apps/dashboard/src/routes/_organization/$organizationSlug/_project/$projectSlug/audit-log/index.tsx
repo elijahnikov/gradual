@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/audit-log/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Audit Log · Gradual" }] }),
   loader: ({ context, params }) => {
     const { queryClient, trpc } = context;
     void queryClient.prefetchInfiniteQuery(

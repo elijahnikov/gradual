@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Gradual" }] }),
   loader: ({ context, params }) => {
     const { queryClient, trpc } = context;
 

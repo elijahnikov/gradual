@@ -26,6 +26,7 @@ export const Route = createRootRouteWithContext<{
   trpcClient: TRPCClient<AppRouter>;
 }>()({
   head: () => ({
+    meta: [{ title: "Gradual" }],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico" },
