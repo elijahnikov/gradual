@@ -6,7 +6,12 @@ import { cn } from "@gradual/ui";
 
 const TooltipCreateHandle = TooltipPrimitive.createHandle;
 
-const TooltipProvider = TooltipPrimitive.Provider;
+function TooltipProvider({
+  delay = 200,
+  ...props
+}: TooltipPrimitive.Provider.Props) {
+  return <TooltipPrimitive.Provider delay={delay} {...props} />;
+}
 
 const Tooltip = TooltipPrimitive.Root;
 

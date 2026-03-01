@@ -216,6 +216,7 @@ export const listApiKeysByOrganizationIdAndProjectId = async ({
       createdAt: true,
       name: true,
       revokedAt: true,
+      lastUsedAt: true,
     },
     with: {
       createdBy: {
@@ -229,7 +230,7 @@ export const listApiKeysByOrganizationIdAndProjectId = async ({
     },
     orderBy: (apiKey, { desc }) => [desc(apiKey.createdAt)],
     limit: input.limit ?? 10,
-    offset: (input.page ?? 1) * (input.limit ?? 10),
+    offset: ((input.page ?? 1) - 1) * (input.limit ?? 10),
   });
   return apiKeys;
 };

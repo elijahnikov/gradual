@@ -50,6 +50,7 @@ export const createProject = async ({
       projectId: createdProject.id,
       organizationId: ctx.organization.id,
       name: createdProject.name,
+      environmentIds: [],
     },
     ctx,
   });
