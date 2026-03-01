@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/api/"
 )({
   component: ApiKeysPage,
+  head: () => ({ meta: [{ title: "API Keys · Gradual" }] }),
   loader: async ({ context, params }) => {
     const { queryClient, trpc } = context;
     const project = await queryClient.ensureQueryData(

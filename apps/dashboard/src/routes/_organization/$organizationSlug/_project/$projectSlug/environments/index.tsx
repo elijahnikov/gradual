@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/environments/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Environments · Gradual" }] }),
   loader: async ({ context, params }) => {
     const { queryClient, trpc } = context;
     const project = await queryClient.ensureQueryData(

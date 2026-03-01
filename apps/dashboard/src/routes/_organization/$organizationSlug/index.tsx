@@ -2,6 +2,7 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_organization/$organizationSlug/")({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Gradual" }] }),
 });
 
 function RouteComponent() {

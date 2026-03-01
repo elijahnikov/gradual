@@ -5,6 +5,7 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/settings/"
 )({
   component: RouteComponent,
+  head: () => ({ meta: [{ title: "Settings · Gradual" }] }),
   loader: ({ context, params }) => {
     const { queryClient, trpc } = context;
     void queryClient.prefetchQuery(
