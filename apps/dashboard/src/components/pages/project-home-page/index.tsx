@@ -90,10 +90,6 @@ function HomeContent({
   const [liveFlagCounts, setLiveFlagCounts] = useState<Map<string, number>>(
     () => new Map()
   );
-  const [liveVolumePoints, setLiveVolumePoints] = useState<
-    { time: number; value: number }[]
-  >([]);
-
   useLiveEvaluationListener(
     useCallback((event: LiveEvaluation) => {
       setLiveEvalCount((c) => c + 1);
@@ -103,11 +99,6 @@ function HomeContent({
         next.set(event.featureFlagId, (next.get(event.featureFlagId) ?? 0) + 1);
         return next;
       });
-
-      setLiveVolumePoints((prev) => [
-        ...prev,
-        { time: Date.now() / 1000, value: (prev.at(-1)?.value ?? 0) + 1 },
-      ]);
     }, [])
   );
 
@@ -143,7 +134,7 @@ function HomeContent({
         <div className="h-full p-3">
           <HomeVolumeChart
             data={data.volumeOverTime}
-            livePoints={liveVolumePoints}
+            liveEvalCount={liveEvalCount}
           />
         </div>
       </Section>
@@ -168,6 +159,62 @@ function HomeContent({
   );
 }
 
+function HomePageSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col">
+      {/* KPI cards */}
+      <div className="grid divide-x sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div className="flex flex-col" key={i}>
+            <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
+              <Skeleton className="size-4 rounded" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="flex flex-col gap-1.5 px-4 py-3">
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Volume chart */}
+      <div className="flex min-h-[400px] flex-1 flex-col border-t">
+        <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
+          <Skeleton className="size-4 rounded" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="flex-1 p-3">
+          <Skeleton className="h-full w-full rounded-md" />
+        </div>
+      </div>
+
+      {/* Bottom grid */}
+      <div className="grid min-h-[300px] divide-x border-t sm:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div className="flex flex-col" key={i}>
+            <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
+              <Skeleton className="size-4 rounded" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              {Array.from({ length: 4 }).map((_, j) => (
+                <div className="flex items-center gap-3" key={j}>
+                  <Skeleton className="size-8 rounded-md" />
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectHomePageComponent() {
   const { organizationSlug, projectSlug } = useParams({
     from: "/_organization/$organizationSlug/_project/$projectSlug/",
@@ -175,15 +222,7 @@ export default function ProjectHomePageComponent() {
 
   return (
     <div className="flex h-[calc(100vh-3.4rem)] min-h-[calc(100vh-3.4rem)] w-full flex-col">
-      <Suspense
-        fallback={
-          <div className="grid gap-4 p-4 sm:grid-cols-3">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        }
-      >
+      <Suspense fallback={<HomePageSkeleton />}>
         <HomeContent
           organizationSlug={organizationSlug}
           projectSlug={projectSlug}

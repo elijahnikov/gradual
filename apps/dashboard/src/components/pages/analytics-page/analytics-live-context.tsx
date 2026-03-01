@@ -17,7 +17,6 @@ interface AnalyticsLiveState {
   errorCount: number;
   flagCounts: Map<string, number>;
   platformCounts: Map<string, number>;
-  volumePoints: { time: number; value: number }[];
   latencyValues: number[];
   isLive: boolean;
 }
@@ -36,7 +35,6 @@ function useAnalyticsLiveUpdates(): AnalyticsLiveState {
     errorCount: 0,
     flagCounts: new Map<string, number>(),
     platformCounts: new Map<string, number>(),
-    volumePoints: [] as { time: number; value: number }[],
     latencyValues: [] as number[],
   });
 
@@ -50,7 +48,6 @@ function useAnalyticsLiveUpdates(): AnalyticsLiveState {
         errorCount: 0,
         flagCounts: new Map(),
         platformCounts: new Map(),
-        volumePoints: [],
         latencyValues: [],
       });
     }
@@ -86,13 +83,6 @@ function useAnalyticsLiveUpdates(): AnalyticsLiveState {
             errorCount: prev.errorCount + (event.errorDetail ? 1 : 0),
             flagCounts: fc,
             platformCounts: pc,
-            volumePoints: [
-              ...prev.volumePoints,
-              {
-                time: Date.now() / 1000,
-                value: prev.totalEvaluations + 1,
-              },
-            ],
             latencyValues:
               event.evaluationDurationUs != null
                 ? [...prev.latencyValues, event.evaluationDurationUs]

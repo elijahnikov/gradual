@@ -50,25 +50,20 @@ async function resolveProject(
 function computeGranularity(
   startDate: Date,
   endDate: Date,
-  granularity?: "hour" | "6hour" | "day"
-): "hour" | "6hour" | "day" {
+  granularity?: "hour" | "day"
+): "hour" | "day" {
   if (granularity) {
     return granularity;
   }
   const rangeDays =
     (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-  return rangeDays <= 1 ? "hour" : rangeDays <= 7 ? "6hour" : "day";
+  return rangeDays <= 8 ? "hour" : "day";
 }
 
-function alignBucketStart(
-  date: Date,
-  granularity: "hour" | "6hour" | "day"
-): Date {
+function alignBucketStart(date: Date, granularity: "hour" | "day"): Date {
   const aligned = new Date(date);
   if (granularity === "day") {
     aligned.setUTCHours(0, 0, 0, 0);
-  } else if (granularity === "6hour") {
-    aligned.setUTCHours(Math.floor(aligned.getUTCHours() / 6) * 6, 0, 0, 0);
   } else {
     aligned.setUTCMinutes(0, 0, 0);
   }
@@ -228,11 +223,7 @@ export async function getVolumeOverTime({
     );
 
   const bucketMs =
-    effectiveGranularity === "hour"
-      ? 60 * 60 * 1000
-      : effectiveGranularity === "6hour"
-        ? 6 * 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
+    effectiveGranularity === "hour" ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
   const evalMap = new Map(
     evaluations.map((e) => [new Date(e.time).getTime(), Number(e.count)])
@@ -505,11 +496,7 @@ export async function getErrorRate({
     );
 
   const bucketMs =
-    effectiveGranularity === "hour"
-      ? 60 * 60 * 1000
-      : effectiveGranularity === "6hour"
-        ? 6 * 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
+    effectiveGranularity === "hour" ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
   const evalMap = new Map(
     evaluations.map((e) => [
@@ -581,11 +568,7 @@ export async function getLatency({
     );
 
   const bucketMs =
-    effectiveGranularity === "hour"
-      ? 60 * 60 * 1000
-      : effectiveGranularity === "6hour"
-        ? 6 * 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
+    effectiveGranularity === "hour" ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
   const evalMap = new Map(
     evaluations.map((e) => [

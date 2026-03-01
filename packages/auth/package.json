@@ -9,7 +9,8 @@
     "./middleware": "./src/middleware.ts",
     "./client": "./src/client.ts",
     "./env": "./env.ts",
-    "./polar": "./src/polar.ts"
+    "./polar": "./src/polar.ts",
+    "./permissions": "./src/permissions.ts"
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",

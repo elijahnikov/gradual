@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useMetricsStore } from "./metrics-store";
 import type { MetricsVariation } from "./types";
 
-const MAX_VISIBLE_CARDS = 3; // Total + 3 variations = 4 cards in one row
+const MAX_VISIBLE_CARDS = 3;
 
 interface MetricsSummaryProps {
   totals: Record<string, number>;

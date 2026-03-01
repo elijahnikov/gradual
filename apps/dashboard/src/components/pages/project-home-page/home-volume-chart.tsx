@@ -27,26 +27,25 @@ function formatLivelineTime(t: number): string {
 
 interface Props {
   data: { time: string; count: number }[];
-  livePoints: { time: number; value: number }[];
+  liveEvalCount: number;
 }
 
-export default function HomeVolumeChart({ data, livePoints }: Props) {
+export default function HomeVolumeChart({ data, liveEvalCount }: Props) {
   const { resolvedTheme } = useTheme();
 
-  const chartData = useMemo(() => {
-    const points: { time: number; value: number }[] = data.map((d) => ({
-      time: new Date(d.time).getTime() / 1000,
-      value: d.count,
-    }));
+  const chartData = useMemo(
+    () =>
+      data.map((d) => ({
+        time: new Date(d.time).getTime() / 1000,
+        value: d.count,
+      })),
+    [data]
+  );
 
-    for (const p of livePoints) {
-      points.push(p);
-    }
-
-    return points;
-  }, [data, livePoints]);
-
-  const currentValue = useMemo(() => chartData.at(-1)?.value ?? 0, [chartData]);
+  const currentValue = useMemo(() => {
+    const lastDbValue = chartData.at(-1)?.value ?? 0;
+    return lastDbValue + liveEvalCount;
+  }, [chartData, liveEvalCount]);
 
   const windowSecs = useMemo(() => {
     const first = chartData[0];
@@ -58,7 +57,7 @@ export default function HomeVolumeChart({ data, livePoints }: Props) {
     return Math.max(60, Math.ceil(span * 1.1));
   }, [chartData]);
 
-  if (chartData.length === 0 && livePoints.length === 0) {
+  if (chartData.length === 0 && liveEvalCount === 0) {
     return (
       <div className="flex h-full items-center justify-center text-ui-fg-muted">
         <Text size="small">No evaluation data in the last 7 days</Text>
@@ -72,6 +71,7 @@ export default function HomeVolumeChart({ data, livePoints }: Props) {
       color="#3b82f6"
       data={chartData}
       formatTime={formatLivelineTime}
+      formatValue={(v) => String(Math.round(v))}
       grid
       momentum={false}
       scrub

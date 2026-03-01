@@ -178,9 +178,6 @@ const createTargetingStore = () =>
 
       const defaultRollout = config.defaultRollout ?? null;
 
-      // After first init, preserve enabled/offVariationId from the store
-      // since they are managed by setEnabled/setOffVariationId/markSaved/reset.
-      // Re-initializing them from the (possibly stale) query cache causes a flash.
       const current = get();
       const isFirstInit = !current.flagId;
       const enabled = isFirstInit ? (config.enabled ?? false) : current.enabled;
@@ -194,7 +191,6 @@ const createTargetingStore = () =>
         ? (config.offVariationId ?? null)
         : current.originalOffVariationId;
 
-      // Reference data (lookups) — always update
       const referenceData = {
         attributes: config.attributes,
         contexts: config.contexts,
@@ -213,8 +209,6 @@ const createTargetingStore = () =>
       };
 
       if (!isFirstInit) {
-        // After first init, only update reference/lookup data
-        // so user edits (targets, hasChanges, etc.) are preserved.
         set(referenceData);
         return;
       }

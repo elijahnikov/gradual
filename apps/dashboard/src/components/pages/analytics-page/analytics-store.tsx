@@ -40,9 +40,10 @@ type AnalyticsStore = AnalyticsState & AnalyticsActions;
 const getDateRangeForPreset = (preset: TimeframePreset): DateRange => {
   const now = new Date();
   const to = new Date(now);
-  to.setMinutes(0, 0, 0);
+  to.setMinutes(59, 59, 999);
 
-  const from = new Date(to);
+  const from = new Date(now);
+  from.setMinutes(0, 0, 0);
   switch (preset) {
     case "24h":
       from.setHours(from.getHours() - 24);

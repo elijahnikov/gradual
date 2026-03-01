@@ -560,8 +560,12 @@ function SegmentTargetingChain({
 
   return (
     <div className="flex w-full flex-col items-center py-3 sm:py-5">
-      <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
-      <SegmentChainConnector />
+      {!readOnly && (
+        <>
+          <AddSegmentEntryButton onAdd={handleAdd} />
+          <SegmentChainConnector />
+        </>
+      )}
 
       {chainItems.map((item, chainIndex) => {
         const excludeEntry = excludedIndividuals[item.index];
@@ -618,15 +622,23 @@ function SegmentTargetingChain({
                 />
               )}
             </div>
-            <SegmentChainConnector />
-            {chainIndex < chainItems.length - 1 ? null : (
-              <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
-            )}
-            {chainIndex < chainItems.length - 1 && (
+            {chainIndex < chainItems.length - 1 ? (
               <>
-                <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
                 <SegmentChainConnector />
+                {!readOnly && (
+                  <>
+                    <AddSegmentEntryButton onAdd={handleAdd} />
+                    <SegmentChainConnector />
+                  </>
+                )}
               </>
+            ) : (
+              !readOnly && (
+                <>
+                  <SegmentChainConnector />
+                  <AddSegmentEntryButton onAdd={handleAdd} />
+                </>
+              )
             )}
           </div>
         );

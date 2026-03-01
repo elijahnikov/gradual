@@ -39,8 +39,6 @@ export default function CreateEnvironmentForm() {
       trpc.environment.create.mutationOptions({
         onSuccess: () => {
           queryClient.invalidateQueries(trpc.environment.pathFilter());
-          queryClient.invalidateQueries(trpc.project.pathFilter());
-          queryClient.invalidateQueries(trpc.featureFlags.pathFilter());
         },
       })
     );

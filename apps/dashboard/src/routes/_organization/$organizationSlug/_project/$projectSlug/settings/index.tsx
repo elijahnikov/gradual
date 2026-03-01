@@ -5,6 +5,14 @@ export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/settings/"
 )({
   component: RouteComponent,
+  loader: ({ context, params }) => {
+    const { queryClient, trpc } = context;
+    void queryClient.prefetchQuery(
+      trpc.webhooks.list.queryOptions({
+        organizationSlug: params.organizationSlug,
+      })
+    );
+  },
 });
 
 function RouteComponent() {
