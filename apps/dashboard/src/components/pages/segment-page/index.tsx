@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@gradual/api";
+import { cn } from "@gradual/ui";
 import { Button } from "@gradual/ui/button";
 import { Card } from "@gradual/ui/card";
 import CopyButton from "@gradual/ui/copy-button";
@@ -60,6 +61,7 @@ import type {
   ContextKind,
   RuleCondition,
 } from "@/components/pages/flag-page/main-flag-view/tab-content/targeting/types";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 
 const DOTTED_BACKGROUND_STYLE_LIGHT = {
@@ -148,6 +150,7 @@ function SegmentPageContent({
   segmentSlug: string;
 }) {
   const trpc = useTRPC();
+  const { canUpdateSegments } = usePermissions();
 
   const { data: segment } = useSuspenseQuery(
     trpc.segments.getByKey.queryOptions({
@@ -157,6 +160,8 @@ function SegmentPageContent({
     })
   );
 
+  const readOnly = !canUpdateSegments;
+
   return (
     <div className="flex h-full">
       <div className="flex flex-1 flex-col overflow-y-auto">
@@ -164,6 +169,7 @@ function SegmentPageContent({
           <SegmentConditionsEditor
             organizationSlug={organizationSlug}
             projectSlug={projectSlug}
+            readOnly={readOnly}
             segment={segment}
           />
         </TargetingStoreProvider>
@@ -171,6 +177,7 @@ function SegmentPageContent({
       <SegmentSidebar
         organizationSlug={organizationSlug}
         projectSlug={projectSlug}
+        readOnly={readOnly}
         segment={segment}
       />
     </div>
@@ -181,10 +188,12 @@ function SegmentConditionsEditor({
   segment,
   organizationSlug,
   projectSlug,
+  readOnly,
 }: {
   segment: Segment;
   organizationSlug: string;
   projectSlug: string;
+  readOnly: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -346,25 +355,27 @@ function SegmentConditionsEditor({
     <div className="flex w-full flex-1 flex-col pt-2.5">
       <div className="mb-3 flex flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
         <Text weight="plus">Segment conditions</Text>
-        <div className="flex items-center gap-2">
-          <Button
-            className="size-6"
-            disabled={!hasChanges}
-            onClick={handleReset}
-            size="small"
-            variant="outline"
-          >
-            <RiArrowGoBackFill className="size-4 shrink-0" />
-          </Button>
-          <Button
-            disabled={!hasChanges || hasValidationErrors}
-            onClick={handleSave}
-            size="small"
-            variant="gradual"
-          >
-            Save changes
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Button
+              className="size-6"
+              disabled={!hasChanges}
+              onClick={handleReset}
+              size="small"
+              variant="outline"
+            >
+              <RiArrowGoBackFill className="size-4 shrink-0" />
+            </Button>
+            <Button
+              disabled={!hasChanges || hasValidationErrors}
+              onClick={handleSave}
+              size="small"
+              variant="gradual"
+            >
+              Save changes
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex h-full w-full flex-1 flex-col border-t bg-ui-bg-base">
@@ -380,6 +391,7 @@ function SegmentConditionsEditor({
               onIncludedChange={handleIncludedChange}
               organizationSlug={organizationSlug}
               projectSlug={projectSlug}
+              readOnly={readOnly}
             />
           </div>
           <div
@@ -410,9 +422,15 @@ const SEGMENT_ENTRY_OPTIONS: {
 
 function AddSegmentEntryButton({
   onAdd,
+  disabled = false,
 }: {
   onAdd: (type: SegmentEntryType) => void;
+  disabled?: boolean;
 }) {
+  if (disabled) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -459,6 +477,7 @@ function SegmentTargetingChain({
   onConditionsChange,
   organizationSlug,
   projectSlug,
+  readOnly = false,
 }: {
   excludedIndividuals: IndividualEntry[];
   includedIndividuals: IndividualEntry[];
@@ -469,6 +488,7 @@ function SegmentTargetingChain({
   onConditionsChange: (conditions: RuleCondition[]) => void;
   organizationSlug: string;
   projectSlug: string;
+  readOnly?: boolean;
 }) {
   const chainItems: ChainItem[] = [
     ...excludedIndividuals.map((_, i) => ({
@@ -540,7 +560,7 @@ function SegmentTargetingChain({
 
   return (
     <div className="flex w-full flex-col items-center py-3 sm:py-5">
-      <AddSegmentEntryButton onAdd={handleAdd} />
+      <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
       <SegmentChainConnector />
 
       {chainItems.map((item, chainIndex) => {
@@ -552,7 +572,12 @@ function SegmentTargetingChain({
             className="flex w-full flex-col items-center"
             key={`${item.type}-${item.index}`}
           >
-            <div className="flex w-full justify-center">
+            <div
+              className={cn(
+                "flex w-full justify-center",
+                readOnly && "pointer-events-none"
+              )}
+            >
               {item.type === "exclude" && excludeEntry && (
                 <IndividualEntryCard
                   entry={excludeEntry}
@@ -564,6 +589,7 @@ function SegmentTargetingChain({
                   }
                   organizationSlug={organizationSlug}
                   projectSlug={projectSlug}
+                  readOnly={readOnly}
                 />
               )}
               {item.type === "include" && includeEntry && (
@@ -577,6 +603,7 @@ function SegmentTargetingChain({
                   }
                   organizationSlug={organizationSlug}
                   projectSlug={projectSlug}
+                  readOnly={readOnly}
                 />
               )}
               {item.type === "condition" && (
@@ -587,16 +614,17 @@ function SegmentTargetingChain({
                   onDelete={() => onConditionsChange([])}
                   organizationSlug={organizationSlug}
                   projectSlug={projectSlug}
+                  readOnly={readOnly}
                 />
               )}
             </div>
             <SegmentChainConnector />
             {chainIndex < chainItems.length - 1 ? null : (
-              <AddSegmentEntryButton onAdd={handleAdd} />
+              <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
             )}
             {chainIndex < chainItems.length - 1 && (
               <>
-                <AddSegmentEntryButton onAdd={handleAdd} />
+                <AddSegmentEntryButton disabled={readOnly} onAdd={handleAdd} />
                 <SegmentChainConnector />
               </>
             )}
@@ -627,6 +655,7 @@ function IndividualEntryCard({
   onDelete,
   organizationSlug,
   projectSlug,
+  readOnly = false,
 }: {
   entry: IndividualEntry;
   isLoading: boolean;
@@ -635,6 +664,7 @@ function IndividualEntryCard({
   onDelete: () => void;
   organizationSlug: string;
   projectSlug: string;
+  readOnly?: boolean;
 }) {
   return (
     <div className="group/entry relative flex w-full max-w-2xl flex-col">
@@ -693,16 +723,18 @@ function IndividualEntryCard({
           )}
         </div>
       </Card>
-      <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
-        <Button
-          className="size-6"
-          onClick={onDelete}
-          size="small"
-          variant="default"
-        >
-          <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
+          <Button
+            className="size-6"
+            onClick={onDelete}
+            size="small"
+            variant="default"
+          >
+            <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -714,6 +746,7 @@ function ConditionEntryCard({
   onDelete,
   organizationSlug,
   projectSlug,
+  readOnly = false,
 }: {
   conditions: RuleCondition[];
   isLoading: boolean;
@@ -721,6 +754,7 @@ function ConditionEntryCard({
   onDelete: () => void;
   organizationSlug: string;
   projectSlug: string;
+  readOnly?: boolean;
 }) {
   const handleChange = (updated: RuleCondition[]) => {
     if (updated.length === 0) {
@@ -757,16 +791,18 @@ function ConditionEntryCard({
           )}
         </div>
       </Card>
-      <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
-        <Button
-          className="size-6"
-          onClick={onDelete}
-          size="small"
-          variant="default"
-        >
-          <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="absolute top-1/2 right-0 hidden translate-x-full -translate-y-1/2 pl-2 opacity-0 transition-opacity group-hover/entry:opacity-100 sm:flex">
+          <Button
+            className="size-6"
+            onClick={onDelete}
+            size="small"
+            variant="default"
+          >
+            <RiDeleteBinLine className="size-3.5 shrink-0 text-ui-fg-error" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -775,12 +811,14 @@ interface SegmentSidebarProps {
   segment: Segment;
   organizationSlug: string;
   projectSlug: string;
+  readOnly: boolean;
 }
 
 function SegmentSidebar({
   segment,
   organizationSlug,
   projectSlug,
+  readOnly,
 }: SegmentSidebarProps) {
   const [optimisticName, setOptimisticName] = useState<string | undefined>(
     undefined
@@ -794,6 +832,7 @@ function SegmentSidebar({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
   const trpc = useTRPC();
+  const { canDeleteSegments } = usePermissions();
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation(
@@ -884,6 +923,7 @@ function SegmentSidebar({
         <div className="flex items-start justify-between gap-2">
           <EditableTitle
             loading={savingField === "name"}
+            readOnly={readOnly}
             title={displayName}
             updateCallback={handleNameUpdate}
           />
@@ -902,14 +942,18 @@ function SegmentSidebar({
                 <RiLink />
                 Copy link
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-ui-fg-error [&_svg]:text-ui-fg-error"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                <RiDeleteBinLine />
-                Delete
-              </DropdownMenuItem>
+              {canDeleteSegments && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <RiDeleteBinLine />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <DeleteSegmentDialog
@@ -926,6 +970,7 @@ function SegmentSidebar({
         </div>
         <EditableDescription
           description={displayDescription}
+          readOnly={readOnly}
           updateCallback={handleDescriptionUpdate}
         />
       </div>

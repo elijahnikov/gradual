@@ -13,6 +13,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import WebhookFormDialog from "../../pages/settings-page/tab-content/webhooks/webhook-form-dialog";
 
@@ -34,6 +35,7 @@ export default function WebhookContextMenu({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { organizationSlug } = useParams({ strict: false });
+  const { canManageWebhooks } = usePermissions();
   const [editOpen, setEditOpen] = useState(false);
 
   const { mutate: toggleEnabled } = useMutation(
@@ -100,6 +102,7 @@ export default function WebhookContextMenu({
           onContextMenu={(e) => e.stopPropagation()}
         >
           <ContextMenu.Item
+            disabled={!canManageWebhooks}
             onClick={() =>
               testWebhook({
                 organizationSlug: organizationSlug as string,
@@ -111,6 +114,7 @@ export default function WebhookContextMenu({
             Test
           </ContextMenu.Item>
           <ContextMenu.Item
+            disabled={!canManageWebhooks}
             onClick={(e) => {
               e.preventDefault();
               setEditOpen(true);
@@ -124,6 +128,7 @@ export default function WebhookContextMenu({
             Copy URL
           </ContextMenu.Item>
           <ContextMenu.Item
+            disabled={!canManageWebhooks}
             onClick={() =>
               toggleEnabled({
                 organizationSlug: organizationSlug as string,
@@ -151,6 +156,7 @@ export default function WebhookContextMenu({
           <ContextMenu.Separator />
           <ContextMenu.Item
             className="text-ui-fg-error [&_svg]:text-ui-fg-error"
+            disabled={!canManageWebhooks}
             onClick={() =>
               deleteWebhook({
                 organizationSlug: organizationSlug as string,

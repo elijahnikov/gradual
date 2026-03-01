@@ -1,4 +1,5 @@
 import { expo } from "@better-auth/expo";
+import { dash } from "@better-auth/infra";
 import { db } from "@gradual/db/client";
 import { checkout, polar, portal, usage } from "@polar-sh/better-auth";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
@@ -19,13 +20,11 @@ import { polarClient } from "./polar";
 
 export const resend = new Resend(authEnv().AUTH_RESEND_KEY as string);
 
-export function initAuth<
-  TExtraPlugins extends BetterAuthPlugin[] = [],
->(options: {
+export function initAuth(options: {
   baseUrl: string;
   productionUrl: string;
   secret: string | undefined;
-  extraPlugins?: TExtraPlugins;
+  extraPlugins?: BetterAuthPlugin[];
 }) {
   const config = {
     appName: "Gradual",
@@ -59,6 +58,7 @@ export function initAuth<
       },
     },
     plugins: [
+      dash(),
       lastLoginMethod(),
       organization({
         ac,

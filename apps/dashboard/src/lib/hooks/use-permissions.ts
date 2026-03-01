@@ -51,5 +51,8 @@ export function usePermissions() {
     canManageApiKeys: isAtLeast("admin"),
     // Webhooks
     canManageWebhooks: isAtLeast("admin"),
+    // Sidebar visibility
+    canViewAuditLog: isAtLeast("admin"),
+    canViewSettings: isAtLeast("admin"),
   };
 }

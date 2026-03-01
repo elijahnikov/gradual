@@ -6,13 +6,18 @@ import { RiFlagOffFill } from "@remixicon/react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useState } from "react";
 import CreateFlagDialog from "@/components/common/dialogs/create-flag-dialog";
+import { PermissionTooltip } from "@/components/common/permission-tooltip";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 export default function EmptyFlagsList() {
   const [isCreateFlagDialogOpen, setIsCreateFlagDialogOpen] =
     useState<boolean>(false);
+  const { canCreateFlags } = usePermissions();
 
   useHotkey("Mod+C", () => {
-    setIsCreateFlagDialogOpen(true);
+    if (canCreateFlags) {
+      setIsCreateFlagDialogOpen(true);
+    }
   });
 
   return (
@@ -26,13 +31,18 @@ export default function EmptyFlagsList() {
           You haven't created any feature flags yet. Let's change that.
         </Text>
       </div>
-      <CreateFlagDialog
-        onOpenChange={setIsCreateFlagDialogOpen}
-        open={isCreateFlagDialogOpen}
+      <PermissionTooltip
+        hasPermission={canCreateFlags}
+        message="You don't have permission to create flags"
       >
-        Create flag
-        <Kbd className="text-ui-fg-base">⌘C</Kbd>
-      </CreateFlagDialog>
+        <CreateFlagDialog
+          onOpenChange={setIsCreateFlagDialogOpen}
+          open={isCreateFlagDialogOpen}
+        >
+          Create flag
+          <Kbd className="text-ui-fg-base">⌘C</Kbd>
+        </CreateFlagDialog>
+      </PermissionTooltip>
     </div>
   );
 }

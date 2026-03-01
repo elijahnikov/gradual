@@ -3,6 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import CreateEnvironmentDialog from "@/components/common/dialogs/create-environment-dialog";
+import { PermissionTooltip } from "@/components/common/permission-tooltip";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import EnvironmentsList, {
   EnvironmentsListSkeleton,
@@ -14,6 +16,7 @@ export default function EnvironmentsPageComponent() {
     from: "/_organization/$organizationSlug/_project/$projectSlug/environments/",
   });
   const [createEnvironmentOpen, setCreateEnvironmentOpen] = useState(false);
+  const { canCreateEnvironments } = usePermissions();
 
   const trpc = useTRPC();
   const { data: project } = useSuspenseQuery(
@@ -26,13 +29,18 @@ export default function EnvironmentsPageComponent() {
   return (
     <div className="flex h-[calc(100vh-3.75rem)] min-h-[calc(100vh-3.75rem)] w-full flex-col sm:h-[calc(100vh-3.75rem)] sm:min-h-[calc(100vh-3.75rem)]">
       <div className="absolute top-0 right-1.25 z-50 flex h-9 items-center">
-        <CreateEnvironmentDialog
-          onOpenChange={setCreateEnvironmentOpen}
-          open={createEnvironmentOpen}
+        <PermissionTooltip
+          hasPermission={canCreateEnvironments}
+          message="You don't have permission to create environments"
         >
-          <RiAddLine className="-mr-0.5 size-4" />
-          Create environment
-        </CreateEnvironmentDialog>
+          <CreateEnvironmentDialog
+            onOpenChange={setCreateEnvironmentOpen}
+            open={createEnvironmentOpen}
+          >
+            <RiAddLine className="-mr-0.5 size-4" />
+            Create environment
+          </CreateEnvironmentDialog>
+        </PermissionTooltip>
       </div>
       <EnvironmentFilterBar />
       <Suspense fallback={<EnvironmentsListSkeleton />}>

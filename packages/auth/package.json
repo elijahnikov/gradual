@@ -13,11 +13,12 @@
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "generate": "dotenv -e ../../.env -- pnpx @better-auth/cli generate --config script/auth-cli.ts --output ../db/src/auth-schema.ts --yes",
+    "generate": "dotenv -e ../../.env -- bunx auth generate --config script/auth-cli.ts --output ../db/src/auth-schema.ts --yes",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@better-auth/expo": "catalog:better-auth",
+    "@better-auth/infra": "catalog:better-auth",
     "@gradual/db": "*",
     "@polar-sh/better-auth": "catalog:better-auth",
     "@polar-sh/sdk": "catalog:better-auth",
@@ -27,7 +28,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@better-auth/cli": "catalog:better-auth",
     "@gradual/tsconfig": "*",
     "typescript": "catalog:"
   }
