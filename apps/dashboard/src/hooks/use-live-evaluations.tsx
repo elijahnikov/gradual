@@ -16,6 +16,7 @@ export interface LiveEvaluation {
   flagName: string | null;
   flagKey: string | null;
   environmentId: string;
+  variationId: string | null;
   errorDetail: string | null;
   sdkPlatform: string | null;
   evaluationDurationUs: number | null;
