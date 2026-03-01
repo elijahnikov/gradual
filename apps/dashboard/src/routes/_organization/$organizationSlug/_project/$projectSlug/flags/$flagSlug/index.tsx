@@ -51,9 +51,6 @@ export const Route = createFileRoute(
         );
       }
     } catch (error) {
-      // CancelledError (silent: true) from TanStack Query happens when
-      // preload-on-intent navigation supersedes an in-flight fetch.
-      // The component's useSuspenseQuery will handle fetching the data.
       if (error && typeof error === "object" && "silent" in error) {
         return;
       }
