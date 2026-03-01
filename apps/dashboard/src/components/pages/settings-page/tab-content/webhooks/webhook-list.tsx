@@ -157,7 +157,7 @@ function WebhookListItem({ webhook }: { webhook: WebhookItem }) {
       webhook={webhook}
     >
       <div
-        className="group/webhook flex flex-col px-4 py-3 data-[selected=true]:bg-ui-button-recall/10"
+        className="group/webhook flex flex-col px-4 py-3 hover:bg-ui-bg-subtle-hover data-[selected=true]:bg-ui-button-recall/10"
         data-selected={isSelected}
       >
         <div className="flex items-center gap-3">

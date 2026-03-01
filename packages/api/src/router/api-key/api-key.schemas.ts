@@ -14,11 +14,11 @@ export const createApiKeySchema = createInsertSchema(apiKey)
     keyPrefix: true,
     createdById: true,
     key: true,
-    environmentIds: true,
   })
   .extend({
     organizationId: z.string(),
     projectId: z.string(),
+    environmentIds: z.array(z.string()).optional().default([]),
   });
 
 export type GetApiKeyByOrganizationIdAndProjectIdInput = z.infer<

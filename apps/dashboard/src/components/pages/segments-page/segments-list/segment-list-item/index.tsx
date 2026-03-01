@@ -53,7 +53,7 @@ export default function SegmentListItem({
   return (
     <SegmentContextMenu segment={segment}>
       <div
-        className="group/segment flex h-16 items-center border-0 px-4 data-[selected=true]:bg-ui-button-recall/10"
+        className="group/segment flex h-16 items-center border-0 px-4 hover:bg-ui-bg-subtle-hover data-[selected=true]:bg-ui-button-recall/10"
         data-selected={isSelected}
       >
         {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: <> */}
