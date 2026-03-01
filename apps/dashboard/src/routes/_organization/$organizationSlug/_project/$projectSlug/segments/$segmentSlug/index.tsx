@@ -11,7 +11,7 @@ export const Route = createFileRoute(
     const { projectSlug, organizationSlug, segmentSlug } = params;
 
     try {
-      const segment = await queryClient.fetchQuery(
+      await queryClient.fetchQuery(
         trpc.segments.getByKey.queryOptions({
           projectSlug,
           organizationSlug,
