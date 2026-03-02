@@ -7,7 +7,7 @@ import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState } from "react";
 import z from "zod/v4";
@@ -30,7 +30,7 @@ export default function VerifyOTPForm({
   const queryClient = useQueryClient();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const form = useForm({
     defaultValues: {
@@ -54,7 +54,8 @@ export default function VerifyOTPForm({
       }
       if (res.data) {
         await queryClient.invalidateQueries(trpc.auth.getSession.pathFilter());
-        throw navigate({ to: "/" });
+        await router.invalidate();
+        return;
       }
       setIsSubmitting(false);
     },

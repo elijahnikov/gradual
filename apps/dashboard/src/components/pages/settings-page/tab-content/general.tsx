@@ -87,6 +87,7 @@ function GeneralSettingsContent() {
   const onSubmit = async (data: z.infer<typeof updateFormSchema>) => {
     try {
       await updateProject({
+        organizationSlug,
         projectId: project.id,
         name: data.name,
       });
@@ -210,7 +211,7 @@ function DeleteProjectButton({
 
   const handleDelete = async () => {
     try {
-      await deleteProject({ projectId });
+      await deleteProject({ organizationSlug, projectId });
       toastManager.add({
         title: "Project deleted",
         description: `${projectName} has been deleted`,

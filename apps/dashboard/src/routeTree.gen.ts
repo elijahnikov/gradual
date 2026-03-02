@@ -13,6 +13,7 @@ import { Route as DeviceRouteImport } from './routes/device'
 import { Route as OrganizationRouteImport } from './routes/_organization'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteInvitationIdRouteImport } from './routes/invite/$invitationId'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
@@ -51,6 +52,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteInvitationIdRoute = InviteInvitationIdRouteImport.update({
+  id: '/invite/$invitationId',
+  path: '/invite/$invitationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/$organizationSlug': typeof OrganizationOrganizationSlugIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/api/files': typeof ApiFilesRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/_organization/$organizationSlug/_project': typeof OrganizationOrganizationSlugProjectRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/files'
     | '/api/upload'
+    | '/invite/$invitationId'
     | '/api/auth/$'
     | '/api/files/$key'
     | '/api/trpc/$'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/files'
     | '/api/upload'
+    | '/invite/$invitationId'
     | '/$organizationSlug'
     | '/api/auth/$'
     | '/api/files/$key'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/api/files'
     | '/api/upload'
+    | '/invite/$invitationId'
     | '/_organization/$organizationSlug/_project'
     | '/api/auth/$'
     | '/api/files/$key'
@@ -353,6 +365,7 @@ export interface RootRouteChildren {
   DeviceRoute: typeof DeviceRoute
   ApiFilesRoute: typeof ApiFilesRouteWithChildren
   ApiUploadRoute: typeof ApiUploadRoute
+  InviteInvitationIdRoute: typeof InviteInvitationIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
@@ -385,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$invitationId': {
+      id: '/invite/$invitationId'
+      path: '/invite/$invitationId'
+      fullPath: '/invite/$invitationId'
+      preLoaderRoute: typeof InviteInvitationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload': {
@@ -656,6 +676,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeviceRoute: DeviceRoute,
   ApiFilesRoute: ApiFilesRouteWithChildren,
   ApiUploadRoute: ApiUploadRoute,
+  InviteInvitationIdRoute: InviteInvitationIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

@@ -78,6 +78,7 @@ export function CreateOrgStep({
 
   const createOrg = useMutation(trpc.organization.create.mutationOptions());
   const createProject = useMutation(trpc.project.create.mutationOptions());
+  const sendInvitation = useMutation(trpc.invitation.create.mutationOptions());
 
   const [
     { files: logoFiles, isDragging: isLogoDragging },
@@ -160,6 +161,19 @@ export function CreateOrgStep({
         await queryClient.invalidateQueries(
           trpc.organization.getAllByUserId.pathFilter()
         );
+
+        // Send invitations (fire-and-forget)
+        if (value.teamMembers.length > 0) {
+          void Promise.allSettled(
+            value.teamMembers.map((m) =>
+              sendInvitation.mutateAsync({
+                organizationSlug: value.orgSlug,
+                email: m.email,
+                role: m.role === "viewer" ? "member" : m.role,
+              })
+            )
+          );
+        }
 
         onComplete(organization.id, project.id, organization.slug);
       } catch (err) {

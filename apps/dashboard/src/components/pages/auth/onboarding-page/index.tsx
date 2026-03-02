@@ -18,9 +18,9 @@ import { useTRPC } from "@/lib/trpc";
 import { CurrentStepHeader } from "./current-step-header";
 import { DashboardPreview } from "./preview";
 import { StepFooter } from "./step-breadcrumb";
-import { CreateOrgStep } from "./steps/create-org-step";
 import { GettingStartedStep } from "./steps/getting-started-step";
 import { InstallSDKStep } from "./steps/install-sdk-step";
+import { JoinOrCreateStep } from "./steps/join-or-create-step";
 import { PlanSelectionStep } from "./steps/plan-selection-step";
 
 interface OnboardingStepEntry {
@@ -186,12 +186,21 @@ export default function OnboardingPageComponent() {
       },
       {
         step: 1,
-        title: "Create your organization",
+        title: "Join or create an organization",
         description:
-          "Set up your organization, create your first project and invite your teammates.",
+          "Accept a pending invitation or create a new organization.",
         component: (
-          <CreateOrgStep
+          <JoinOrCreateStep
             isLoading={isUpdatingUser}
+            onAcceptInvitation={async (orgSlug) => {
+              setOrganizationSlug(orgSlug);
+              await updateUser({ hasOnboarded: true });
+              resetPreview();
+              navigate({
+                to: "/$organizationSlug",
+                params: { organizationSlug: orgSlug },
+              });
+            }}
             onComplete={(organizationId, projectId, orgSlug) => {
               setCreatedOrganizationId(organizationId);
               setCreatedProjectId(projectId);
@@ -233,6 +242,9 @@ export default function OnboardingPageComponent() {
       setCreatedOrganizationId,
       setCreatedProjectId,
       setOrganizationSlug,
+      updateUser,
+      resetPreview,
+      navigate,
     ]
   );
 

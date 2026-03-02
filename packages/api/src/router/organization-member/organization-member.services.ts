@@ -174,7 +174,7 @@ export const removeOrganizationMember = async ({
 
   const removedMember = await ctx.authApi.removeMember({
     body: {
-      memberIdOrEmail: memberToRemove.userId,
+      memberIdOrEmail: memberToRemove.id,
       organizationId: input.organizationId,
     },
     headers: ctx.headers,

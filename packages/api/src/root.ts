@@ -6,6 +6,7 @@ import { authRouter } from "./router/auth/auth.router";
 import { environmentRouter } from "./router/environment/environment.router";
 import { evaluationsRouter } from "./router/evaluations/evaluations.router";
 import { featureFlagsRouter } from "./router/feature-flags/feature-flags.router";
+import { invitationRouter } from "./router/invitation/invitation.router";
 import { organizationRouter } from "./router/organization/organization.router";
 import { organizationMemberRouter } from "./router/organization-member/organization-member.router";
 import { projectRouter } from "./router/project/project.router";
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   project: projectRouter,
   apiKey: apiKeyRouter,
   featureFlags: featureFlagsRouter,
+  invitation: invitationRouter,
   segments: segmentsRouter,
   snapshots: snapshotsRouter,
   usage: usageRouter,
