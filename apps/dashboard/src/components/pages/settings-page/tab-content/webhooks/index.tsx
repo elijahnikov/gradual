@@ -14,7 +14,7 @@ export default function WebhooksSettings() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex items-center justify-between border-b bg-ui-bg-subtle px-4 py-2">
+      <div className="flex h-12 items-center justify-between border-b bg-ui-bg-subtle px-4 py-2">
         <Text className="text-ui-fg-muted" size="xsmall">
           Receive real-time notifications when audit log events occur
         </Text>

@@ -13,6 +13,13 @@ export const Route = createFileRoute(
         organizationSlug: params.organizationSlug,
       })
     );
+    void queryClient.prefetchQuery(
+      trpc.organizationMember.getMembers.queryOptions({
+        organizationSlug: params.organizationSlug,
+        getWithPermissions: true,
+        limit: 100,
+      })
+    );
   },
 });
 

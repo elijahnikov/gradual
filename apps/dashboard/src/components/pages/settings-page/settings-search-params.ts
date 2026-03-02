@@ -1,6 +1,7 @@
 import {
+  RiGroup3Fill,
   RiNotification3Fill,
-  RiPlugLine,
+  RiPlugFill,
   RiSettings3Fill,
   RiWebhookLine,
 } from "@remixicon/react";
@@ -9,6 +10,7 @@ import type React from "react";
 
 export const settingsTabOptions = [
   "general",
+  "members",
   "webhooks",
   "integrations",
   "notifications",
@@ -29,22 +31,28 @@ export const settingsTabList: {
     hotkey: "1",
   },
   {
-    tab: "webhooks",
-    icon: RiWebhookLine,
-    description: "Manage webhook endpoints and deliveries",
+    tab: "members",
+    icon: RiGroup3Fill,
+    description: "Manage organization members and roles",
     hotkey: "2",
   },
   {
-    tab: "integrations",
-    icon: RiPlugLine,
-    description: "Third-party integrations and connections",
+    tab: "webhooks",
+    icon: RiWebhookLine,
+    description: "Manage webhook endpoints and deliveries",
     hotkey: "3",
+  },
+  {
+    tab: "integrations",
+    icon: RiPlugFill,
+    description: "Third-party integrations and connections",
+    hotkey: "4",
   },
   {
     tab: "notifications",
     icon: RiNotification3Fill,
     description: "Notification preferences and channels",
-    hotkey: "4",
+    hotkey: "5",
   },
 ];
 
