@@ -40,14 +40,16 @@ export const Route = createRootRouteWithContext<{
     if (
       !session?.user &&
       location.pathname !== "/login" &&
-      !location.pathname.startsWith("/device")
+      !location.pathname.startsWith("/device") &&
+      !location.pathname.startsWith("/invite")
     ) {
       throw redirect({ to: "/login" });
     }
     if (
       session?.user &&
       !session.user.hasOnboarded &&
-      location.pathname !== "/onboarding"
+      location.pathname !== "/onboarding" &&
+      !location.pathname.startsWith("/invite")
     ) {
       throw redirect({ to: "/onboarding" });
     }

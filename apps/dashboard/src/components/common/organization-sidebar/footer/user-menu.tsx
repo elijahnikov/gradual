@@ -41,7 +41,7 @@ export default function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center justify-center">
-        <Avatar className="size-6">
+        <Avatar className="size-6 shadow-none">
           <AvatarImage alt="User" src={user.user.image ?? undefined} />
           <AvatarFallback>
             {user.user.name.charAt(0).toUpperCase()}

@@ -1,7 +1,7 @@
 import { Badge } from "@gradual/ui/badge";
 import { Button } from "@gradual/ui/button";
 import { toastManager } from "@gradual/ui/toast";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { authClient } from "@/auth/client";
 import { SOCIAL_LOGIN_ICONS } from "@/lib/misc/social-login-icons";
 
@@ -27,6 +27,7 @@ const socials: { id: Socials; icon: React.ReactNode; label: string }[] = [
 
 export default function LoginButtons() {
   const navigate = useNavigate();
+  const { redirect: redirectTo } = useSearch({ from: "/_auth" });
   const lastLoginMethod = authClient.getLastUsedLoginMethod();
 
   return (
@@ -38,7 +39,7 @@ export default function LoginButtons() {
           onClick={async () => {
             const { data, error } = await authClient.signIn.social({
               provider: social.id,
-              callbackURL: "/",
+              callbackURL: redirectTo ?? "/",
             });
             if (error) {
               toastManager.add({

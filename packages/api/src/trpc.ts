@@ -68,6 +68,7 @@ interface PermissionCheck {
   organization?: ("read" | "update" | "delete")[];
   project?: ("read" | "create" | "update" | "delete")[];
   members?: ("read" | "invite" | "remove" | "update")[];
+  invitation?: ("create" | "cancel")[];
   flags?: ("read" | "create" | "update" | "delete")[];
   environments?: ("read" | "create" | "update" | "delete")[];
   segments?: ("read" | "create" | "update" | "delete")[];

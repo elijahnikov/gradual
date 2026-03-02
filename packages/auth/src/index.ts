@@ -68,6 +68,22 @@ export function initAuth(options: {
           member,
           viewer,
         },
+        async sendInvitationEmail(data) {
+          const { error } = await resend.emails.send({
+            from: "Gradual <noreply@notifications.gradual.so>",
+            to: [data.email],
+            subject: `You've been invited to join ${data.organization.name} on Gradual`,
+            html: `
+              <p>Hi,</p>
+              <p><strong>${data.inviter.user.name}</strong> has invited you to join <strong>${data.organization.name}</strong> as a <strong>${data.role}</strong> on Gradual.</p>
+              <p><a href="${options.baseUrl}/invite/${data.id}">Click here to accept the invitation</a></p>
+              <p>This invitation will expire in 48 hours.</p>
+            `,
+          });
+          if (error) {
+            console.error("Error sending invitation email", error);
+          }
+        },
       }),
       emailOTP({
         async sendVerificationOTP({ email, otp, type }) {

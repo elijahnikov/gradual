@@ -32,11 +32,13 @@ export const updateProjectSchema = createUpdateSchema(project)
   })
   .extend({
     projectId: z.uuid(),
+    organizationSlug: z.string(),
   });
 
 export type DeleteProjectInput = z.infer<typeof deleteProjectSchema>;
 export const deleteProjectSchema = z.object({
   projectId: z.uuid(),
+  organizationSlug: z.string(),
 });
 
 export type GetAllProjectsByOrganizationIdInput = z.infer<
