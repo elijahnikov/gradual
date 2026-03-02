@@ -4,6 +4,7 @@ import { settingsSearchParams } from "./settings-search-params";
 import SettingsSubheader from "./settings-subheader";
 import GeneralSettings from "./tab-content/general";
 import IntegrationsSettings from "./tab-content/integrations";
+import MembersSettings from "./tab-content/members";
 import NotificationsSettings from "./tab-content/notifications";
 import WebhooksSettings from "./tab-content/webhooks";
 
@@ -14,6 +15,8 @@ export default function SettingsPage() {
     switch (tab) {
       case "general":
         return <GeneralSettings />;
+      case "members":
+        return <MembersSettings />;
       case "webhooks":
         return <WebhooksSettings />;
       case "integrations":

@@ -24,6 +24,7 @@ export default function SettingsSubheader() {
 
   const tabPermissions: Record<SettingsTab, boolean> = {
     general: true,
+    members: true,
     webhooks: canManageWebhooks,
     integrations: true,
     notifications: true,
@@ -35,16 +36,21 @@ export default function SettingsSubheader() {
     }
   });
   useHotkey("2", () => {
+    if (tabPermissions.members) {
+      setQueryStates({ tab: "members" });
+    }
+  });
+  useHotkey("3", () => {
     if (tabPermissions.webhooks) {
       setQueryStates({ tab: "webhooks" });
     }
   });
-  useHotkey("3", () => {
+  useHotkey("4", () => {
     if (tabPermissions.integrations) {
       setQueryStates({ tab: "integrations" });
     }
   });
-  useHotkey("4", () => {
+  useHotkey("5", () => {
     if (tabPermissions.notifications) {
       setQueryStates({ tab: "notifications" });
     }
