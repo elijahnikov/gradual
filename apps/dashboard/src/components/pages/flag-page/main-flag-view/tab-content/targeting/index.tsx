@@ -245,9 +245,9 @@ function FlagTargetingContent({
   ]);
 
   return (
-    <div className="flex w-full flex-1 flex-col pt-2.5">
+    <div className="flex w-full flex-1 flex-col items-center justify-center">
       <div className="flex h-full w-full flex-1 flex-col p-0">
-        <div className="mb-3 flex flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex h-12.5 flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
             <TooltipProvider>
@@ -279,7 +279,7 @@ function FlagTargetingContent({
                       !hasChanges || hasValidationErrors || !canUpdateFlags
                     }
                     onClick={openReviewModal}
-                    size="small"
+                    size="xsmall"
                     variant="gradual"
                   >
                     Review and save

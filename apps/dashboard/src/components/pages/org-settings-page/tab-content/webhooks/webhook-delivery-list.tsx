@@ -13,13 +13,11 @@ export default function WebhookDeliveryList({
   webhookId: string;
 }) {
   const trpc = useTRPC();
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/settings/",
-  });
+  const { organizationSlug } = useParams({ strict: false });
 
   const { data, isLoading } = useQuery(
     trpc.webhooks.listDeliveries.queryOptions({
-      organizationSlug,
+      organizationSlug: organizationSlug as string,
       webhookId,
       limit: 20,
     })

@@ -56,9 +56,7 @@ export default function WebhookFormDialog({
   const isEditing = !!webhook;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/settings/",
-  });
+  const { organizationSlug } = useParams({ strict: false });
 
   const [name, setName] = useState(webhook?.name ?? "");
   const [url, setUrl] = useState(webhook?.url ?? "");
@@ -105,7 +103,7 @@ export default function WebhookFormDialog({
     try {
       if (isEditing) {
         await updateWebhook({
-          organizationSlug,
+          organizationSlug: organizationSlug as string,
           id: webhook.id,
           name,
           url,
@@ -121,7 +119,7 @@ export default function WebhookFormDialog({
         onOpenChange(false);
       } else {
         const result = await createWebhook({
-          organizationSlug,
+          organizationSlug: organizationSlug as string,
           name,
           url,
           eventFilters: {

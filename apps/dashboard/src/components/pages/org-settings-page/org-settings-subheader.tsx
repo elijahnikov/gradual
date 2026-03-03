@@ -5,24 +5,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
+import { RiArrowLeftSLine } from "@remixicon/react";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { Link, useParams } from "@tanstack/react-router";
 import { useQueryStates } from "nuqs";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  type SettingsTab,
-  settingsSearchParams,
-  settingsTabList,
-} from "./settings-search-params";
+  type OrgSettingsTab,
+  orgSettingsSearchParams,
+  orgSettingsTabList,
+} from "./org-settings-search-params";
 
-export default function SettingsSubheader() {
-  const [{ tab }, setQueryStates] = useQueryStates(settingsSearchParams);
+export default function OrgSettingsSubheader() {
+  const [{ tab }, setQueryStates] = useQueryStates(orgSettingsSearchParams);
+  const { canManageWebhooks, canManageIntegrations, canManageBilling } =
+    usePermissions();
 
   const handleTabChange = (value: string) => {
-    setQueryStates({ tab: value as SettingsTab });
+    setQueryStates({ tab: value as OrgSettingsTab });
   };
 
-  const tabPermissions: Record<SettingsTab, boolean> = {
+  const tabPermissions: Record<OrgSettingsTab, boolean> = {
     general: true,
-    notifications: true,
+    projects: true,
+    members: true,
+    webhooks: canManageWebhooks,
+    integrations: canManageIntegrations,
+    billing: canManageBilling,
   };
 
   useHotkey("1", () => {
@@ -31,17 +40,53 @@ export default function SettingsSubheader() {
     }
   });
   useHotkey("2", () => {
-    if (tabPermissions.notifications) {
-      setQueryStates({ tab: "notifications" });
+    if (tabPermissions.projects) {
+      setQueryStates({ tab: "projects" });
+    }
+  });
+  useHotkey("3", () => {
+    if (tabPermissions.members) {
+      setQueryStates({ tab: "members" });
+    }
+  });
+  useHotkey("4", () => {
+    if (tabPermissions.webhooks) {
+      setQueryStates({ tab: "webhooks" });
+    }
+  });
+  useHotkey("5", () => {
+    if (tabPermissions.integrations) {
+      setQueryStates({ tab: "integrations" });
+    }
+  });
+  useHotkey("6", () => {
+    if (tabPermissions.billing) {
+      setQueryStates({ tab: "billing" });
     }
   });
 
+  const { organizationSlug } = useParams({ strict: false });
+
   return (
-    <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center border-b bg-ui-bg-subtle py-2 pl-1">
+    <div className="sticky top-0 z-50 flex h-10 min-h-10 items-center gap-1 border-b bg-ui-bg-subtle py-2 pl-1">
       <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Link
+                className="mr-0.5 ml-1 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-ui-fg-muted transition-colors hover:bg-ui-bg-subtle-hover hover:text-ui-fg-base"
+                params={{ organizationSlug: organizationSlug as string }}
+                to="/$organizationSlug"
+              />
+            }
+          >
+            <RiArrowLeftSLine className="size-4 shrink-0" />
+          </TooltipTrigger>
+          <TooltipContent>Back to organization</TooltipContent>
+        </Tooltip>
         <Tabs onValueChange={handleTabChange} value={tab}>
           <TabsList className="h-8 shadow-elevation-card-rest">
-            {settingsTabList.map(
+            {orgSettingsTabList.map(
               ({ tab: tabValue, icon, description, hotkey }) => {
                 const Icon = icon;
                 const hasPermission = tabPermissions[tabValue];

@@ -350,8 +350,8 @@ export default function VariationsItem({
   }, [variation.name, variation.value]);
 
   return (
-    <Card className="group relative flex flex-col rounded-none p-0 shadow-none">
-      <div className="p-3 pt-2">
+    <Card className="group relative flex flex-col rounded-none bg-ui-bg-base! p-0 px-2 shadow-none">
+      <div className="pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <VariationColorPicker
@@ -465,7 +465,7 @@ export default function VariationsItem({
           />
         </div>
       </div>
-      <div className="flex items-center px-3 pb-3">
+      <div className="mt-2 flex items-center pb-3">
         <div className="flex items-center gap-0.5">
           <RiFlashlightFill className="size-4 text-ui-fg-muted" />
           <Text className="text-ui-fg-base" size="xsmall" weight="plus">

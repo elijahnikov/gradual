@@ -27,7 +27,7 @@ export const owner = ac.newRole({
 });
 
 export const admin = ac.newRole({
-  organization: ["read"],
+  organization: ["read", "update"],
   project: ["read", "create", "update", "delete"],
   member: ["delete", "update"],
   members: ["read", "invite", "remove", "update"],

@@ -369,7 +369,7 @@ function SegmentConditionsEditor({
             <Button
               disabled={!hasChanges || hasValidationErrors}
               onClick={handleSave}
-              size="small"
+              size="xsmall"
               variant="gradual"
             >
               Save changes

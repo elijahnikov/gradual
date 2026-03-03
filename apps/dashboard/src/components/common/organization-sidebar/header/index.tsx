@@ -20,7 +20,7 @@ export default function MainSidebarHeader() {
             <SidebarLinkItem
               icon={RiSettings5Fill}
               title="Organization settings"
-              url="/"
+              url="/$organizationSlug/settings"
             />
           </TooltipProvider>
         </div>

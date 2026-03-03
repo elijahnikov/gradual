@@ -24,6 +24,7 @@ import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
 import { Route as ApiFilesKeyRouteImport } from './routes/api/files/$key'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as OrganizationOrganizationSlugProjectRouteRouteImport } from './routes/_organization/$organizationSlug/_project/route'
+import { Route as OrganizationOrganizationSlugSettingsIndexRouteImport } from './routes/_organization/$organizationSlug/settings/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugRouteRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/route'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/index'
 import { Route as OrganizationOrganizationSlugProjectProjectSlugSettingsIndexRouteImport } from './routes/_organization/$organizationSlug/_project/$projectSlug/settings/index'
@@ -109,6 +110,12 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const OrganizationOrganizationSlugProjectRouteRoute =
   OrganizationOrganizationSlugProjectRouteRouteImport.update({
     id: '/_project',
+    getParentRoute: () => OrganizationOrganizationSlugRouteRoute,
+  } as any)
+const OrganizationOrganizationSlugSettingsIndexRoute =
+  OrganizationOrganizationSlugSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
     getParentRoute: () => OrganizationOrganizationSlugRouteRoute,
   } as any)
 const OrganizationOrganizationSlugProjectProjectSlugRouteRoute =
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
   '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugRouteRouteWithChildren
+  '/$organizationSlug/settings/': typeof OrganizationOrganizationSlugSettingsIndexRoute
   '/$organizationSlug/$projectSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/$organizationSlug/$projectSlug/analytics/': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/$organizationSlug/$projectSlug/api/': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
@@ -239,6 +247,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$key': typeof ApiFilesKeyRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/$organizationSlug/settings': typeof OrganizationOrganizationSlugSettingsIndexRoute
   '/$organizationSlug/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/$organizationSlug/$projectSlug/analytics': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/$organizationSlug/$projectSlug/api': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
@@ -268,6 +277,7 @@ export interface FileRoutesById {
   '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_organization/$organizationSlug/': typeof OrganizationOrganizationSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug': typeof OrganizationOrganizationSlugProjectProjectSlugRouteRouteWithChildren
+  '/_organization/$organizationSlug/settings/': typeof OrganizationOrganizationSlugSettingsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/': typeof OrganizationOrganizationSlugProjectProjectSlugIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/analytics/': typeof OrganizationOrganizationSlugProjectProjectSlugAnalyticsIndexRoute
   '/_organization/$organizationSlug/_project/$projectSlug/api/': typeof OrganizationOrganizationSlugProjectProjectSlugApiIndexRoute
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/api/trpc/$'
     | '/$organizationSlug/'
     | '/$organizationSlug/$projectSlug'
+    | '/$organizationSlug/settings/'
     | '/$organizationSlug/$projectSlug/'
     | '/$organizationSlug/$projectSlug/analytics/'
     | '/$organizationSlug/$projectSlug/api/'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/files/$key'
     | '/api/trpc/$'
+    | '/$organizationSlug/settings'
     | '/$organizationSlug/$projectSlug'
     | '/$organizationSlug/$projectSlug/analytics'
     | '/$organizationSlug/$projectSlug/api'
@@ -346,6 +358,7 @@ export interface FileRouteTypes {
     | '/api/trpc/$'
     | '/_organization/$organizationSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug'
+    | '/_organization/$organizationSlug/settings/'
     | '/_organization/$organizationSlug/_project/$projectSlug/'
     | '/_organization/$organizationSlug/_project/$projectSlug/analytics/'
     | '/_organization/$organizationSlug/_project/$projectSlug/api/'
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/$organizationSlug'
       preLoaderRoute: typeof OrganizationOrganizationSlugProjectRouteRouteImport
+      parentRoute: typeof OrganizationOrganizationSlugRouteRoute
+    }
+    '/_organization/$organizationSlug/settings/': {
+      id: '/_organization/$organizationSlug/settings/'
+      path: '/settings'
+      fullPath: '/$organizationSlug/settings/'
+      preLoaderRoute: typeof OrganizationOrganizationSlugSettingsIndexRouteImport
       parentRoute: typeof OrganizationOrganizationSlugRouteRoute
     }
     '/_organization/$organizationSlug/_project/$projectSlug': {
@@ -629,6 +649,7 @@ const OrganizationOrganizationSlugProjectRouteRouteWithChildren =
 interface OrganizationOrganizationSlugRouteRouteChildren {
   OrganizationOrganizationSlugProjectRouteRoute: typeof OrganizationOrganizationSlugProjectRouteRouteWithChildren
   OrganizationOrganizationSlugIndexRoute: typeof OrganizationOrganizationSlugIndexRoute
+  OrganizationOrganizationSlugSettingsIndexRoute: typeof OrganizationOrganizationSlugSettingsIndexRoute
 }
 
 const OrganizationOrganizationSlugRouteRouteChildren: OrganizationOrganizationSlugRouteRouteChildren =
@@ -637,6 +658,8 @@ const OrganizationOrganizationSlugRouteRouteChildren: OrganizationOrganizationSl
       OrganizationOrganizationSlugProjectRouteRouteWithChildren,
     OrganizationOrganizationSlugIndexRoute:
       OrganizationOrganizationSlugIndexRoute,
+    OrganizationOrganizationSlugSettingsIndexRoute:
+      OrganizationOrganizationSlugSettingsIndexRoute,
   }
 
 const OrganizationOrganizationSlugRouteRouteWithChildren =
