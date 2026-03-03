@@ -33,12 +33,12 @@ type WebhookItem = RouterOutputs["webhooks"]["list"][number];
 
 export default function WebhookList() {
   const trpc = useTRPC();
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/settings/",
-  });
+  const { organizationSlug } = useParams({ strict: false });
 
   const { data: webhooks } = useSuspenseQuery(
-    trpc.webhooks.list.queryOptions({ organizationSlug })
+    trpc.webhooks.list.queryOptions({
+      organizationSlug: organizationSlug as string,
+    })
   );
 
   const { selectedWebhooks, setSelectedWebhooks, clearSelectedWebhooks } =

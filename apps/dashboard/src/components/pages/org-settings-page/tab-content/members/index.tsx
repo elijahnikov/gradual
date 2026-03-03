@@ -42,7 +42,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { upperFirst } from "lodash";
+import _, { upperFirst } from "lodash";
 import { Suspense, useState } from "react";
 import { PermissionTooltip } from "@/components/common/permission-tooltip";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -90,19 +90,17 @@ export default function MembersSettings() {
 function MembersSettingsContent() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/settings/",
-  });
+  const { organizationSlug } = useParams({ strict: false });
   const { canInviteMembers } = usePermissions();
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const membersQueryOptions = trpc.organizationMember.getMembers.queryOptions({
-    organizationSlug,
+    organizationSlug: organizationSlug as string,
     getWithPermissions: true,
     limit: 100,
   });
   const invitationsQueryOptions = trpc.invitation.list.queryOptions({
-    organizationSlug,
+    organizationSlug: organizationSlug as string,
   });
 
   const { data: members } = useSuspenseQuery(membersQueryOptions);
@@ -197,7 +195,7 @@ function MembersSettingsContent() {
                 className="size-7"
                 onClick={() =>
                   cancelInvitation({
-                    organizationSlug,
+                    organizationSlug: organizationSlug as string,
                     invitationId: invitation.id,
                   })
                 }
@@ -411,9 +409,9 @@ function ChangeRoleDialog({
             value={role}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{_.upperFirst(role)}</SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent alignItemWithTrigger={false}>
               <SelectItem value="owner">Owner</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="member">Member</SelectItem>

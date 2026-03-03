@@ -6,21 +6,6 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   head: () => ({ meta: [{ title: "Settings · Gradual" }] }),
-  loader: ({ context, params }) => {
-    const { queryClient, trpc } = context;
-    void queryClient.prefetchQuery(
-      trpc.webhooks.list.queryOptions({
-        organizationSlug: params.organizationSlug,
-      })
-    );
-    void queryClient.prefetchQuery(
-      trpc.organizationMember.getMembers.queryOptions({
-        organizationSlug: params.organizationSlug,
-        getWithPermissions: true,
-        limit: 100,
-      })
-    );
-  },
 });
 
 function RouteComponent() {

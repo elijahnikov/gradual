@@ -328,30 +328,23 @@ export default function FlagSidebar({
             }
           >
             <ComboboxValue>
-              {isLoadingMembers && currentMaintainerId ? (
-                <div className="flex items-center gap-2">
-                  <Skeleton className="size-5 rounded-full" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-5 border">
-                    {selectedMaintainer ? (
-                      <>
-                        <AvatarImage src={selectedMaintainer.avatar} />
-                        <AvatarFallback>
-                          {selectedMaintainer.label?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </>
-                    ) : (
-                      <RiUserSmileLine className="size-3" />
-                    )}
-                  </Avatar>
-                  <Text size="small">
-                    {selectedMaintainer?.label ?? "Unassigned"}
-                  </Text>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Avatar className="size-5 border">
+                  {selectedMaintainer ? (
+                    <>
+                      <AvatarImage src={selectedMaintainer.avatar} />
+                      <AvatarFallback>
+                        {selectedMaintainer.label?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <RiUserSmileLine className="size-3" />
+                  )}
+                </Avatar>
+                <Text size="small">
+                  {selectedMaintainer?.label ?? "Unassigned"}
+                </Text>
+              </div>
             </ComboboxValue>
             <RiArrowDownSLine className="ml-auto size-4 text-ui-fg-muted" />
           </ComboboxTrigger>

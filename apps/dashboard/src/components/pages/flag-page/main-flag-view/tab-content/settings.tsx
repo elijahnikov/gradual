@@ -97,7 +97,7 @@ function DangerZone({
 
   return (
     <div className="flex flex-col border-destructive/40 p-0">
-      <div className="p-3">
+      <div className="h-12.5 p-3">
         <Text size="base" weight="plus">
           Danger zone
         </Text>

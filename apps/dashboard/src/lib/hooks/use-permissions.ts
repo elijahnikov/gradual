@@ -66,6 +66,10 @@ export function usePermissions() {
     canManageApiKeys: roleHas(role, "apiKeys", "create"),
     // Webhooks — no dedicated resource; follows project-level admin access
     canManageWebhooks: roleHas(role, "project", "update"),
+    // Integrations — follows organization-level admin access
+    canManageIntegrations: roleHas(role, "organization", "update"),
+    // Billing — follows organization-level admin access
+    canManageBilling: roleHas(role, "organization", "update"),
     // Sidebar visibility — derived from project admin access
     canViewAuditLog: roleHas(role, "project", "update"),
     canViewSettings: roleHas(role, "project", "update"),

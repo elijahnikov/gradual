@@ -34,9 +34,7 @@ export default function InviteMemberDialog({
   const [role, setRole] = useState("member");
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/_project/$projectSlug/settings/",
-  });
+  const { organizationSlug } = useParams({ strict: false });
 
   const { mutateAsync: createInvitation, isPending } = useMutation(
     trpc.invitation.create.mutationOptions({
@@ -49,7 +47,7 @@ export default function InviteMemberDialog({
   const handleSubmit = async () => {
     try {
       await createInvitation({
-        organizationSlug,
+        organizationSlug: organizationSlug as string,
         email,
         role: role as "owner" | "admin" | "member",
       });

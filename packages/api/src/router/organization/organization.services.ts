@@ -109,6 +109,7 @@ export const updateOrganization = async ({
       data: {
         name: input.name,
         slug: input.slug,
+        logo: input.logo ?? undefined,
       },
       organizationId: input.organizationId,
     },

@@ -15,7 +15,7 @@ import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
-import WebhookFormDialog from "../../pages/settings-page/tab-content/webhooks/webhook-form-dialog";
+import WebhookFormDialog from "../../pages/org-settings-page/tab-content/webhooks/webhook-form-dialog";
 
 type WebhookItem = RouterOutputs["webhooks"]["list"][number];
 
