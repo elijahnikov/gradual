@@ -1,4 +1,4 @@
-import { member, project } from "@gradual/db/schema";
+import { member, organizationDomain, project } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { createAuditLog } from "../../lib/audit-log";
@@ -6,6 +6,10 @@ import type {
   ProtectedOrganizationTRPCContext,
   ProtectedTRPCContext,
 } from "../../trpc";
+import {
+  extractDomain,
+  isWorkDomain,
+} from "../organization-domain/organization-domain.services";
 import type {
   CheckSlugAvailabilityInput,
   CreateOrganizationInput,
@@ -93,6 +97,24 @@ export const createOrganization = async ({
     },
     headers: ctx.headers,
   });
+
+  // Auto-associate creator's email domain with the org
+  const email = currentUser.email;
+  if (email) {
+    const domain = extractDomain(email);
+    if (domain && isWorkDomain(domain)) {
+      // Only associate if no other org has claimed this domain
+      const existing = await ctx.db.query.organizationDomain.findFirst({
+        where: eq(organizationDomain.domain, domain),
+      });
+      if (!existing) {
+        await ctx.db.insert(organizationDomain).values({
+          organizationId: createdOrganization.id,
+          domain,
+        });
+      }
+    }
+  }
 
   return createdOrganization;
 };

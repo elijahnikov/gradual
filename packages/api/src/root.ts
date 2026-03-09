@@ -8,6 +8,7 @@ import { evaluationsRouter } from "./router/evaluations/evaluations.router";
 import { featureFlagsRouter } from "./router/feature-flags/feature-flags.router";
 import { invitationRouter } from "./router/invitation/invitation.router";
 import { organizationRouter } from "./router/organization/organization.router";
+import { organizationDomainRouter } from "./router/organization-domain/organization-domain.router";
 import { organizationMemberRouter } from "./router/organization-member/organization-member.router";
 import { projectRouter } from "./router/project/project.router";
 import { segmentsRouter } from "./router/segments/segments.router";
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   environment: environmentRouter,
   evaluations: evaluationsRouter,
   organization: organizationRouter,
+  organizationDomain: organizationDomainRouter,
   organizationMember: organizationMemberRouter,
   project: projectRouter,
   apiKey: apiKeyRouter,

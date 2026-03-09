@@ -23,9 +23,10 @@ import { Skeleton } from "@gradual/ui/skeleton";
 import { Text } from "@gradual/ui/text";
 import { toastManager } from "@gradual/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RiBuilding2Fill } from "@remixicon/react";
+import { RiBuilding2Fill, RiCloseLine, RiGlobeLine } from "@remixicon/react";
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -287,6 +288,8 @@ function OrgGeneralSettingsContent() {
           </form>
         </Form>
 
+        <DomainSection organizationId={organization.id} />
+
         <div className="w-full border-b p-4">
           <Text className="text-ui-fg-error" size="small" weight="plus">
             Danger Zone
@@ -309,6 +312,82 @@ function OrgGeneralSettingsContent() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DomainSection({ organizationId }: { organizationId: string }) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { canUpdateOrganization } = usePermissions();
+
+  const { data: domains } = useQuery(
+    trpc.organizationDomain.list.queryOptions({ organizationId })
+  );
+
+  const { mutateAsync: removeDomain, isPending: isRemoving } = useMutation(
+    trpc.organizationDomain.remove.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries(
+          trpc.organizationDomain.list.queryOptions({ organizationId })
+        );
+      },
+    })
+  );
+
+  if (!domains || domains.length === 0) {
+    return null;
+  }
+
+  const handleRemove = async (domainId: string) => {
+    try {
+      await removeDomain({ domainId, organizationId });
+      toastManager.add({
+        title: "Domain removed",
+        description: "The domain has been removed from this organization",
+        type: "success",
+      });
+    } catch {
+      toastManager.add({
+        title: "Failed to remove domain",
+        description: "Please try again",
+        type: "error",
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 border-b p-4">
+      <div>
+        <Text size="small" weight="plus">
+          Associated Domain
+        </Text>
+        <Text className="mt-1 text-ui-fg-muted" size="xsmall">
+          Users signing up with this email domain will be prompted to join your
+          organization.
+        </Text>
+      </div>
+      {domains.map((d) => (
+        <div
+          className="flex items-center gap-2 rounded-lg border px-3 py-2"
+          key={d.id}
+        >
+          <RiGlobeLine className="size-4 text-ui-fg-muted" />
+          <Text className="flex-1" size="small">
+            {d.domain}
+          </Text>
+          {canUpdateOrganization && (
+            <Button
+              disabled={isRemoving}
+              onClick={() => handleRemove(d.id)}
+              size="small"
+              variant="ghost"
+            >
+              <RiCloseLine className="size-4" />
+            </Button>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

@@ -973,6 +973,34 @@ export const webhookDelivery = pgTable(
   ]
 );
 
+export const organizationDomain = pgTable(
+  "organization_domain",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    domain: text("domain").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("organization_domain_domain_idx").on(table.domain),
+    index("organization_domain_org_idx").on(table.organizationId),
+  ]
+);
+
+export const organizationDomainRelations = relations(
+  organizationDomain,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [organizationDomain.organizationId],
+      references: [organization.id],
+    }),
+  })
+);
+
 export const organizationRelations = relations(organization, ({ many }) => ({
   projects: many(project),
   environments: many(environment),
@@ -981,6 +1009,7 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   apiKeys: many(apiKey),
   auditLogs: many(auditLog),
   webhooks: many(webhook),
+  domains: many(organizationDomain),
 }));
 
 export const projectRelations = relations(project, ({ one, many }) => ({
