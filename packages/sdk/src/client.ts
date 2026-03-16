@@ -169,6 +169,7 @@ class GradualClient implements Gradual {
   private identifiedContext: EvaluationContext = {};
   private identityHash: string | null = null;
   private identityHashSent = false;
+  private readonly sentContextHashes: Set<string> = new Set();
   private mauLimitReached = false;
   private readonly updateListeners: Set<() => void> = new Set();
   private eventBuffer: EventBuffer | null = null;
@@ -635,7 +636,7 @@ class GradualClient implements Gradual {
       traceId: params.traceId,
       contextKinds,
       contextKeys,
-      contextIdentityHash: this.getAndMarkIdentityHash(),
+      contextIdentityHash: this.getOrComputeIdentityHash(context),
       timestamp: Date.now(),
       matchedTargetName: params.matchedTargetName,
       errorDetail: params.errorDetail,
@@ -644,10 +645,20 @@ class GradualClient implements Gradual {
     });
   }
 
-  private getAndMarkIdentityHash(): string | undefined {
+  private getOrComputeIdentityHash(
+    context: EvaluationContext
+  ): string | undefined {
+    // If identify() was called and hash not yet sent, use that
     if (this.identityHash && !this.identityHashSent) {
       this.identityHashSent = true;
       return this.identityHash;
+    }
+    // If context has identifiable keys, compute a hash for MAU tracking.
+    // Only send each unique hash once to avoid redundant MAU events.
+    const hash = hashContext(context);
+    if (hash.length > 0 && !this.sentContextHashes.has(hash)) {
+      this.sentContextHashes.add(hash);
+      return hash;
     }
     return undefined;
   }
@@ -810,6 +821,7 @@ class GradualClient implements Gradual {
     this.identifiedContext = {};
     this.identityHash = null;
     this.identityHashSent = false;
+    this.sentContextHashes.clear();
   }
 
   async refresh(): Promise<void> {

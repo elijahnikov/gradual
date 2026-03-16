@@ -26,6 +26,7 @@ import { Suspense, useState } from "react";
 import CreateProjectDialog from "@/components/common/dialogs/create-project-dialog";
 import { PermissionTooltip } from "@/components/common/permission-tooltip";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { usePlanLimits } from "@/lib/hooks/use-plan-limits";
 import { useRecentlyVisited } from "@/lib/hooks/use-recently-visited";
 import { useTRPC } from "@/lib/trpc";
 import OrgProjects from "./org-projects";
@@ -162,14 +163,21 @@ function QuickActions({
   organizationSlug: string;
 }) {
   const { canCreateProject } = usePermissions();
+  const { canCreateProject: canCreateProjectPlan } =
+    usePlanLimits(organizationId);
   const [createOpen, setCreateOpen] = useState(false);
+
+  const projectAllowed = canCreateProject && canCreateProjectPlan;
 
   const actions = [
     {
       label: "New project",
       icon: RiAddLine,
       onClick: () => setCreateOpen(true),
-      permission: canCreateProject,
+      permission: projectAllowed,
+      tooltipMessage: canCreateProjectPlan
+        ? undefined
+        : "You've reached the project limit for your plan. Upgrade to create more projects.",
     },
     {
       label: "Invite member",
@@ -232,6 +240,7 @@ function QuickActions({
               <PermissionTooltip
                 hasPermission={action.permission}
                 key={action.label}
+                message={action.tooltipMessage}
               >
                 <Button
                   disabled={!action.permission}

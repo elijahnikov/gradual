@@ -49,3 +49,10 @@ export type GetOrganizationOverviewInput = z.infer<
 export const getOrganizationOverviewSchema = z.object({
   organizationId: z.uuid(),
 });
+
+export type GetOrganizationLimitsInput = z.infer<
+  typeof getOrganizationLimitsSchema
+>;
+export const getOrganizationLimitsSchema = z.object({
+  organizationId: z.uuid(),
+});

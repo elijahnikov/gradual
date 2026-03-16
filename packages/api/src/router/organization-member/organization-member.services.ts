@@ -1,8 +1,9 @@
-import { and, eq, ilike, or } from "@gradual/db";
+import { and, count, eq, ilike, or } from "@gradual/db";
 import { member, user } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { asc, desc } from "drizzle-orm";
 import { createAuditLog } from "../../lib/audit-log";
+import { getOrganizationPlanLimits } from "../../lib/plan-limits";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import type {
   CreateOrganizationMemberInput,
@@ -19,6 +20,23 @@ export const createOrganizationMember = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateOrganizationMemberInput;
 }) => {
+  const [planLimits, memberCount] = await Promise.all([
+    getOrganizationPlanLimits(ctx, input.organizationId),
+    ctx.db
+      .select({ total: count() })
+      .from(member)
+      .where(eq(member.organizationId, input.organizationId)),
+  ]);
+
+  const currentMembers = memberCount[0]?.total ?? 0;
+  if (planLimits.members !== null && currentMembers >= planLimits.members) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "You've reached the team member limit for your plan. Upgrade to add more members.",
+    });
+  }
+
   const createdMember = await ctx.authApi.addMember({
     body: {
       userId: input.userId,

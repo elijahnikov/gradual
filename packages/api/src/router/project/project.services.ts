@@ -9,6 +9,7 @@ import {
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { createAuditLog } from "../../lib/audit-log";
+import { getOrganizationPlanLimits } from "../../lib/plan-limits";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { createApiKey } from "../api-key/api-key.services";
 import { seedDefaultAttributes } from "../attributes/attributes.services";
@@ -35,6 +36,28 @@ export const createProject = async ({
   ctx: ProtectedOrganizationTRPCContext;
   input: CreateProjectInput;
 }) => {
+  const [planLimits, projectCount] = await Promise.all([
+    getOrganizationPlanLimits(ctx, ctx.organization.id),
+    ctx.db
+      .select({ total: count() })
+      .from(project)
+      .where(
+        and(
+          eq(project.organizationId, ctx.organization.id),
+          isNull(project.deletedAt)
+        )
+      ),
+  ]);
+
+  const currentProjects = projectCount[0]?.total ?? 0;
+  if (planLimits.projects !== null && currentProjects >= planLimits.projects) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "You've reached the project limit for your plan. Upgrade to create more projects.",
+    });
+  }
+
   const [createdProject] = await ctx.db
     .insert(project)
     .values(input)

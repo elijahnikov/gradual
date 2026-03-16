@@ -6,6 +6,7 @@ import {
 } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { createAuditLog } from "../../lib/audit-log";
+import { getOrganizationPlanLimits } from "../../lib/plan-limits";
 import type { ProtectedOrganizationTRPCContext } from "../../trpc";
 import { queueSnapshotPublish } from "../snapshots/snapshots.services";
 import type {
@@ -38,6 +39,32 @@ export const createEnvironment = async ({
 
   if (!foundProject) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+  }
+
+  const [planLimits, envCount] = await Promise.all([
+    getOrganizationPlanLimits(ctx, organization.id),
+    ctx.db
+      .select({ total: count() })
+      .from(environment)
+      .where(
+        and(
+          eq(environment.projectId, foundProject.id),
+          eq(environment.organizationId, organization.id),
+          isNull(environment.deletedAt)
+        )
+      ),
+  ]);
+
+  const currentEnvs = envCount[0]?.total ?? 0;
+  if (
+    planLimits.environmentsPerProject !== null &&
+    currentEnvs >= planLimits.environmentsPerProject
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "You've reached the environment limit for your plan. Upgrade to create more environments.",
+    });
   }
 
   const [createdEnvironment] = await ctx.db
