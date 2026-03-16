@@ -1,5 +1,14 @@
 # @gradual-so/sdk-react
 
+## 0.8.12
+
+### Patch Changes
+
+- [#106](https://github.com/elijahnikov/gradual/pull/106) [`5f8bfca`](https://github.com/elijahnikov/gradual/commit/5f8bfca759d344be0990354ebc59ee172e22e6b6) Thanks [@elijahnikov](https://github.com/elijahnikov)! - Fix identify user for usage tracking
+
+- Updated dependencies [[`5f8bfca`](https://github.com/elijahnikov/gradual/commit/5f8bfca759d344be0990354ebc59ee172e22e6b6)]:
+  - @gradual-so/sdk@0.8.12
+
 ## 0.8.11
 
 ### Patch Changes
