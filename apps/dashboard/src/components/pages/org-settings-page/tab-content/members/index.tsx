@@ -46,6 +46,7 @@ import _, { upperFirst } from "lodash";
 import { Suspense, useState } from "react";
 import { PermissionTooltip } from "@/components/common/permission-tooltip";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { usePlanLimits } from "@/lib/hooks/use-plan-limits";
 import { useTRPC } from "@/lib/trpc";
 import InviteMemberDialog from "./invite-member-dialog";
 
@@ -93,6 +94,18 @@ function MembersSettingsContent() {
   const { organizationSlug } = useParams({ strict: false });
   const { canInviteMembers } = usePermissions();
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  const { data: organization } = useSuspenseQuery(
+    trpc.organization.getBySlug.queryOptions({
+      organizationSlug: organizationSlug as string,
+    })
+  );
+
+  const { canInviteMember: canInviteMemberPlan } = usePlanLimits(
+    organization.id
+  );
+
+  const inviteAllowed = canInviteMembers && canInviteMemberPlan;
 
   const membersQueryOptions = trpc.organizationMember.getMembers.queryOptions({
     organizationSlug: organizationSlug as string,
@@ -150,10 +163,17 @@ function MembersSettingsContent() {
         <Text className="text-ui-fg-muted" size="xsmall">
           {members.length} {members.length === 1 ? "member" : "members"}
         </Text>
-        <PermissionTooltip hasPermission={canInviteMembers}>
+        <PermissionTooltip
+          hasPermission={inviteAllowed}
+          message={
+            canInviteMemberPlan
+              ? undefined
+              : "You've reached the team member limit for your plan. Upgrade to invite more members."
+          }
+        >
           <Button
             className="gap-x-1"
-            disabled={!canInviteMembers}
+            disabled={!inviteAllowed}
             onClick={() => setInviteOpen(true)}
             size="small"
             variant="outline"

@@ -50,4 +50,10 @@ export const organizationRouter = {
     .query((opts) => {
       return services.getOrganizationOverview({ ...opts });
     }),
+
+  getLimits: protectedOrganizationProcedure({ organization: ["read"] })
+    .input(schemas.getOrganizationLimitsSchema)
+    .query((opts) => {
+      return services.getOrganizationLimits({ ...opts });
+    }),
 } satisfies TRPCRouterRecord;

@@ -1,4 +1,4 @@
-import { count, gte, lt } from "@gradual/db";
+import { count, gte, isNull, lt } from "@gradual/db";
 import {
   featureFlag,
   featureFlagEvaluation,
@@ -9,6 +9,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { createAuditLog } from "../../lib/audit-log";
+import { getOrganizationPlanLimits } from "../../lib/plan-limits";
 import type {
   ProtectedOrganizationTRPCContext,
   ProtectedTRPCContext,
@@ -22,6 +23,7 @@ import type {
   CreateOrganizationInput,
   DeleteOrganizationInput,
   GetOrganizationBySlugInput,
+  GetOrganizationLimitsInput,
   GetOrganizationOverviewInput,
   UpdateOrganizationInput,
 } from "./organization.schemas";
@@ -296,5 +298,42 @@ export const getOrganizationOverview = async ({
     totalFlags: flagCount[0]?.total ?? 0,
     totalMembers: memberCount[0]?.total ?? 0,
     evaluations24h: evaluationCount[0]?.total ?? 0,
+  };
+};
+
+export const getOrganizationLimits = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetOrganizationLimitsInput;
+}) => {
+  const [planLimits, projectCount, memberCount] = await Promise.all([
+    getOrganizationPlanLimits(ctx, input.organizationId),
+    ctx.db
+      .select({ total: count() })
+      .from(project)
+      .where(
+        and(
+          eq(project.organizationId, input.organizationId),
+          isNull(project.deletedAt)
+        )
+      ),
+    ctx.db
+      .select({ total: count() })
+      .from(member)
+      .where(eq(member.organizationId, input.organizationId)),
+  ]);
+
+  const projects = projectCount[0]?.total ?? 0;
+  const members = memberCount[0]?.total ?? 0;
+
+  return {
+    plan: planLimits,
+    usage: { projects, members },
+    canCreateProject:
+      planLimits.projects === null || projects < planLimits.projects,
+    canInviteMember:
+      planLimits.members === null || members < planLimits.members,
   };
 };

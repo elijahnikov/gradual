@@ -9,6 +9,7 @@ import { Suspense, useState } from "react";
 import CreateProjectDialog from "@/components/common/dialogs/create-project-dialog";
 import { PermissionTooltip } from "@/components/common/permission-tooltip";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { usePlanLimits } from "@/lib/hooks/use-plan-limits";
 import { useTRPC } from "@/lib/trpc";
 
 function ProjectRowSkeleton() {
@@ -56,6 +57,12 @@ function ProjectsSettingsContent() {
     })
   );
 
+  const { canCreateProject: canCreateProjectPlan } = usePlanLimits(
+    organization.id
+  );
+
+  const createAllowed = canCreateProject && canCreateProjectPlan;
+
   const { data: projects } = useSuspenseQuery(
     trpc.project.getAllByOrganizationId.queryOptions({
       organizationId: organization.id,
@@ -68,10 +75,17 @@ function ProjectsSettingsContent() {
         <Text className="text-ui-fg-muted" size="xsmall">
           {projects.length} {projects.length === 1 ? "project" : "projects"}
         </Text>
-        <PermissionTooltip hasPermission={canCreateProject}>
+        <PermissionTooltip
+          hasPermission={createAllowed}
+          message={
+            canCreateProjectPlan
+              ? undefined
+              : "You've reached the project limit for your plan. Upgrade to create more projects."
+          }
+        >
           <Button
             className="gap-x-1"
-            disabled={!canCreateProject}
+            disabled={!createAllowed}
             onClick={() => setCreateOpen(true)}
             size="small"
             variant="outline"
