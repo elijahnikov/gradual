@@ -26,11 +26,11 @@ function SidebarLinkItem({
   const buttonClassName = cn(
     "group/menu flex h-8 items-center justify-start self-start rounded-full text-left font-sans text-[13px] focus-visible:bg-transparent! focus-visible:shadow-borders-interactive-with-active!",
     isActive
-      ? "text-ui-fg-base"
+      ? "bg-[rgba(0,0,0,0.070)] text-ui-fg-base dark:bg-[rgba(255,255,255,0.070)]"
       : "text-ui-fg-muted transition-colors duration-200 hover:bg-[rgba(0,0,0,0.070)] hover:text-ui-fg-base dark:hover:bg-[rgba(255,255,255,0.070)]"
   );
 
-  const buttonVariant = isActive ? "secondary" : "ghost";
+  const buttonVariant = "ghost";
 
   if (external) {
     return (

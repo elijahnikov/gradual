@@ -33,7 +33,7 @@ function SectionHeader({
   title: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 border-b bg-ui-bg-subtle px-4 py-3">
+    <div className="flex items-center gap-2.5 px-4 py-3">
       <Icon className="size-4 shrink-0 text-ui-fg-muted" />
       <Text size="small" weight="plus">
         {title}

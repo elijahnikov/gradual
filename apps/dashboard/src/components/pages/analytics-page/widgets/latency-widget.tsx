@@ -196,7 +196,7 @@ export default function LatencyWidget() {
 
     if (!(hasData && primary)) {
       return (
-        <div className="flex h-full items-center justify-center text-ui-fg-muted">
+        <div className="flex h-full items-center justify-center text-sm text-ui-fg-muted">
           No latency data available
         </div>
       );
@@ -221,7 +221,7 @@ export default function LatencyWidget() {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-ui-fg-muted">
+      <div className="flex h-full items-center justify-center text-sm text-ui-fg-muted">
         No latency data available
       </div>
     );

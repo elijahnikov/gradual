@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useEffect } from "react";
 import OrgSettingsPage from "@/components/pages/org-settings-page";
+import { addRecentVisit } from "@/lib/hooks/use-recently-visited";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/settings/"
@@ -24,5 +26,18 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
+  const { organizationSlug } = useParams({
+    from: "/_organization/$organizationSlug/settings/",
+  });
+
+  useEffect(() => {
+    addRecentVisit({
+      path: `/${organizationSlug}/settings`,
+      title: "Settings",
+      subtitle: organizationSlug,
+      type: "settings",
+    });
+  }, [organizationSlug]);
+
   return <OrgSettingsPage />;
 }

@@ -42,3 +42,10 @@ export type CheckSlugAvailabilityInput = z.infer<
 export const checkSlugAvailabilitySchema = z.object({
   slug: z.string(),
 });
+
+export type GetOrganizationOverviewInput = z.infer<
+  typeof getOrganizationOverviewSchema
+>;
+export const getOrganizationOverviewSchema = z.object({
+  organizationId: z.uuid(),
+});

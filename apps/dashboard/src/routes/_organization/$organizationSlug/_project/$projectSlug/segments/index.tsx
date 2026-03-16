@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useEffect } from "react";
 import SegmentsPageComponent from "@/components/pages/segments-page";
+import { addRecentVisit } from "@/lib/hooks/use-recently-visited";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/segments/"
@@ -35,5 +37,18 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
+  const { organizationSlug, projectSlug } = useParams({
+    from: "/_organization/$organizationSlug/_project/$projectSlug/segments/",
+  });
+
+  useEffect(() => {
+    addRecentVisit({
+      path: `/${organizationSlug}/${projectSlug}/segments`,
+      title: "Segments",
+      subtitle: projectSlug,
+      type: "segments",
+    });
+  }, [organizationSlug, projectSlug]);
+
   return <SegmentsPageComponent />;
 }

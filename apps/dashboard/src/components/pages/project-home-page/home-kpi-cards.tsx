@@ -34,7 +34,7 @@ function KpiCard({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-1.5 border-b bg-ui-bg-subtle px-4 py-3">
+      <div className="flex flex-col gap-1.5 px-4 py-3">
         <div className="flex items-center gap-x-1">
           {Icon && <Icon className="size-4 shrink-0 text-ui-fg-muted" />}
           <Text size="small" weight="plus">
@@ -42,7 +42,7 @@ function KpiCard({
           </Text>
         </div>
       </div>
-      <div className="flex flex-col justify-center px-4 py-3">
+      <div className="flex flex-col justify-center px-4 pb-3">
         <div className="flex items-baseline gap-2">
           <span className="font-semibold text-3xl tracking-tight">{value}</span>
         </div>

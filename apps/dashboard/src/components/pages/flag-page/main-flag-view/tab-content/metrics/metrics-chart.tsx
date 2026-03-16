@@ -100,7 +100,7 @@ export default function MetricsChart({
 
   if (data.length === 0 || series.length === 0) {
     return (
-      <div className="flex h-full min-h-[300px] items-center justify-center text-ui-fg-muted">
+      <div className="flex h-full min-h-[300px] items-center justify-center text-sm text-ui-fg-muted">
         No data available for the selected time range
       </div>
     );

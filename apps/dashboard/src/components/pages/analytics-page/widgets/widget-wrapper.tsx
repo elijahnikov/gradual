@@ -80,7 +80,7 @@ export default function WidgetWrapper({
 }: WidgetWrapperProps) {
   return (
     <div className={cn("flex h-full flex-col overflow-hidden", className)}>
-      <div className="flex flex-col gap-1.5 border-b bg-ui-bg-subtle px-4 py-3">
+      <div className="flex flex-col gap-1.5 px-3 pt-2 pb-1">
         <div className="flex items-center gap-x-1">
           {Icon && <Icon className="size-4 shrink-0 text-ui-fg-muted" />}
           <Text size="small" weight="plus">
