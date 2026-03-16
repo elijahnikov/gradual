@@ -55,7 +55,7 @@ export default function SdkPlatformWidget() {
 
   if (chartItems.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-ui-fg-muted">
+      <div className="flex h-full items-center justify-center text-sm text-ui-fg-muted">
         No SDK platform data available
       </div>
     );

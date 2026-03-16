@@ -44,4 +44,10 @@ export const organizationRouter = {
     .query((opts) => {
       return services.checkSlugAvailability({ ...opts });
     }),
+
+  getOverview: protectedOrganizationProcedure({ organization: ["read"] })
+    .input(schemas.getOrganizationOverviewSchema)
+    .query((opts) => {
+      return services.getOrganizationOverview({ ...opts });
+    }),
 } satisfies TRPCRouterRecord;

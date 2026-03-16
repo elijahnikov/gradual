@@ -1,17 +1,7 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import OrgHomePage from "@/components/pages/org-home-page";
 
 export const Route = createFileRoute("/_organization/$organizationSlug/")({
-  component: RouteComponent,
-  head: () => ({ meta: [{ title: "Gradual" }] }),
+  component: OrgHomePage,
+  head: () => ({ meta: [{ title: "Overview | Gradual" }] }),
 });
-
-function RouteComponent() {
-  const { organizationSlug } = useParams({
-    from: "/_organization/$organizationSlug/",
-  });
-  return (
-    <div>
-      Hello "/_organization-layout-route/$organizationSlug/"! {organizationSlug}
-    </div>
-  );
-}

@@ -1,5 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useEffect } from "react";
 import FlagPageComponent from "@/components/pages/flag-page";
+import { addRecentVisit } from "@/lib/hooks/use-recently-visited";
+import { useTRPC } from "@/lib/trpc";
 
 export const Route = createFileRoute(
   "/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/"
@@ -60,5 +64,29 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
+  const trpc = useTRPC();
+  const { organizationSlug, projectSlug, flagSlug } = useParams({
+    from: "/_organization/$organizationSlug/_project/$projectSlug/flags/$flagSlug/",
+  });
+
+  const { data: flag } = useQuery(
+    trpc.featureFlags.getByKey.queryOptions({
+      projectSlug,
+      organizationSlug,
+      key: flagSlug,
+    })
+  );
+
+  useEffect(() => {
+    if (flag) {
+      addRecentVisit({
+        path: `/${organizationSlug}/${projectSlug}/flags/${flagSlug}`,
+        title: flag.flag.name,
+        subtitle: projectSlug,
+        type: "flag",
+      });
+    }
+  }, [flag, organizationSlug, projectSlug, flagSlug]);
+
   return <FlagPageComponent />;
 }

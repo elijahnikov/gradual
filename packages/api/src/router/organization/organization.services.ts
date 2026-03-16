@@ -1,4 +1,11 @@
-import { member, organizationDomain, project } from "@gradual/db/schema";
+import { count, gte, lt } from "@gradual/db";
+import {
+  featureFlag,
+  featureFlagEvaluation,
+  member,
+  organizationDomain,
+  project,
+} from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { createAuditLog } from "../../lib/audit-log";
@@ -15,6 +22,7 @@ import type {
   CreateOrganizationInput,
   DeleteOrganizationInput,
   GetOrganizationBySlugInput,
+  GetOrganizationOverviewInput,
   UpdateOrganizationInput,
 } from "./organization.schemas";
 
@@ -242,4 +250,51 @@ export const checkSlugAvailability = async ({
     },
   });
   return data.status;
+};
+
+export const getOrganizationOverview = async ({
+  ctx,
+  input,
+}: {
+  ctx: ProtectedOrganizationTRPCContext;
+  input: GetOrganizationOverviewInput;
+}) => {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const flags = await ctx.db
+    .select({ id: featureFlag.id })
+    .from(featureFlag)
+    .where(eq(featureFlag.organizationId, input.organizationId));
+
+  const flagIds = flags.map((f) => f.id);
+
+  const [flagCount, memberCount, evaluationCount] = await Promise.all([
+    ctx.db
+      .select({ total: count() })
+      .from(featureFlag)
+      .where(eq(featureFlag.organizationId, input.organizationId)),
+    ctx.db
+      .select({ total: count() })
+      .from(member)
+      .where(eq(member.organizationId, input.organizationId)),
+    flagIds.length > 0
+      ? ctx.db
+          .select({ total: count() })
+          .from(featureFlagEvaluation)
+          .where(
+            and(
+              inArray(featureFlagEvaluation.featureFlagId, flagIds),
+              gte(featureFlagEvaluation.createdAt, twentyFourHoursAgo),
+              lt(featureFlagEvaluation.createdAt, now)
+            )
+          )
+      : Promise.resolve([{ total: 0 }]),
+  ]);
+
+  return {
+    totalFlags: flagCount[0]?.total ?? 0,
+    totalMembers: memberCount[0]?.total ?? 0,
+    evaluations24h: evaluationCount[0]?.total ?? 0,
+  };
 };

@@ -110,7 +110,7 @@ export default function VolumeOverTimeWidget() {
   if (live.isLive) {
     if (livelineData.length === 0) {
       return (
-        <div className="flex h-full items-center justify-center text-ui-fg-muted">
+        <div className="flex h-full items-center justify-center text-sm text-ui-fg-muted">
           No data available for the selected time range
         </div>
       );
@@ -153,7 +153,7 @@ export default function VolumeOverTimeWidget() {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-ui-fg-muted">
+      <div className="flex h-full items-center justify-center text-sm text-ui-fg-muted">
         No data available for the selected time range
       </div>
     );
