@@ -46,6 +46,10 @@
         "@vitejs/plugin-react": "^5.1.2",
         "vite-tsconfig-paths": "^5.1.4"
       },
+      "upstash": {
+        "@upstash/ratelimit": "^2.0.8",
+        "@upstash/redis": "^1.37.0"
+      },
       "react": {
         "@types/react": "^19.2.7",
         "@types/react-dom": "^19.2.3",

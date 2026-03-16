@@ -28,6 +28,8 @@
     "@gradual/auth": "*",
     "@gradual/db": "*",
     "@trpc/server": "catalog:trpc",
+    "@upstash/ratelimit": "catalog:upstash",
+    "@upstash/redis": "catalog:upstash",
     "superjson": "2.2.3",
     "zod": "catalog:"
   },

@@ -6,6 +6,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import type { InferSelectModel } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError, z } from "zod/v4";
+import { checkRateLimit, getProtectedRateLimiter } from "./rate-limit";
 
 export const createTRPCContext = async (opts: {
   headers: Headers;
@@ -51,16 +52,28 @@ export const createTRPCRouter = t.router;
 
 export const publicProcedure = t.procedure;
 
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+const rateLimitMiddleware = t.middleware(async ({ ctx, type, next }) => {
+  if (type === "mutation") {
+    const limiter = getProtectedRateLimiter();
+    if (limiter && ctx.session?.user) {
+      await checkRateLimit(limiter, ctx.session.user.id);
+    }
   }
-  return next({
-    ctx: {
-      session: { ...ctx.session, user: ctx.session.user },
-    },
-  });
+  return next();
 });
+
+export const protectedProcedure = t.procedure
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    return next({
+      ctx: {
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  })
+  .use(rateLimitMiddleware);
 
 export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
 

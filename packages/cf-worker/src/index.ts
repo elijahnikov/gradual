@@ -1,5 +1,11 @@
 export { SnapshotRoom } from "./snapshot-room";
 
+import {
+  buildRateLimitResponse,
+  createSdkRateLimiters,
+  mergeRateLimitHeaders,
+} from "./rate-limit";
+
 interface SnapshotJobMessage {
   orgId: string;
   projectId: string;
@@ -67,6 +73,9 @@ interface Env {
   SNAPSHOT_ROOM: DurableObjectNamespace;
   CLOUDFLARE_WORKERS_ADMIN_KEY: string;
   API_INTERNAL_URL: string;
+  UPSTASH_REDIS_REST_URL: string;
+  UPSTASH_REDIS_REST_TOKEN: string;
+  ENVIRONMENT?: string;
 }
 
 function verifyAdminAuth(request: Request, env: Env): boolean {
@@ -824,6 +833,58 @@ export default {
       });
     }
 
+    const corsHeaders = { "Access-Control-Allow-Origin": "*" };
+
+    let rateLimitResult: {
+      limit: number;
+      remaining: number;
+      reset: number;
+    } | null = null;
+    if (
+      isSDKRoute &&
+      env.ENVIRONMENT !== "development" &&
+      env.UPSTASH_REDIS_REST_URL &&
+      env.UPSTASH_REDIS_REST_TOKEN
+    ) {
+      const limiters = createSdkRateLimiters(env);
+      let rateLimitKey: string | null = null;
+      let limiter: typeof limiters.init | null = null;
+
+      if (pathname === "/api/v1/sdk/init") {
+        rateLimitKey = request.headers.get("CF-Connecting-IP") ?? "unknown";
+        limiter = limiters.init;
+      } else if (pathname === "/api/v1/sdk/snapshot") {
+        const auth = request.headers.get("Authorization");
+        if (auth?.startsWith("Bearer ")) {
+          rateLimitKey = auth.slice(7);
+        }
+        limiter = limiters.snapshot;
+      } else if (pathname === "/api/v1/sdk/evaluations") {
+        const auth = request.headers.get("Authorization");
+        if (auth?.startsWith("Bearer ")) {
+          rateLimitKey = auth.slice(7);
+        }
+        limiter = limiters.evaluations;
+      } else if (pathname === "/api/v1/sdk/connect") {
+        const connectUrl = new URL(request.url);
+        rateLimitKey = connectUrl.searchParams.get("apiKey");
+        limiter = limiters.connect;
+      }
+
+      if (limiter && rateLimitKey) {
+        const result = await limiter.limit(rateLimitKey);
+        if (!result.success) {
+          return buildRateLimitResponse(result, corsHeaders);
+        }
+        rateLimitResult = result;
+
+        // For connect, check rate limit then proceed directly
+        if (pathname === "/api/v1/sdk/connect") {
+          return sdkConnect(request, env);
+        }
+      }
+    }
+
     let response: Response;
 
     switch (pathname) {
@@ -861,6 +922,9 @@ export default {
     }
 
     response.headers.set("Access-Control-Allow-Origin", "*");
+    if (rateLimitResult) {
+      return mergeRateLimitHeaders(response, rateLimitResult);
+    }
     return response;
   },
 
