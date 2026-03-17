@@ -1,14 +1,18 @@
 import { authEnv } from "@gradual/auth/env";
-import { eq } from "@gradual/db";
+import { eq, inArray } from "@gradual/db";
 import { apiKey } from "@gradual/db/schema";
 import { TRPCError } from "@trpc/server";
 import { createAuditLog } from "../../lib/audit-log";
-import type { ProtectedOrganizationTRPCContext } from "../../trpc";
+import type {
+  ProtectedOrganizationTRPCContext,
+  PublicTRPCContext,
+} from "../../trpc";
 import type {
   CreateApiKeyInput,
   GetApiKeyByOrganizationIdAndProjectIdInput,
   ListApiKeysByOrganizationIdAndProjectIdInput,
   RevokeApiKeyInput,
+  SyncLastUsedInput,
 } from "./api-key.schemas";
 import { extractKeyPrefix, generateApiKey, hashApiKey } from "./api-key.utils";
 
@@ -233,4 +237,46 @@ export const listApiKeysByOrganizationIdAndProjectId = async ({
     offset: ((input.page ?? 1) - 1) * (input.limit ?? 10),
   });
   return apiKeys;
+};
+
+export const syncLastUsed = async ({
+  ctx,
+  input,
+}: {
+  ctx: PublicTRPCContext;
+  input: SyncLastUsedInput;
+}) => {
+  const expectedSecret = authEnv().CLOUDFLARE_WORKERS_ADMIN_KEY;
+  if (!expectedSecret || input.workerSecret !== expectedSecret) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid worker secret",
+    });
+  }
+
+  if (input.keys.length === 0) {
+    return { updated: 0 };
+  }
+
+  const rawKeys = input.keys.map((k) => k.key);
+  const existing = await ctx.db
+    .select({ id: apiKey.id, key: apiKey.key })
+    .from(apiKey)
+    .where(inArray(apiKey.key, rawKeys));
+
+  const keyToId = new Map(existing.map((row) => [row.key, row.id]));
+
+  let updated = 0;
+  for (const entry of input.keys) {
+    const id = keyToId.get(entry.key);
+    if (id) {
+      await ctx.db
+        .update(apiKey)
+        .set({ lastUsedAt: new Date(entry.lastUsedAt) })
+        .where(eq(apiKey.id, id));
+      updated++;
+    }
+  }
+
+  return { updated };
 };
