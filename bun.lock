@@ -169,10 +169,6 @@
     "packages/cf-worker": {
       "name": "cf-worker",
       "version": "0.0.0",
-      "dependencies": {
-        "@upstash/ratelimit": "catalog:upstash",
-        "@upstash/redis": "catalog:upstash",
-      },
       "devDependencies": {
         "@cloudflare/vitest-pool-workers": "^0.8.19",
         "@cloudflare/workers-types": "^4.20260114.0",

@@ -1,6 +1,6 @@
 import { authEnv } from "@gradual/auth/env";
 import { polarClient } from "@gradual/auth/polar";
-import { and, eq, inArray, sql } from "@gradual/db";
+import { and, eq, inArray, lt, sql } from "@gradual/db";
 import {
   attribute,
   context,
@@ -13,7 +13,10 @@ import { TRPCError } from "@trpc/server";
 
 import type { PublicTRPCContext } from "../../trpc";
 import { ee } from "./evaluations.emitter";
-import type { IngestEvaluationsInput } from "./evaluations.schemas";
+import type {
+  IngestEvaluationsInput,
+  PruneEvaluationsInput,
+} from "./evaluations.schemas";
 
 export async function ingestEvaluations({
   ctx,
@@ -306,6 +309,55 @@ export async function ingestEvaluations({
   }
 
   return { ingested: totalIngested };
+}
+
+const RETENTION_DAYS = 90;
+const PRUNE_BATCH_SIZE = 1000;
+const PRUNE_MAX_BATCHES = 100;
+
+export async function pruneEvaluations({
+  ctx,
+  input,
+}: {
+  ctx: PublicTRPCContext;
+  input: PruneEvaluationsInput;
+}): Promise<{ deleted: number }> {
+  const expectedSecret = authEnv().CLOUDFLARE_WORKERS_ADMIN_KEY;
+  if (!expectedSecret || input.workerSecret !== expectedSecret) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid worker secret",
+    });
+  }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
+
+  let totalDeleted = 0;
+
+  for (let i = 0; i < PRUNE_MAX_BATCHES; i++) {
+    const batch = await ctx.db
+      .delete(featureFlagEvaluation)
+      .where(
+        inArray(
+          featureFlagEvaluation.id,
+          ctx.db
+            .select({ id: featureFlagEvaluation.id })
+            .from(featureFlagEvaluation)
+            .where(lt(featureFlagEvaluation.createdAt, cutoff))
+            .limit(PRUNE_BATCH_SIZE)
+        )
+      )
+      .returning({ id: featureFlagEvaluation.id });
+
+    totalDeleted += batch.length;
+
+    if (batch.length < PRUNE_BATCH_SIZE) {
+      break;
+    }
+  }
+
+  return { deleted: totalDeleted };
 }
 
 const PLAN_MAU_LIMITS: Record<string, number | null> = {

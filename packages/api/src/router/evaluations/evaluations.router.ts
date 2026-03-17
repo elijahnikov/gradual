@@ -9,4 +9,9 @@ export const evaluationsRouter = {
   ingest: publicProcedure
     .input(schemas.ingestEvaluationsSchema)
     .mutation((opts) => services.ingestEvaluations({ ...opts })),
+
+  // INTERNAL, CALLED BY CF WORKER CRON
+  prune: publicProcedure
+    .input(schemas.pruneEvaluationsSchema)
+    .mutation((opts) => services.pruneEvaluations({ ...opts })),
 } satisfies TRPCRouterRecord;

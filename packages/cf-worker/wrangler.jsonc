@@ -31,6 +31,9 @@
       "new_classes": ["SnapshotRoom"]
     }
   ],
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  },
   "queues": {
     "producers": [
       {
