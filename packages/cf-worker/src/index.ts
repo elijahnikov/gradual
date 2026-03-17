@@ -44,6 +44,7 @@ interface EvaluationQueueMessage {
 interface ApiKeyMetadata {
   orgId: string;
   projectId: string;
+  lastUsedAt?: number;
 }
 
 interface AuditLogWebhookMessage {
@@ -78,18 +79,43 @@ function verifyAdminAuth(request: Request, env: Env): boolean {
   return token === env.CLOUDFLARE_WORKERS_ADMIN_KEY;
 }
 
+const LAST_USED_THROTTLE_MS = 5 * 60 * 1000;
+
 async function getApiKeyMetadata(
   apiKey: string,
-  env: Env
+  env: Env,
+  ctx?: ExecutionContext
 ): Promise<ApiKeyMetadata | null> {
-  const value = await env.GRADUAL_API_KEY.get(`apiKey:${apiKey}`);
+  const kvKey = `apiKey:${apiKey}`;
+  const value = await env.GRADUAL_API_KEY.get(kvKey);
   if (!value) {
     return null;
   }
-  return JSON.parse(value) as ApiKeyMetadata;
+  const metadata = JSON.parse(value) as ApiKeyMetadata;
+
+  const now = Date.now();
+  if (
+    !metadata.lastUsedAt ||
+    now - metadata.lastUsedAt > LAST_USED_THROTTLE_MS
+  ) {
+    metadata.lastUsedAt = now;
+    const writePromise = env.GRADUAL_API_KEY.put(
+      kvKey,
+      JSON.stringify(metadata)
+    );
+    if (ctx) {
+      ctx.waitUntil(writePromise);
+    }
+  }
+
+  return metadata;
 }
 
-async function sdkInit(request: Request, env: Env): Promise<Response> {
+async function sdkInit(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -103,7 +129,7 @@ async function sdkInit(request: Request, env: Env): Promise<Response> {
       );
     }
 
-    const metadata = await getApiKeyMetadata(body.apiKey, env);
+    const metadata = await getApiKeyMetadata(body.apiKey, env, ctx);
     if (!metadata) {
       return Response.json(
         { valid: false, error: "Invalid API key" },
@@ -132,7 +158,11 @@ async function sdkInit(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
+async function sdkGetSnapshot(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
   if (request.method !== "GET") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -146,7 +176,7 @@ async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
   }
 
   const apiKey = authHeader.slice(7);
-  const metadata = await getApiKeyMetadata(apiKey, env);
+  const metadata = await getApiKeyMetadata(apiKey, env, ctx);
   if (!metadata) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
@@ -187,7 +217,11 @@ async function sdkGetSnapshot(request: Request, env: Env): Promise<Response> {
   });
 }
 
-async function sdkConnect(request: Request, env: Env): Promise<Response> {
+async function sdkConnect(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
   if (request.headers.get("Upgrade") !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
   }
@@ -202,7 +236,7 @@ async function sdkConnect(request: Request, env: Env): Promise<Response> {
     );
   }
 
-  const metadata = await getApiKeyMetadata(apiKey, env);
+  const metadata = await getApiKeyMetadata(apiKey, env, ctx);
   if (!metadata) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
@@ -564,7 +598,8 @@ async function adminUpdateMauStatus(
 
 async function sdkIngestEvaluations(
   request: Request,
-  env: Env
+  env: Env,
+  ctx: ExecutionContext
 ): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -579,7 +614,7 @@ async function sdkIngestEvaluations(
   }
 
   const apiKey = authHeader.slice(7);
-  const metadata = await getApiKeyMetadata(apiKey, env);
+  const metadata = await getApiKeyMetadata(apiKey, env, ctx);
   if (!metadata) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
@@ -803,8 +838,65 @@ async function processWebhookQueue(
   }
 }
 
+async function syncApiKeyLastUsed(env: Env): Promise<void> {
+  try {
+    const keys: Array<{ key: string; lastUsedAt: number }> = [];
+    let cursor: string | undefined;
+
+    do {
+      const listResult = await env.GRADUAL_API_KEY.list({
+        prefix: "apiKey:",
+        cursor,
+      });
+
+      for (const kvKey of listResult.keys) {
+        const value = await env.GRADUAL_API_KEY.get(kvKey.name);
+        if (value) {
+          const metadata = JSON.parse(value) as ApiKeyMetadata;
+          if (metadata.lastUsedAt) {
+            const rawKey = kvKey.name.slice("apiKey:".length);
+            keys.push({ key: rawKey, lastUsedAt: metadata.lastUsedAt });
+          }
+        }
+      }
+
+      cursor = listResult.list_complete ? undefined : listResult.cursor;
+    } while (cursor);
+
+    if (keys.length === 0) {
+      return;
+    }
+
+    const apiUrl = `${env.API_INTERNAL_URL}/api/trpc/apiKey.syncLastUsed`;
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        json: {
+          workerSecret: env.CLOUDFLARE_WORKERS_ADMIN_KEY,
+          keys,
+        },
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (response.ok) {
+      const result = (await response.json()) as {
+        result: { data: { json: { updated: number } } };
+      };
+      console.log(
+        `API key lastUsedAt sync complete: ${result.result.data.json.updated} keys updated`
+      );
+    } else {
+      const errorText = await response.text();
+      console.error("API key lastUsedAt sync failed:", errorText);
+    }
+  } catch (err) {
+    console.error("syncApiKeyLastUsed error:", err);
+  }
+}
+
 export default {
-  async fetch(request, env, _ctx): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const { pathname } = new URL(request.url);
     const isSDKRoute =
       pathname === "/api/v1/sdk/init" ||
@@ -828,16 +920,16 @@ export default {
 
     switch (pathname) {
       case "/api/v1/sdk/init":
-        response = await sdkInit(request, env);
+        response = await sdkInit(request, env, ctx);
         break;
       case "/api/v1/sdk/snapshot":
-        response = await sdkGetSnapshot(request, env);
+        response = await sdkGetSnapshot(request, env, ctx);
         break;
       case "/api/v1/sdk/evaluations":
-        response = await sdkIngestEvaluations(request, env);
+        response = await sdkIngestEvaluations(request, env, ctx);
         break;
       case "/api/v1/sdk/connect":
-        return sdkConnect(request, env);
+        return sdkConnect(request, env, ctx);
       case "/api/v1/snapshot":
         return adminGetSnapshot(request, env);
       case "/api/v1/queue-snapshot":
@@ -885,6 +977,8 @@ export default {
       const errorText = await response.text();
       console.error("Evaluation pruning failed:", errorText);
     }
+
+    await syncApiKeyLastUsed(env);
   },
 
   queue(batch, env): Promise<void> {
