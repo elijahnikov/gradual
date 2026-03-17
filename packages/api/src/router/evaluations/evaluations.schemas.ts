@@ -61,3 +61,9 @@ export const ingestEvaluationsSchema = z.object({
 });
 
 export type IngestEvaluationsInput = z.infer<typeof ingestEvaluationsSchema>;
+
+export const pruneEvaluationsSchema = z.object({
+  workerSecret: z.string(),
+});
+
+export type PruneEvaluationsInput = z.infer<typeof pruneEvaluationsSchema>;

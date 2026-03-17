@@ -1,14 +1,6 @@
 {
   "name": "cf-worker",
   "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
-    "test": "vitest",
-    "cf-typegen": "wrangler types"
-  },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.8.19",
     "@cloudflare/workers-types": "^4.20260114.0",
@@ -16,8 +8,12 @@
     "vitest": "~3.2.0",
     "wrangler": "^4.62.0"
   },
-  "dependencies": {
-    "@upstash/ratelimit": "catalog:upstash",
-    "@upstash/redis": "catalog:upstash"
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types"
   }
 }
