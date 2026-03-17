@@ -38,6 +38,17 @@ export const revokeApiKeySchema = createSelectSchema(apiKey).pick({
   projectId: true,
 });
 
+export type SyncLastUsedInput = z.infer<typeof syncLastUsedSchema>;
+export const syncLastUsedSchema = z.object({
+  workerSecret: z.string(),
+  keys: z.array(
+    z.object({
+      key: z.string(),
+      lastUsedAt: z.number(),
+    })
+  ),
+});
+
 export type ListApiKeysByOrganizationIdAndProjectIdInput = z.infer<
   typeof listApiKeysByOrganizationIdAndProjectIdSchema
 >;
