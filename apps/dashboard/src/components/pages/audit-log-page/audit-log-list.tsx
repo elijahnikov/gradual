@@ -247,17 +247,17 @@ function AuditLogListItem({
         onClick={onToggle}
       >
         <Avatar className="size-6 shrink-0">
-          <AvatarImage src={item.user.image ?? undefined} />
+          <AvatarImage src={item.user?.image ?? undefined} />
           <AvatarFallback className="text-[10px]">
-            {item.user.name?.charAt(0) ?? "?"}
+            {item.user?.name?.charAt(0) ?? "?"}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex shrink-0 flex-col">
           <Text className="truncate" size="small" weight="plus">
-            {item.user.name ?? item.user.email}
+            {item.user?.name ?? item.user?.email ?? "Deleted user"}
           </Text>
-          {item.user.name && (
+          {item.user?.name && (
             <Text className="truncate text-ui-fg-muted" size="xsmall">
               {item.user.email}
             </Text>
@@ -347,10 +347,10 @@ function AuditLogListItem({
                 <div className="rounded-md border bg-ui-bg-base p-2.5">
                   <SectionLabel>Actor</SectionLabel>
                   <DetailField label="Name">
-                    {item.user.name ?? "-"}
+                    {item.user?.name ?? "-"}
                   </DetailField>
-                  <DetailField copyText={item.user.email} label="Email" mono>
-                    {item.user.email}
+                  <DetailField copyText={item.user?.email} label="Email" mono>
+                    {item.user?.email ?? "-"}
                   </DetailField>
                   {item.ipAddress && (
                     <DetailField
