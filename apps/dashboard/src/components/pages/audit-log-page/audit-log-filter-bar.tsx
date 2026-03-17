@@ -172,8 +172,8 @@ export default function AuditLogFilterBar() {
           (meta?.name as string) ?? (meta?.key as string) ?? "";
         return [
           item.createdAt?.toISOString() ?? "",
-          item.user.name ?? "",
-          item.user.email,
+          item.user?.name ?? "",
+          item.user?.email ?? "",
           item.action,
           item.resourceType,
           item.resourceId,

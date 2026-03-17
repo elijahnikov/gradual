@@ -74,7 +74,7 @@ export const listAuditLogs = async ({
       projectName: project.name,
     })
     .from(auditLog)
-    .innerJoin(user, eq(auditLog.userId, user.id))
+    .leftJoin(user, eq(auditLog.userId, user.id))
     .leftJoin(project, eq(auditLog.projectId, project.id))
     .where(and(...conditions))
     .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
@@ -154,7 +154,7 @@ export const exportAuditLogs = async ({
       projectName: project.name,
     })
     .from(auditLog)
-    .innerJoin(user, eq(auditLog.userId, user.id))
+    .leftJoin(user, eq(auditLog.userId, user.id))
     .leftJoin(project, eq(auditLog.projectId, project.id))
     .where(and(...conditions))
     .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
