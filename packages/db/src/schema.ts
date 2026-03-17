@@ -887,9 +887,9 @@ export const auditLog = pgTable(
     projectId: uuid("project_id").references(() => project.id, {
       onDelete: "cascade",
     }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "set null" }),
+    userId: uuid("user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
