@@ -366,13 +366,48 @@ const PLAN_MAU_LIMITS: Record<string, number | null> = {
   "702b22c1-f1f7-4aa8-828b-56e322f9a7c2": null, // Enterprise
 };
 
-const orgOwnerCache = new Map<string, string>();
+class TTLCache<T> {
+  private readonly cache = new Map<string, { value: T; expiresAt: number }>();
+  private readonly maxSize: number;
+  private readonly ttlMs: number;
 
-const MAU_STATUS_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const orgMauStatusCache = new Map<
-  string,
-  { mauLimit: number | null; limitReached: boolean; cachedAt: number }
->();
+  constructor(maxSize: number, ttlMs: number) {
+    this.maxSize = maxSize;
+    this.ttlMs = ttlMs;
+  }
+
+  get(key: string): T | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return undefined;
+    }
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+
+  set(key: string, value: T): void {
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+  }
+}
+
+const MAU_STATUS_TTL_MS = 5 * 60 * 1000;
+const OWNER_TTL_MS = 30 * 60 * 1000;
+const MAX_CACHE_SIZE = 1000;
+
+const orgOwnerCache = new TTLCache<string>(MAX_CACHE_SIZE, OWNER_TTL_MS);
+const orgMauStatusCache = new TTLCache<{
+  mauLimit: number | null;
+  limitReached: boolean;
+}>(MAX_CACHE_SIZE, MAU_STATUS_TTL_MS);
 
 async function reportMAUToPolar(
   ctx: { db: PublicTRPCContext["db"] },
@@ -401,11 +436,7 @@ async function reportMAUToPolar(
     orgOwnerCache.set(organizationId, ownerUserId);
   }
 
-  const cached = orgMauStatusCache.get(organizationId);
-  let mauStatus =
-    cached && Date.now() - cached.cachedAt < MAU_STATUS_TTL_MS
-      ? cached
-      : undefined;
+  let mauStatus = orgMauStatusCache.get(organizationId);
 
   if (!mauStatus) {
     try {
@@ -421,10 +452,9 @@ async function reportMAUToPolar(
       mauStatus = {
         mauLimit,
         limitReached: mauLimit !== null && consumedUnits >= mauLimit,
-        cachedAt: Date.now(),
       };
     } catch {
-      mauStatus = { mauLimit: 1000, limitReached: false, cachedAt: Date.now() };
+      mauStatus = { mauLimit: 1000, limitReached: false };
     }
     orgMauStatusCache.set(organizationId, mauStatus);
   }
