@@ -76,7 +76,8 @@
     "fix": "bun x ultracite@latest fix",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter='@gradual-so/*' && changeset publish"
+    "release": "turbo run build --filter='@gradual-so/*' && changeset publish",
+    "docs": "cd apps/docs && mint dev --port 3333"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
