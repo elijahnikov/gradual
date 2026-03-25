@@ -116,6 +116,14 @@ interface TargetingActions {
   setEnabled: (enabled: boolean) => void;
   setOffVariationId: (offVariationId: string | null) => void;
 
+  loadFromEnvironment: (config: {
+    targets: LocalTarget[];
+    defaultVariationId: string;
+    defaultRollout: LocalRollout | null;
+    enabled: boolean;
+    offVariationId: string | null;
+  }) => void;
+
   openReviewModal: () => void;
   closeReviewModal: () => void;
 }
@@ -541,6 +549,17 @@ const createTargetingStore = () =>
 
     setOffVariationId: (offVariationId) => {
       set({ offVariationId, hasChanges: true });
+    },
+
+    loadFromEnvironment: (config) => {
+      set({
+        targets: config.targets,
+        defaultVariationIdState: config.defaultVariationId,
+        defaultRollout: config.defaultRollout,
+        enabled: config.enabled,
+        offVariationId: config.offVariationId,
+        hasChanges: true,
+      });
     },
 
     openReviewModal: () => {

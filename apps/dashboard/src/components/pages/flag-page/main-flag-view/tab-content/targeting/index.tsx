@@ -1,5 +1,14 @@
 import type { RouterOutputs } from "@gradual/api";
 import { Button } from "@gradual/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@gradual/ui/dropdown-menu";
+import { Separator } from "@gradual/ui/separator";
 import { Text } from "@gradual/ui/text";
 import {
   Tooltip,
@@ -7,10 +16,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@gradual/ui/tooltip";
-import { RiArrowGoBackFill } from "@remixicon/react";
+import {
+  RiArrowGoBackFill,
+  RiFileCopyLine,
+  RiLoader4Line,
+} from "@remixicon/react";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useTRPC } from "@/lib/trpc";
 import DefaultVariation from "./default-variation";
@@ -152,6 +169,14 @@ function FlagTargetingContent({
     });
   }, [flagEnvironment.targets]);
 
+  const otherEnvironments = useMemo(
+    () =>
+      flag.environments
+        .filter((e) => e.environment.slug !== environmentSlug)
+        .map((e) => e.environment),
+    [flag.environments, environmentSlug]
+  );
+
   const { canUpdateFlags } = usePermissions();
   const initialize = useTargetingStore((s) => s.initialize);
   const targets = useTargetingStore((s) => s.targets);
@@ -160,6 +185,138 @@ function FlagTargetingContent({
   const openReviewModal = useTargetingStore((s) => s.openReviewModal);
   const reset = useTargetingStore((s) => s.reset);
   const enabled = useTargetingStore((s) => s.enabled);
+  const loadFromEnvironment = useTargetingStore((s) => s.loadFromEnvironment);
+
+  const queryClient = useQueryClient();
+  const [isCopying, setIsCopying] = useState(false);
+
+  const handleCopyFrom = useCallback(
+    async (sourceEnvSlug: string) => {
+      setIsCopying(true);
+      try {
+        const sourceConfig = await queryClient.fetchQuery(
+          trpc.featureFlags.getTargetingRules.queryOptions({
+            flagId: flag.flag.id,
+            environmentSlug: sourceEnvSlug,
+            organizationSlug,
+            projectSlug,
+          })
+        );
+
+        const copiedTargets: LocalTarget[] = sourceConfig.targets.map(
+          (target) => {
+            const base: LocalTarget = {
+              id: crypto.randomUUID(),
+              type: target.type,
+              name: target.name,
+            };
+
+            if (target.variationId) {
+              base.variationId = target.variationId;
+            } else if (target.rollout && target.rollout.variations.length > 0) {
+              base.rollout = {
+                variations: target.rollout.variations.map((rv) => ({
+                  variationId: rv.variationId,
+                  weight: rv.weight,
+                })),
+                bucketContextKind: target.rollout.bucketContextKind,
+                bucketAttributeKey: target.rollout.bucketAttributeKey,
+                seed: target.rollout.seed ?? undefined,
+                schedule: target.rollout.schedule
+                  ? (
+                      target.rollout.schedule as Array<{
+                        durationMinutes: number;
+                        variations: Array<{
+                          variationId: string;
+                          weight: number;
+                        }>;
+                      }>
+                    ).map((step) => ({
+                      durationMinutes: step.durationMinutes,
+                      variations: step.variations.map((sv) => ({
+                        variationId: sv.variationId,
+                        weight: sv.weight,
+                      })),
+                    }))
+                  : undefined,
+              };
+            }
+
+            if (
+              target.type === "rule" &&
+              target.rules &&
+              target.rules.length > 0
+            ) {
+              base.conditions = target.rules.map((rule) => ({
+                contextKind: rule.contextKind,
+                attributeKey: rule.attributeKey,
+                operator: rule.operator as TargetingOperator,
+                value: rule.value,
+              }));
+            } else if (target.type === "individual" && target.individual) {
+              base.contextKind = target.individual.contextKind;
+              base.attributeKey = target.individual.attributeKey;
+              base.attributeValue = target.individual.attributeValue;
+            } else if (target.type === "segment" && target.segment) {
+              base.segmentId = target.segment.segmentId;
+            }
+
+            return base;
+          }
+        );
+
+        const copiedDefaultRollout = sourceConfig.defaultRollout
+          ? {
+              variations: sourceConfig.defaultRollout.variations.map((rv) => ({
+                variationId: rv.variationId,
+                weight: rv.weight,
+              })),
+              bucketContextKind: sourceConfig.defaultRollout.bucketContextKind,
+              bucketAttributeKey:
+                sourceConfig.defaultRollout.bucketAttributeKey,
+              seed: sourceConfig.defaultRollout.seed ?? undefined,
+              schedule: sourceConfig.defaultRollout.schedule
+                ? (
+                    sourceConfig.defaultRollout.schedule as Array<{
+                      durationMinutes: number;
+                      variations: Array<{
+                        variationId: string;
+                        weight: number;
+                      }>;
+                    }>
+                  ).map((step) => ({
+                    durationMinutes: step.durationMinutes,
+                    variations: step.variations.map((sv) => ({
+                      variationId: sv.variationId,
+                      weight: sv.weight,
+                    })),
+                  }))
+                : undefined,
+            }
+          : null;
+
+        loadFromEnvironment({
+          targets: copiedTargets,
+          defaultVariationId:
+            sourceConfig.defaultVariation?.id ?? defaultVariationId,
+          defaultRollout: copiedDefaultRollout,
+          enabled: sourceConfig.enabled,
+          offVariationId: sourceConfig.offVariationId,
+        });
+      } finally {
+        setIsCopying(false);
+      }
+    },
+    [
+      queryClient,
+      trpc,
+      flag.flag.id,
+      organizationSlug,
+      projectSlug,
+      defaultVariationId,
+      loadFromEnvironment,
+    ]
+  );
 
   const validationErrors = useMemo(
     () => getValidationErrors(targets),
@@ -250,6 +407,49 @@ function FlagTargetingContent({
         <div className="flex h-12.5 flex-col gap-2 px-2.5 sm:flex-row sm:items-center sm:justify-between">
           <Text weight="plus">Targeting rules for {environmentSlug}</Text>
           <div className="flex items-center gap-2">
+            {otherEnvironments.length > 0 && canUpdateFlags && (
+              <DropdownMenu>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <DropdownMenuTrigger
+                          className="flex size-6 items-center justify-center rounded-[6px] border border-ui-border-base bg-ui-bg-base hover:bg-ui-bg-base-hover disabled:opacity-50"
+                          disabled={isCopying}
+                        />
+                      }
+                    >
+                      {isCopying ? (
+                        <RiLoader4Line className="size-3.5 shrink-0 animate-spin" />
+                      ) : (
+                        <RiFileCopyLine className="size-3.5 shrink-0" />
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent>Copy from environment</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Copy targeting from</DropdownMenuLabel>
+                    {otherEnvironments.map((env) => (
+                      <DropdownMenuItem
+                        key={env.slug}
+                        onClick={() => handleCopyFrom(env.slug)}
+                      >
+                        <span
+                          className="mr-1 size-3.5 shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: env.color ?? undefined,
+                          }}
+                        />
+                        {env.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Separator orientation="vertical" />
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger
