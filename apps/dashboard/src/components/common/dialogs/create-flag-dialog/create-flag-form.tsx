@@ -1,7 +1,7 @@
 import { createCompleteFeatureFlagSchema } from "@gradual/api/schemas";
 import { getVariationColorByIndex } from "@gradual/api/utils";
 import { Badge } from "@gradual/ui/badge";
-import { DialogFooter } from "@gradual/ui/dialog";
+import { DialogFooter, DialogHeader, DialogTitle } from "@gradual/ui/dialog";
 import {
   Form,
   FormControl,
@@ -19,13 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@gradual/ui/select";
+import { Skeleton } from "@gradual/ui/skeleton";
 import { Textarea } from "@gradual/ui/textarea";
 import { toastManager } from "@gradual/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RiCloseLine } from "@remixicon/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { RiCloseLine, RiFileTextLine } from "@remixicon/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type UseFormReturn, useForm } from "react-hook-form";
 import type z from "zod/v4";
 import { useTRPC } from "@/lib/trpc";
@@ -47,8 +48,28 @@ export default function CreateFlagForm({
 
   const tagInputRef = useRef<HTMLInputElement>(null);
 
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    null
+  );
+
   const queryClient = useQueryClient();
   const trpc = useTRPC();
+
+  const { data: templates, isLoading: isLoadingTemplates } = useQuery(
+    trpc.flagTemplates.list.queryOptions(
+      {
+        organizationSlug: params.organizationSlug ?? "",
+      },
+      {
+        enabled: !!params.organizationSlug,
+      }
+    )
+  );
+
+  const { mutateAsync: incrementUsage } = useMutation(
+    trpc.flagTemplates.incrementUsage.mutationOptions()
+  );
+
   const { mutateAsync: createFlag, isPending: isCreatingFlag } = useMutation(
     trpc.featureFlags.create.mutationOptions({
       onSuccess: () => {
@@ -94,6 +115,61 @@ export default function CreateFlagForm({
       defaultWhenOffVariationIndex: 1,
     },
   });
+
+  const applyTemplate = useCallback(
+    (templateId: string | null) => {
+      setSelectedTemplateId(templateId);
+      if (!(templateId && templates)) {
+        return;
+      }
+      const template = templates.find((t) => t.id === templateId);
+      if (!template) {
+        return;
+      }
+
+      const config = template.config as {
+        type: string;
+        variations: Array<{
+          name: string;
+          value: unknown;
+          isDefault: boolean;
+        }>;
+      };
+
+      form.setValue(
+        "type",
+        config.type as "boolean" | "string" | "number" | "json"
+      );
+      form.setValue(
+        "variations",
+        config.variations.map((v, i) => ({
+          name: v.name,
+          value: v.value as string | number | boolean | object,
+          description: undefined,
+          color: getVariationColorByIndex(i),
+          isDefault: v.isDefault,
+          rolloutPercentage: 0,
+          sortOrder: i,
+        }))
+      );
+
+      const defaultIdx = config.variations.findIndex((v) => v.isDefault);
+      if (defaultIdx !== -1) {
+        form.setValue("defaultWhenOnVariationIndex", defaultIdx);
+        form.setValue(
+          "defaultWhenOffVariationIndex",
+          config.type === "boolean"
+            ? config.variations.findIndex((v) => !v.isDefault)
+            : defaultIdx
+        );
+      }
+
+      if (template.description) {
+        form.setValue("description", template.description);
+      }
+    },
+    [templates, form]
+  );
 
   const currentType = form.watch("type");
 
@@ -225,6 +301,11 @@ export default function CreateFlagForm({
         maintainerId:
           data.maintainerId === "no-maintainer" ? null : data.maintainerId,
       });
+      if (selectedTemplateId) {
+        incrementUsage({ templateId: selectedTemplateId }).catch(() => {
+          // fire-and-forget, ignore errors
+        });
+      }
       toastManager.add({
         type: "success",
         title: "Feature flag created successfully",
@@ -255,6 +336,43 @@ export default function CreateFlagForm({
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle className="font-medium text-[14px]">
+          Create a new flag
+        </DialogTitle>
+        {isLoadingTemplates ? (
+          <Skeleton className="ml-auto h-7 w-44" />
+        ) : templates && templates.length > 0 ? (
+          <Select
+            items={[
+              { value: "__none__", label: "Select a template" },
+              ...templates.map((t) => ({ value: t.id, label: t.name })),
+            ]}
+            onValueChange={(value) => {
+              applyTemplate(value === "__none__" ? null : value);
+            }}
+            value={selectedTemplateId ?? "__none__"}
+          >
+            <SelectTrigger
+              className="ml-auto w-48 justify-between text-left"
+              size="sm"
+            >
+              <div className="flex items-center gap-1.5">
+                <RiFileTextLine className="size-3.5 shrink-0 text-ui-fg-muted" />
+                <SelectValue placeholder="Select a template" />
+              </div>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value="__none__">Select a template</SelectItem>
+              {templates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+      </DialogHeader>
       <Form {...form}>
         <form
           className="grid h-full grid-cols-2 divide-x"

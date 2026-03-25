@@ -107,6 +107,7 @@ export default function MainFlagView({
         flag={flag.flag}
         organizationSlug={organizationSlug}
         projectSlug={projectSlug}
+        variations={flag.variations}
       />
     </div>
   );

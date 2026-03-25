@@ -22,6 +22,7 @@ export default function SettingsSubheader() {
 
   const tabPermissions: Record<SettingsTab, boolean> = {
     general: true,
+    templates: true,
     notifications: true,
   };
 
@@ -31,6 +32,11 @@ export default function SettingsSubheader() {
     }
   });
   useHotkey("2", () => {
+    if (tabPermissions.templates) {
+      setQueryStates({ tab: "templates" });
+    }
+  });
+  useHotkey("3", () => {
     if (tabPermissions.notifications) {
       setQueryStates({ tab: "notifications" });
     }
