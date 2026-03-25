@@ -29,6 +29,7 @@ import {
   RiCalendarFill,
   RiDeleteBinLine,
   RiFileCopyLine,
+  RiFileTextLine,
   RiHashtag,
   RiKey2Fill,
   RiLink,
@@ -51,12 +52,14 @@ interface FlagSidebarProps {
   flag: RouterOutputs["featureFlags"]["getByKey"]["flag"];
   organizationSlug: string;
   projectSlug: string;
+  variations: RouterOutputs["featureFlags"]["getByKey"]["variations"];
 }
 
 export default function FlagSidebar({
   flag,
   organizationSlug,
   projectSlug,
+  variations,
 }: FlagSidebarProps) {
   const [optimisticName, setOptimisticName] = useState<string | undefined>(
     undefined
@@ -75,6 +78,42 @@ export default function FlagSidebar({
   const { canUpdateFlags, canDeleteFlags } = usePermissions();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+
+  const { mutateAsync: createTemplate, isPending: isSavingTemplate } =
+    useMutation(
+      trpc.flagTemplates.create.mutationOptions({
+        onSuccess: () => {
+          queryClient.invalidateQueries(trpc.flagTemplates.pathFilter());
+          toastManager.add({
+            title: "Saved as template",
+            description: "You can use this template when creating new flags",
+            type: "success",
+          });
+        },
+        onError: () => {
+          toastManager.add({
+            title: "Failed to save template",
+            type: "error",
+          });
+        },
+      })
+    );
+
+  const handleSaveAsTemplate = () => {
+    createTemplate({
+      organizationSlug,
+      name: flag.name,
+      description: flag.description ?? undefined,
+      config: {
+        type: flag.type as "boolean" | "string" | "number" | "json",
+        variations: variations.map((v) => ({
+          name: v.name,
+          value: v.value as string | number | boolean,
+          isDefault: v.isDefault,
+        })),
+      },
+    });
+  };
 
   const { data: members, isLoading: isLoadingMembers } = useQuery({
     ...trpc.organizationMember.getMembers.queryOptions({
@@ -259,6 +298,13 @@ export default function FlagSidebar({
               <DropdownMenuItem onClick={handleCopyLink}>
                 <RiLink />
                 Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isSavingTemplate}
+                onClick={handleSaveAsTemplate}
+              >
+                <RiFileTextLine />
+                Save as template
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

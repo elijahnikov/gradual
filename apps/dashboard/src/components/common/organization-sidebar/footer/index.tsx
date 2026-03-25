@@ -18,7 +18,7 @@ export default function MainSidebarFooter() {
               external
               icon={RiQuestionFill}
               title="Documentation"
-              url="https://gradual.so/docs"
+              url="https://docs.gradual.so"
             />
           </div>
           <Card className="relative flex w-max flex-col gap-1.5 rounded-full bg-ui-bg-base p-1">

@@ -4,6 +4,7 @@ import { settingsSearchParams } from "./settings-search-params";
 import SettingsSubheader from "./settings-subheader";
 import GeneralSettings from "./tab-content/general";
 import NotificationsSettings from "./tab-content/notifications";
+import TemplatesSettings from "./tab-content/templates";
 
 export default function SettingsPage() {
   const [{ tab }] = useQueryStates(settingsSearchParams);
@@ -12,6 +13,8 @@ export default function SettingsPage() {
     switch (tab) {
       case "general":
         return <GeneralSettings />;
+      case "templates":
+        return <TemplatesSettings />;
       case "notifications":
         return <NotificationsSettings />;
       default:

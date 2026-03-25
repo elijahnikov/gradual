@@ -1335,3 +1335,14 @@ export const webhookDeliveryRelations = relations(
     }),
   })
 );
+
+export const flagTemplateRelations = relations(flagTemplate, ({ one }) => ({
+  organization: one(organization, {
+    fields: [flagTemplate.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
+    fields: [flagTemplate.createdById],
+    references: [user.id],
+  }),
+}));

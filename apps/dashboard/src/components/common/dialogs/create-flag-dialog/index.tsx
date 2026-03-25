@@ -1,11 +1,5 @@
 import { Button } from "@gradual/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@gradual/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@gradual/ui/dialog";
 import CreateFlagForm from "./create-flag-form";
 
 export default function CreateFlagDialog({
@@ -29,11 +23,6 @@ export default function CreateFlagDialog({
         </DialogTrigger>
       ) : null}
       <DialogContent className="relative top-8 flex min-h-[80vh] min-w-[70vw] flex-col">
-        <DialogHeader>
-          <DialogTitle className="font-medium text-[14px]">
-            Create a new flag
-          </DialogTitle>
-        </DialogHeader>
         <CreateFlagForm isDialogOpen={open} />
       </DialogContent>
     </Dialog>
